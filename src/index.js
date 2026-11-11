@@ -12,7 +12,7 @@ export default {
   }
   if(!env.DB)return err('D1 not configured',503);
   const accessCode=str(request.headers.get('x-service-code'),100).trim();
-  if(!/^(?:\\d{6}|[A-Za-z0-9_-]{12,80})$/.test(accessCode))return err('Código de servicio no válido',403);
+  if(!/^(?:\d{6}|[A-Za-z0-9_-]{12,80})$/.test(accessCode))return err('Código de servicio no válido',403);
   try{
    if(p==='/api/services'&&m==='POST'){
     const v=await body(request),id=crypto.randomUUID();
