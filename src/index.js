@@ -36,9 +36,19 @@ export default {
       const input=await body(request),snapshot=input.service;
       if(!snapshot||typeof snapshot!=='object'||Array.isArray(snapshot))return err('Invalid service snapshot');
       if(JSON.stringify(snapshot).length>2000000)return err('Service too large',413);
+      const expected=String(input.revision||'');
+      const revision=crypto.randomUUID();
       snapshot.code=service.code;
-      await env.DB.prepare('INSERT INTO service_snapshots(service_id,snapshot,updated_at) VALUES(?,?,CURRENT_TIMESTAMP) ON CONFLICT(service_id) DO UPDATE SET snapshot=excluded.snapshot,updated_at=CURRENT_TIMESTAMP').bind(service.id,JSON.stringify(snapshot)).run();
-      return json({ok:true,service:snapshot});
+      snapshot._syncRevision=revision;
+      const serialized=JSON.stringify(snapshot);
+      let result;
+      if(!expected){
+        result=await env.DB.prepare('INSERT OR IGNORE INTO service_snapshots(service_id,snapshot,updated_at) VALUES(?,?,CURRENT_TIMESTAMP)').bind(service.id,serialized).run();
+      }else{
+        result=await env.DB.prepare("UPDATE service_snapshots SET snapshot=?,updated_at=CURRENT_TIMESTAMP WHERE service_id=? AND json_extract(snapshot,'$._syncRevision')=?").bind(serialized,service.id,expected).run();
+      }
+      if(!result.meta?.changes)return err('Otro dispositivo ha modificado este servicio. Actualiza para sincronizar antes de guardar.',409);
+      return json({ok:true,service:snapshot,revision});
     }
     if(!section&&m==='GET'){
      const [workers,teams,scenarios,incidents,requirements]=await Promise.all([
