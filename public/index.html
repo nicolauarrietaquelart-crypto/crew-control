@@ -7050,6 +7050,10 @@ body > .modal:not(.hidden){z-index:50000!important;isolation:isolate!important}
  width:34px!important;height:34px!important;border-radius:50%!important;
  background:#f0f0f0!important;color:#111!important;
 }
+body > #teamColorPalette.team-palette-popover:not(.hidden){
+ position:fixed!important;z-index:2147483647!important;
+ isolation:isolate!important;pointer-events:auto!important;
+}
 /* Standard modal system — consistent size, visible shadow, internal scrolling */
 .modal:not(.hidden){
  position:fixed!important;inset:0!important;z-index:1000!important;
@@ -9966,6 +9970,10 @@ function openTeamColorPalette(event,teamId,button){
   const pop=document.getElementById('teamColorPalette');
   if(!pop)return;
 
+  // Palette is a floating portal, not a child of the dialog stacking context.
+  if(pop.parentElement!==document.body)document.body.appendChild(pop);
+  pop.style.setProperty('z-index','2147483647','important');
+  pop.style.setProperty('position','fixed','important');
   pop.classList.remove('hidden');
 
   const rect=button.getBoundingClientRect();
