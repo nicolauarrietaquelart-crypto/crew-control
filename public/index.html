@@ -7075,6 +7075,14 @@ body > #teamColorPalette.team-palette-popover:not(.hidden){
 .modal:not(.hidden){
  overflow:visible!important;
 }
+/* Fix root cause: legacy v11.2.20 constrained modal backdrop to below header.
+   The overlay must cover the ENTIRE viewport, including the bottom strip. */
+body > .modal:not(.hidden){
+ inset:0!important;top:0!important;bottom:0!important;
+ width:100vw!important;height:100dvh!important;max-height:none!important;
+ box-sizing:border-box!important;
+ z-index:2147483000!important;
+}
 /* Standard modal system — consistent size, visible shadow, internal scrolling */
 .modal:not(.hidden){
  position:fixed!important;inset:0!important;z-index:1000!important;
@@ -15051,7 +15059,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
    const isWorker=modal.id==='workerModal';
    const isWide=card.classList.contains('integrated-modal-card-v129')||card.classList.contains('modal-wide');
    const width=isWorker?820:isWide?780:720;
-   set(modal,{'position':'fixed','inset':'0','z-index':'2147483000','isolation':'isolate','padding':mobile?'20px 12px':'44px 30px','overflow':'visible','align-items':'center','justify-content':'center'});
+   set(modal,{'position':'fixed','inset':'0','top':'0','bottom':'0','height':'100dvh','max-height':'none','width':'100vw','z-index':'2147483000','isolation':'isolate','padding':mobile?'20px 12px':'44px 30px','overflow':'visible','align-items':'center','justify-content':'center'});
    set(card,{
     'width':mobile?'100%':`min(${width}px, calc(100vw - 60px))`,
     'max-width':mobile?'calc(100vw - 24px)':'calc(100vw - 60px)',
