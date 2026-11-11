@@ -10540,8 +10540,8 @@ function pdfHeaderKey(value){
   if(/\bLLAM\b|\bLLAMADA\b/.test(v))return'hLlam';
   if(/^INICIO$|HORA INICIO/.test(v))return'inicio';
   if(/^FIN$|HORA FIN/.test(v))return'fin';
-  if(/\bPAUSA\b/.test(v))return'pausa';
-  if(/\bDIETA\b/.test(v))return'dieta';
+  if(/^PAUSA$/.test(v))return'pausa';
+  if(/^(?:N|NO|NUMERO)?\s*DIETA$/.test(v))return'dieta';
   if(/^CS$|COORDINADOR/.test(v))return'cs';
   if(/\bMOVIL\b/.test(v))return'movil';
   if(/\bTELEFONO\b|^TEL$/.test(v))return'telefono';
@@ -10605,12 +10605,13 @@ function detectPdfColumnLayout(lines,width){
     const previous=columns[index-1];
     const next=columns[index+1];
 
+    // Use actual header cell edges, not midpoints of header starting Xs.
+    // This prevents FIN, PAUSA and N.DIETA from bleeding into each other.
     const min=previous
-      ? (previous.x+col.x)/2
+      ? (previous.endX+col.x)/2
       : Math.max(0,col.x-width*.035);
-
     const max=next
-      ? (col.x+next.x)/2
+      ? (col.endX+next.x)/2
       : width+1;
 
     bounds[col.key]={min,max,x:col.x};
@@ -12626,7 +12627,7 @@ function overnightBadge(start,end){
 
   if(endMinutes>=startMinutes)return'';
 
-  return '<span class="schedule-real">+1 día</span>';
+  return ''; // Overnight arithmetic remains intact; hide redundant badge.
 }
 
 function isValidClock(value){
