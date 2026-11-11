@@ -7019,6 +7019,23 @@ html:has(.modal:not(.hidden)),body:has(.modal:not(.hidden)){overflow:hidden!impo
  .modal:not(.hidden)>.modal-card .modal-actions{position:sticky!important;bottom:-16px!important;background:#fff!important;padding:12px 0 calc(12px + env(safe-area-inset-bottom,0px))!important;z-index:2!important}
 }
 @media(prefers-reduced-motion:reduce){.modal:not(.hidden)>.modal-card{animation:none!important}}
+
+/* Worker detail: fixed footer INSIDE the viewport; only fields scroll. */
+#workerModal:not(.hidden){position:fixed!important;inset:0!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:18px!important;overflow:hidden!important}
+#workerModal:not(.hidden)>.modal-card{display:grid!important;grid-template-rows:auto minmax(0,1fr) auto!important;align-content:stretch!important;height:min(760px,calc(100dvh - 36px))!important;min-height:0!important;max-height:calc(100dvh - 36px)!important;width:min(1200px,100%)!important;max-width:calc(100vw - 36px)!important;margin:0 auto!important;padding:20px 24px 0!important;overflow:hidden!important;box-sizing:border-box!important;border-radius:22px!important}
+#workerModal .modal-head{grid-row:1!important;margin:0!important;padding:0 0 14px!important}
+#workerModal .modal-grid{grid-row:2!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important;padding:12px 4px 18px!important;scrollbar-gutter:stable!important}
+#workerModal .modal-actions{grid-row:3!important;position:relative!important;bottom:auto!important;margin:0 -24px!important;padding:12px 24px calc(14px + env(safe-area-inset-bottom,0px))!important;background:#fff!important;border-top:1px solid #e9e9ed!important;z-index:3!important;box-shadow:none!important;flex-shrink:0!important}
+#workerModal .modal-actions .service-actions{display:flex!important;gap:7px!important;flex-wrap:wrap!important}
+#workerModal .modal-actions button{white-space:nowrap!important}
+@media(max-width:700px){
+ #workerModal:not(.hidden){padding:8px!important}
+ #workerModal:not(.hidden)>.modal-card{height:calc(100dvh - 16px)!important;max-height:calc(100dvh - 16px)!important;max-width:calc(100vw - 16px)!important;padding:16px 14px 0!important;border-radius:18px!important}
+ #workerModal .modal-grid{padding:10px 2px 14px!important}
+ #workerModal .modal-actions{margin:0 -14px!important;padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px))!important;gap:8px!important}
+ #workerModal .modal-actions .service-actions{width:100%!important;justify-content:flex-start!important}
+ #workerModal .modal-actions button{min-height:38px!important}
+}
 </style>
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#171719">
