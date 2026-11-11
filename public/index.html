@@ -8822,7 +8822,7 @@ async function crewD1Dispatch(method,args){
     return {service:next,summary:{matched,added,removed,scheduleChanged,pauseChanged,dietChanged,coordinatorChanged,movedToReserve,changedNames}};
   }
   if(method==='duplicateServiceSetup'){
-    const newCode=Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>b.toString(16).padStart(2,'0')).join('');
+    const newCode=String(crypto.getRandomValues(new Uint32Array(1))[0]%1000000).padStart(6,'0');
     const res=await fetch('/api/services',{method:'POST',headers:{'content-type':'application/json','x-service-code':newCode},body:JSON.stringify({name:state.service?.serviceName||''})});
     const created=await res.json();if(!res.ok)throw new Error(created.error||'Error al duplicar');
     const original=state.service||{};
@@ -8848,7 +8848,7 @@ async function crewD1Dispatch(method,args){
     return ready;
   }
   if(method==='generateNewService'){
-    const code=Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>b.toString(16).padStart(2,'0')).join('');
+    const code=String(crypto.getRandomValues(new Uint32Array(1))[0]%1000000).padStart(6,'0');
     const response=await fetch('/api/services',{method:'POST',headers:{'content-type':'application/json','x-service-code':code},body:JSON.stringify({name:''})});
     const result=await response.json();
     if(!response.ok)throw new Error(result.error||'No se pudo crear el servicio');
