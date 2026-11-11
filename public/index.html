@@ -6944,6 +6944,18 @@ body > .modal{position:fixed!important;inset:0!important;z-index:20000!important
 #personnelGroups [data-shift-key].shift-row-hidden,#personnelGroups [data-shift-key][hidden]{display:none!important}
 .shift-divider-btn{touch-action:manipulation;cursor:pointer}
 
+
+/* Continuous category carousel, with stationary navigation arrows above the rail. */
+.operational-work-pager-v11233{position:relative!important;display:block!important;min-width:0!important;}
+.operational-work-pager-v11233 #operationalWorkFilters{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important;scroll-behavior:smooth!important;scroll-snap-type:x proximity;scrollbar-width:none!important;gap:7px!important;padding:3px 45px!important;mask:none!important;-webkit-mask:none!important;overscroll-behavior-x:contain;}
+.operational-work-pager-v11233 #operationalWorkFilters::-webkit-scrollbar{display:none!important;}
+.operational-work-pager-v11233 .operational-work-chip-v122{flex:0 0 auto!important;max-width:none!important;scroll-snap-align:center;transition:background-color .24s ease,border-color .24s ease,color .24s ease,box-shadow .24s ease,transform .24s ease!important;}
+.operational-work-pager-v11233 .operational-work-chip-v122[hidden]{display:inline-flex!important;}
+.operational-work-pager-v11233 .operational-work-chip-v122:active{transform:scale(.96)!important;}
+.operational-work-pager-v11233 .operational-work-next-v11232,.operational-work-pager-v11233 #operationalWorkPrevious{position:absolute!important;top:50%!important;transform:translateY(-50%)!important;z-index:5!important;transition:opacity .2s ease,background-color .2s ease,box-shadow .2s ease!important;}
+.operational-work-pager-v11233 #operationalWorkPrevious{left:0!important;}
+.operational-work-pager-v11233 #operationalWorkNext{right:0!important;}
+@media(prefers-reduced-motion:reduce){.operational-work-pager-v11233 #operationalWorkFilters{scroll-behavior:auto!important;}.operational-work-pager-v11233 .operational-work-chip-v122{transition:none!important;}}
 </style>
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#171719">
@@ -13587,65 +13599,22 @@ function updateOperationalWorkNextButton(){
   const prev=document.getElementById('operationalWorkPrevious');
   const next=document.getElementById('operationalWorkNext');
   if(!host||!prev||!next)return;
-
-  const items=[...host.querySelectorAll('.operational-work-chip-v122')];
-  if(!items.length){prev.disabled=true;next.disabled=true;return;}
-
-  const maxIndex=items.length-1;
-  const start=Math.max(0,Math.min(maxIndex,operationalWorkPageStartV11233));
-  operationalWorkPageStartV11233=start;
-
-  // Measure while temporarily visible; all items fit into a 1-row clipped rail.
-  items.forEach(button=>button.hidden=false);
-  const widths=items.map(button=>Math.ceil(button.getBoundingClientRect().width));
-  const available=Math.max(85,host.clientWidth-4);
-  let used=0;
-  let last=start;
-
-  for(let index=start;index<items.length;index++){
-    const width=Math.min(available,Math.max(36,widths[index]));
-    const required=width+(index>start?5:0);
-    if(index>start && used+required>available)break;
-    used+=required;
-    last=index;
-  }
-
-  operationalWorkPageLastV11233=last;
-  items.forEach((button,index)=>{
-    button.hidden=index<start||index>last;
-  });
-
-  prev.disabled=start===0;
-  next.disabled=last>=maxIndex;
+  // All categories remain in the same continuous horizontal rail.
+  // The arrows are fixed overlays; categories scroll underneath them.
+  const max=Math.max(0,host.scrollWidth-host.clientWidth);
+  prev.disabled=host.scrollLeft<=2;
+  next.disabled=host.scrollLeft>=max-2;
   next.classList.toggle('at-end-v11232',next.disabled);
-  host.scrollLeft=0;
 }
-
 function nextOperationalWorkType(){
   const host=document.getElementById('operationalWorkFilters');
   if(!host)return;
-  const count=host.querySelectorAll('.operational-work-chip-v122').length;
-  if(!count || operationalWorkPageLastV11233>=count-1)return;
-  operationalWorkPageStartV11233=operationalWorkPageLastV11233+1;
-  updateOperationalWorkNextButton();
+  host.scrollBy({left:Math.max(140,host.clientWidth*.72),behavior:'smooth'});
 }
-
 function previousOperationalWorkType(){
   const host=document.getElementById('operationalWorkFilters');
-  if(!host || operationalWorkPageStartV11233<=0)return;
-  const items=[...host.querySelectorAll('.operational-work-chip-v122')];
-  items.forEach(item=>item.hidden=false);
-  const available=Math.max(85,host.clientWidth-4);
-  let used=0;
-  let newStart=operationalWorkPageStartV11233-1;
-  for(let index=operationalWorkPageStartV11233-1;index>=0;index--){
-    const width=Math.min(available,Math.max(36,Math.ceil(items[index].getBoundingClientRect().width)));
-    if(used && used+width+5>available)break;
-    used+=width+(used?5:0);
-    newStart=index;
-  }
-  operationalWorkPageStartV11233=newStart;
-  updateOperationalWorkNextButton();
+  if(!host)return;
+  host.scrollBy({left:-Math.max(140,host.clientWidth*.72),behavior:'smooth'});
 }
 
 function renderOperationalWorkFilters(){
@@ -13662,7 +13631,7 @@ function renderOperationalWorkFilters(){
   const signature=JSON.stringify(buttons);
   if(host.dataset.workSignature!==signature){
     host.dataset.workSignature=signature;
-    operationalWorkPageStartV11233=0;
+    host.scrollLeft=0;
     host.innerHTML=buttons.map(work=>`<button type="button"
       data-work-type="${escapeAttr(work)}"
       class="operational-work-chip-v122"
@@ -13678,6 +13647,7 @@ function renderOperationalWorkFilters(){
       work==='ALL'?state.operationalWorkFilter==='ALL':
       normalize(work)===normalize(state.operationalWorkFilter));
   });
+  if(!host.dataset.scrollListenerAttached){host.addEventListener('scroll',updateOperationalWorkNextButton,{passive:true});host.dataset.scrollListenerAttached='1';}
   updateOperationalWorkNextButton();
   renderOperationalTimeFilters();
   updateSidebarUtilityBadges();
