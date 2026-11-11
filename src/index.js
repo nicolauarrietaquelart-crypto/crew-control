@@ -12,12 +12,12 @@ export default {
   }
   if(!env.DB)return err('D1 not configured',503);
   const accessCode=str(request.headers.get('x-service-code'),100).trim();
-  if(!/^[A-Za-z0-9_-]{12,80}$/.test(accessCode))return err('Introduce un código de servicio de al menos 12 caracteres',403);
+  if(!/^(?:\\d{6}|[A-Za-z0-9_-]{12,80})$/.test(accessCode))return err('Código de servicio no válido',403);
   try{
    if(p==='/api/services'&&m==='POST'){
     const v=await body(request),id=crypto.randomUUID();
     const existing=await env.DB.prepare('SELECT id,code FROM services WHERE code=?').bind(accessCode).first();
-    if(existing)return json({ok:true,id:existing.id,code:existing.code,existing:true});
+    if(existing)return err('Este código ya existe; genera otro',409);
     await env.DB.prepare('INSERT INTO services(id,code,name,service_date,venue) VALUES(?,?,?,?,?)').bind(id,accessCode,str(v.name,200),str(v.service_date,20),str(v.venue,200)).run();
     return json({ok:true,id,code:accessCode},201);
    }
