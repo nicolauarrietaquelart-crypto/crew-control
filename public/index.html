@@ -10163,8 +10163,10 @@ async function parsePennyWisePdf(file){
       if(!hLlam)hLlam=shiftTimes[0] || columnText(lineItems,width,.425,.495);
       if(!inicio)inicio=shiftTimes[1] || columnText(lineItems,width,.475,.555);
       if(!fin)fin=shiftTimes[2] || columnText(lineItems,width,.525,.610);
-      if(!pausaRaw)pausaRaw=shiftTimes[3] || '00:00';
-      if(!dietaRaw)dietaRaw=shiftTimes[4] || '0';
+      // Never infer PAUSA or DIETA from the fourth/fifth time in the row:
+      // these may be shift times or values from adjacent columns.
+      if(!pausaRaw)pausaRaw='';
+      if(!dietaRaw)dietaRaw='';
 
       let csMarker=pageLayout
         ? columnTextByPdfLayout(lineItems,pageLayout,'cs')
@@ -10417,21 +10419,22 @@ function looksLikeShiftBundle(value){
 }
 
 function normalizePdfPauseValue(value){
-  const raw=String(value||'').trim();
-
-  if(!raw)return'00:00';
-  if(/^(0|0[.,]0|0:00|00:00)$/.test(raw))return'00:00';
-
-  const normalized=normalizeTime(raw);
-  if(/^\d{2}:\d{2}$/.test(normalized))return normalized;
-
-  const numeric=Number(raw.replace(',','.'));
-  if(Number.isFinite(numeric)&&numeric>=0){
-    const minutes=Math.round(numeric*60);
-    return `${String(Math.floor(minutes/60)).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;
+  // Accept only a single, explicit pause value; reject merged PDF columns.
+  const raw=String(value??'').trim();
+  if(!raw||/^(?:-|—|SIN PAUSA)$/i.test(raw))return '00:00';
+  if(/^(?:0|0[.,]0|0:00|00:00)$/.test(raw))return '00:00';
+  const hm=raw.match(/^(\\d{1,2})[:.,](\\d{2})$/);
+  if(hm){
+    const h=Number(hm[1]),m=Number(hm[2]);
+    if(m>=60||h>3)return '00:00'; // Flag implausible extraction rather than inventing a 6h break.
+    return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
   }
-
-  return'00:00';
+  const numeric=raw.match(/^(\\d{1,2})(?:[.,](\\d{1,2}))?$/);
+  if(!numeric)return '00:00';
+  const hours=Number(raw.replace(',','.'));
+  if(!Number.isFinite(hours)||hours<0||hours>3)return '00:00';
+  const minutes=Math.round(hours*60);
+  return String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0');
 }
 
 function personLikePdfText(value){
@@ -10659,12 +10662,11 @@ function normalizeTime(v){
   return String(Number(m[1])).padStart(2,'0')+':'+String(Number(m[2])).padStart(2,'0');
 }
 function normalizeDietFromPdf(value){
-  const v=String(value||'').trim();
-  if(!v)return 0;
-  const m=v.match(/^(\d{1,2})[:.,]\d{1,2}$/);
-  if(m)return Math.max(0,Number(m[1])||0);
-  const n=Number(v.replace(',','.'));
-  return Number.isFinite(n)?Math.max(0,Math.round(n)):0;
+  const raw=String(value??'').trim();
+  // DIETA is a count, not a time or an arbitrary number from another column.
+  if(!/^[0-9]{1,2}$/.test(raw))return 0;
+  const count=Number(raw);
+  return count>=0&&count<=4?count:0;
 }
 
 function dateId(v){return String(v||'').replace(/\D/g,'')||'NODATE'}
