@@ -10121,13 +10121,10 @@ async function parsePennyWisePdf(file){
           if(candidate&&categoryBoundary.test(candidate))especialidad=candidate;
         }
       }
-      // Reject worker identifiers masquerading as telephone numbers.
-      if(!looksLikePhoneNumber(movil))movil='';
-      if(!looksLikePhoneNumber(telefono))telefono='';
-      if(!movil&&!telefono){
-        const candidates=orderedRowItems.filter(i=>looksLikePhoneNumber(i.text));
-        if(candidates.length)movil=candidates[candidates.length-1].text;
-      }
+      // The PDF contains distinct TELEFONO and MOVIL columns.
+      // Read ONLY MOVIL; never substitute TELEFONO or a random numeric item.
+      movil=extractPdfMobileColumn(orderedRowItems,pageLayout,width);
+      telefono='';
 
       if(!personal||['NOMBRE','PERSONAL'].includes(normalize(personal)))continue;
 
@@ -10148,7 +10145,7 @@ async function parsePennyWisePdf(file){
         pausa:normalizeTime(pausa),
         nDieta:nDieta,
         isCoordinator:isCoordinator,
-        movil:normalizePhone(movil||telefono)
+        movil:normalizePhone(movil)
       };
 
       workers.push(worker);
@@ -10459,6 +10456,35 @@ function repairShiftedPdfWorkerRow(items,current){
     movil,
     csMarker
   };
+}
+
+function extractPdfMobileColumn(items,layout,width){
+  const sorted=items.slice().sort((a,b)=>a.x-b.x);
+  const mobile=layout?.bounds?.movil;
+  const landline=layout?.bounds?.telefono;
+  // When header positions are available, use the real MOVIL column only.
+  // Use the header X as a boundary so fragments never leak from TELEFONO.
+  if(mobile){
+    const lower=landline ? (landline.x+mobile.x)/2 : mobile.min;
+    const upper=mobile.max;
+    const chunks=sorted.filter(i=>i.x>=lower&&i.x<upper)
+      .map(i=>String(i.text||'').trim()).filter(Boolean);
+    const direct=chunks.find(looksLikePhoneNumber);
+    if(direct)return direct;
+    const joined=chunks.join('').replace(/\s+/g,'');
+    const found=joined.match(/(?:\+34|0034)?[6789]\d{8}/);
+    if(found&&looksLikePhoneNumber(found[0]))return found[0];
+    return '';
+  }
+  // Historical layout: MOVIL is to the right of TELEFONO.
+  // Do not fall back to the landline column if the mobile cell is blank.
+  const chunks=sorted.filter(i=>i.x>=width*.815&&i.x<width*.99)
+    .map(i=>String(i.text||'').trim()).filter(Boolean);
+  const direct=chunks.find(looksLikePhoneNumber);
+  if(direct)return direct;
+  const joined=chunks.join('').replace(/\s+/g,'');
+  const found=joined.match(/(?:\+34|0034)?[6789]\d{8}/);
+  return found&&looksLikePhoneNumber(found[0])?found[0]:'';
 }
 
 function looksLikePhoneNumber(value){
