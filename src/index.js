@@ -27,6 +27,19 @@ export default {
     if(code!==accessCode)return err('Código de servicio incorrecto',403);
     const service=await env.DB.prepare('SELECT * FROM services WHERE code=?').bind(code).first();
     if(!service)return err('Service not found',404);
+    if(!section&&m==='GET'&&url.searchParams.get('format')==='snapshot'){
+      const row=await env.DB.prepare('SELECT snapshot FROM service_snapshots WHERE service_id=?').bind(service.id).first();
+      return json({ok:true,service:row?.snapshot?JSON.parse(row.snapshot):{code:service.code,serviceName:service.name,serviceDate:service.service_date,venue:service.venue,closed:!!service.closed,workers:[],teams:[],scenarios:[],incidents:[],requirements:[],workOrder:[],hiddenWorkTypes:[]}});
+    }
+    if(!section&&m==='PUT'){
+      if(service.closed)return err('Service is closed',409);
+      const input=await body(request),snapshot=input.service;
+      if(!snapshot||typeof snapshot!=='object'||Array.isArray(snapshot))return err('Invalid service snapshot');
+      if(JSON.stringify(snapshot).length>2000000)return err('Service too large',413);
+      snapshot.code=service.code;
+      await env.DB.prepare('INSERT INTO service_snapshots(service_id,snapshot,updated_at) VALUES(?,?,CURRENT_TIMESTAMP) ON CONFLICT(service_id) DO UPDATE SET snapshot=excluded.snapshot,updated_at=CURRENT_TIMESTAMP').bind(service.id,JSON.stringify(snapshot)).run();
+      return json({ok:true,service:snapshot});
+    }
     if(!section&&m==='GET'){
      const [workers,teams,scenarios,incidents,requirements]=await Promise.all([
       env.DB.prepare('SELECT * FROM workers WHERE service_id=? ORDER BY sort_order').bind(service.id).all(),
