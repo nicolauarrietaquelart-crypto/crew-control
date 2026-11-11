@@ -8607,7 +8607,78 @@ async function firebaseGenerateClosedPdf(code){
   return pdf;
 }
 
+
+// Cloudflare D1 adapter: retain the original Fluid Blocks interface.
+const crewApi=async(code,method='GET',payload)=> {
+  const response=await fetch('/api/services/'+encodeURIComponent(code)+'?format=snapshot',{
+    method,headers:{'content-type':'application/json','x-service-code':code},
+    ...(payload===undefined?{}:{body:JSON.stringify(payload)})
+  });
+  const data=await response.json();
+  if(!response.ok)throw new Error(data.error||'Error de Cloudflare D1');
+  return data;
+};
+const crewPersist=async service=>{
+  if(!service?.code)throw new Error('Servicio no seleccionado');
+  await crewApi(service.code,'PUT',{service});
+  return service;
+};
+async function crewD1Dispatch(method,args){
+  const code=String(args[0]||state.service?.code||'');
+  if(method==='loadService')return (await crewApi(code)).service;
+  if(method==='generateNewService'){
+    const code=Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>b.toString(16).padStart(2,'0')).join('');
+    const response=await fetch('/api/services',{method:'POST',headers:{'content-type':'application/json','x-service-code':code},body:JSON.stringify({name:''})});
+    const result=await response.json();
+    if(!response.ok)throw new Error(result.error||'No se pudo crear el servicio');
+    return (await crewApi(code)).service;
+  }
+  if(method==='saveServiceMeta'){
+    const next={...state.service,...args[1]};
+    await crewPersist(next);return {ok:true};
+  }
+  if(method==='saveScenariosAndTeams'){
+    const next={...state.service,scenarios:args[1]||[],teams:args[2]||[]};
+    await crewPersist(next);return next;
+  }
+  if(method==='saveWorkerChanges'){
+    const next={...state.service,workers:(state.service?.workers||[]).map(w=>{
+      const change=(args[1]||[]).find(x=>String(x.workerId)===String(w.id));
+      if(!change)return w;
+      const {workerId,...fields}=change;return {...w,...fields};
+    })};
+    await crewPersist(next);return {ok:true};
+  }
+  if(method==='addManualWorker'){
+    const data=args[1]||{},id=crypto.randomUUID();
+    const worker={id,...data,status:'PENDIENTE',blockId:'MANUAL_'+id,blockLabel:(data.trabajo||'')+' · MANUAL',sortOrder:(state.service?.workers||[]).length+1};
+    await crewPersist({...state.service,workers:[...(state.service?.workers||[]),worker]});return worker;
+  }
+  if(method==='closeService'||method==='reopenService'){
+    const closed=method==='closeService';
+    const response=await fetch('/api/services/'+encodeURIComponent(code),{method:'PATCH',headers:{'content-type':'application/json','x-service-code':code},body:JSON.stringify({closed})});
+    const result=await response.json();if(!response.ok)throw new Error(result.error||'No se pudo cambiar el estado');
+    return {ok:true,service:{...state.service,closed},closedAt:closed?new Date().toISOString():''};
+  }
+  if(method==='saveTeamRequirements'){
+    const [code,serviceDate,trabajo,requirements,noTeams]=args;
+    const rest=(state.service?.requirements||[]).filter(r=>!(r.serviceDate===serviceDate&&r.trabajo===trabajo));
+    const saved=noTeams?[{serviceDate,trabajo,teamId:'NO_TEAMS',requiredCount:0}]:(requirements||[]).map(r=>({...r,serviceDate,trabajo}));
+    await crewPersist({...state.service,requirements:[...rest,...saved]});return {ok:true,saved,noTeams};
+  }
+  if(method==='saveIncident'){
+    const payload=args[1]||{},id=payload.incidentId||crypto.randomUUID();
+    const existing=(state.service?.incidents||[]).filter(i=>String(i.id)!==String(id));
+    const incident={...payload,id,createdAt:new Date().toISOString()};
+    await crewPersist({...state.service,incidents:[...existing,incident]});return incident;
+  }
+  if(method==='deleteIncident'){
+    await crewPersist({...state.service,incidents:(state.service?.incidents||[]).filter(i=>String(i.id)!==String(args[1]))});return {ok:true};
+  }
+  throw new Error('La función '+method+' todavía no está migrada a Cloudflare D1');
+}
 async function dispatchBackend(method,args){
+  return crewD1Dispatch(method,args);
   switch(String(method)){
     case 'loadService':
       return firebaseLoadService(...args);
