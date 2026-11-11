@@ -6882,14 +6882,6 @@ details .work-group-arrow{transition:transform 320ms var(--fluid-spring)!importa
 @keyframes fluid-refresh{from{opacity:.65}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 
-
-/* Layout repair: do not float the brand header over scrolling content. */
-@media(min-width:701px){body>header{position:relative!important;top:auto!important;left:auto!important;right:auto!important;width:100%!important;margin:0!important;border-radius:0!important;transform:none!important}}
-@media(max-width:700px){body>header{border-radius:0!important;margin:0!important;left:0!important;right:0!important;width:100%!important}}
-#appScreen{scroll-margin-top:12px}
-.work-group,.table-wrap{min-width:0}
-.table-wrap{overflow-x:auto;overscroll-behavior-x:contain}
-
 </style>
 </head>
 <body>
@@ -8687,21 +8679,13 @@ async function crewD1Dispatch(method,args){
   const code=String(args[0]||state.service?.code||'');
   if(method==='replaceWorkersFromPdf'){
     const parsed=args[1]||{},old=state.service||{},previous=old.workers||[];
-    const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleUpperCase('es').replace(/[^A-Z0-9]/g,'');
-    const key=w=>[norm(w.personal),norm(w.serviceDate),norm(w.trabajo)].join('|');
-    const nameDate=w=>[norm(w.personal),norm(w.serviceDate)].join('|');
+    const key=w=>[String(w.personal||'').trim().toLocaleUpperCase(),String(w.serviceDate||''),String(w.trabajo||'').trim().toLocaleUpperCase()].join('|');
     const buckets=new Map();
     for(const w of previous){const k=key(w);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(w)}
     let matched=0,added=0,scheduleChanged=0,pauseChanged=0,dietChanged=0,coordinatorChanged=0,movedToReserve=0;
     const changedNames=[];
-    const usedIds=new Set();
     const workers=(parsed.workers||[]).map((w,index)=>{
-      let oldWorker=(buckets.get(key(w))||[]).shift();
-      if(!oldWorker){
-        const candidates=previous.filter(p=>nameDate(p)===nameDate(w)&&!usedIds.has(p.id));
-        if(candidates.length===1)oldWorker=candidates[0];
-      }
-      if(oldWorker)usedIds.add(oldWorker.id);
+      const oldWorker=(buckets.get(key(w))||[]).shift();
       if(!oldWorker){added++;return {...w,id:w.id||crypto.randomUUID(),sortOrder:index+1,status:'PENDIENTE',included:true}}
       matched++;
       if(oldWorker.inicio!==w.inicio||oldWorker.fin!==w.fin){scheduleChanged++;changedNames.push(w.personal||'')}
@@ -9891,20 +9875,6 @@ async function importPdf(file){
     if(!parsed.workers.length)throw new Error('No se ha encontrado personal con nombre en el PDF.');
     parsed.meta.pdfName=file.name;
 
-    const existingCount=state.service?.workers?.length||0;
-    if(existingCount>0){
-      const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleUpperCase('es').replace(/[^A-Z0-9]/g,'');
-      const existingNames=new Set(state.service.workers.map(w=>norm(w.personal)).filter(Boolean));
-      const shared=parsed.workers.filter(w=>existingNames.has(norm(w.personal))).length;
-      if(shared===0){
-        showPdfStatus('Importación detenida: ninguno de los nombres coincide con el personal actual. Revisa que sea el PDF del servicio correcto.','error');
-        return;
-      }
-      const removedEstimate=Math.max(0,existingCount-shared);
-      if(removedEstimate>Math.floor(existingCount*.3)){
-        if(!confirm('Atención: el PDF parece sustituir gran parte del personal actual ('+existingCount+' registros anteriores, '+shared+' coincidencias por nombre). ¿Quieres continuar?'))return;
-      }
-    }
     showPdfStatus(`Detectados ${parsed.workers.length} registros en ${new Set(parsed.workers.map(w=>w.serviceDate)).size} día(s). Guardando…`,'info');
 
     backend.run
