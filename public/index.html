@@ -12579,26 +12579,30 @@ function formatMinutesClient(minutes){
   return `${sign}${h}h ${String(m).padStart(2,'0')}m`;
 }
 
-function effectivePause(w){
-  return w.actualPause!==undefined&&w.actualPause!==null&&w.actualPause!==''
-    ? w.actualPause
-    : (w.pausa||'00:00');
+function validOperationalPause(value){
+  const v=String(value??'').trim();
+  if(/^(?:SIN PAUSA|NO PAUSA)$/i.test(v))return '00:00';
+  const m=v.match(/^(\d{1,2})(?::00)?\s*(?:h|hr|horas?)?$/i);
+  if(!m)return null;
+  const h=Number(m[1]);
+  return h>=0&&h<=3?String(h).padStart(2,'0')+':00':null;
 }
-
+function effectivePause(w){
+  const manual=w.actualPause!==undefined&&w.actualPause!==null&&w.actualPause!=='';
+  const raw=manual?w.actualPause:w.pausa;
+  return validOperationalPause(raw??'00:00');
+}
 function pauseChipHtml(w){
   const effective=effectivePause(w);
   const manual=w.actualPause!==undefined&&w.actualPause!==null&&w.actualPause!=='';
-  const label=effective==='00:00'?'SIN PAUSA':formatPauseLabel(effective);
-  return `<span class="ops-chip ${manual?'manual':''}">${escapeHtml(label)}</span>`;
+  const label=effective===null?'REVISAR PAUSA':effective==='00:00'?'SIN PAUSA':formatPauseLabel(effective);
+  return `<span class="ops-chip ${manual?'manual':''}" ${effective===null?'title="Pausa fuera del rango permitido (0-3 horas). Revisar ficha del trabajador."':''}>${escapeHtml(label)}</span>`;
 }
-
 function formatPauseLabel(value){
-  const m=String(value||'').match(/^(\d{2}):(\d{2})$/);
-  if(!m)return value||'—';
-  const h=Number(m[1]),min=Number(m[2]);
-  if(h===0)return `${min} min`;
-  if(min===0)return `${h} h`;
-  return `${h} h ${min} min`;
+  const v=validOperationalPause(value);
+  if(v===null)return 'REVISAR PAUSA';
+  const h=Number(v.slice(0,2));
+  return h===0?'SIN PAUSA':`${h} h`;
 }
 
 function effectiveDiet(w){
