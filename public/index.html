@@ -8786,11 +8786,52 @@ const crewApi=async(code,method='GET',payload)=> {
   if(!response.ok)throw new Error(data.error||'Error de Cloudflare D1');
   return data;
 };
-const crewPersist=async service=>{
-  if(!service?.code)throw new Error('Servicio no seleccionado');
-  await crewApi(service.code,'PUT',{service});
-  return service;
+let crewSaveQueue=Promise.resolve();
+let crewLastLocalWrite=0;
+let crewRemoteCheckInFlight=false;
+const crewPersist=service=>{
+  if(!service?.code)return Promise.reject(new Error('Servicio no seleccionado'));
+  crewLastLocalWrite=Date.now();
+  const save=async()=>{
+    const code=service.code;
+    // Read latest local revision at execution time, not at queue insertion time.
+    const revision=String(state.service?._syncRevision||service._syncRevision||'');
+    const result=await crewApi(code,'PUT',{service,revision});
+    if(state.service?.code===code)state.service._syncRevision=result.revision;
+    service._syncRevision=result.revision;
+    crewLastLocalWrite=Date.now();
+    return service;
+  };
+  const task=crewSaveQueue.then(save);
+  crewSaveQueue=task.catch(()=>{});
+  return task;
 };
+async function crewCheckRemoteChanges(){
+  if(crewRemoteCheckInFlight||document.hidden||!state.service?.code||state.service.closed)return;
+  if(Date.now()-crewLastLocalWrite<4000||state.workerSaveInFlight||
+    Object.keys(state.pendingWorkerUpdates||{}).length||state.workerSaveTimer||
+    document.querySelector('.modal:not(.hidden)')||
+    document.activeElement?.matches('input,textarea,select,[contenteditable="true"]'))return;
+  const code=state.service.code;
+  crewRemoteCheckInFlight=true;
+  try{
+    await crewSaveQueue;
+    const response=await crewApi(code);
+    const remote=response.service;
+    if(!remote||state.service?.code!==code)return;
+    if(remote._syncRevision===state.service._syncRevision)return;
+    state.service=remote;
+    const active=state.activeDay;
+    renderScenarios();
+    updateTeamSelects();
+    state.activeDay=active;
+    renderPersonnel();
+    applyClosedState();
+    setSaveState('Sincronizado','saved');
+  }catch(error){console.warn('Sincronización:',error)}
+  finally{crewRemoteCheckInFlight=false}
+}
+window.setInterval(crewCheckRemoteChanges,3000);
 // Default crew teams; only bootstrap when a service has no teams.
 const CREW_DEFAULT_TEAMS=[
   ['LIGHTS','VERDE','#43F500',false],
