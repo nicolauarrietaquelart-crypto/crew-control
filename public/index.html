@@ -10085,6 +10085,33 @@ async function parsePennyWisePdf(file){
         csMarker=repaired.csMarker||csMarker;
       }
 
+      // Repair merged PDF name/category fields without guessing surname length.
+      const categoryBoundary=/\b(?:RUNNER(?:\s+FURGONETA)?|CREW\s+HEAD|FORKLIFTER|FORKLIFT|AUXILIAR|HAND\s+[A-Z]|CARGADOR|MONTADOR|TECNIC[OA]|OPERARI[OA]|CONDUCTOR|PUSHER|LOADER|BACKLINE|CATERING|RIGGER|SEGURIDAD|LUCES|SONIDO|VIDEO|V[IÍ]DEO|SFX)\b/i;
+      const categoryMatch=String(personal||'').match(categoryBoundary);
+      if(categoryMatch&&categoryMatch.index>0){
+        const candidateName=personal.slice(0,categoryMatch.index).trim();
+        if(personLikePdfText(candidateName)){
+          especialidad=personal.slice(categoryMatch.index).trim();
+          personal=candidateName;
+        }
+      }
+      // PDF.js may merge column text or move it across the header boundary.
+      if(!especialidad){
+        const categoryX=pageLayout?.bounds?.especialidad?.x;
+        if(Number.isFinite(categoryX)){
+          const right=orderedRowItems.filter(i=>i.x>=categoryX-1&&i.x<(firstTime?.x||width));
+          const candidate=right.map(i=>i.text).join(' ').trim();
+          if(candidate&&categoryBoundary.test(candidate))especialidad=candidate;
+        }
+      }
+      // Reject worker identifiers masquerading as telephone numbers.
+      if(!looksLikePhoneNumber(movil))movil='';
+      if(!looksLikePhoneNumber(telefono))telefono='';
+      if(!movil&&!telefono){
+        const candidates=orderedRowItems.filter(i=>looksLikePhoneNumber(i.text));
+        if(candidates.length)movil=candidates[candidates.length-1].text;
+      }
+
       if(!personal||['NOMBRE','PERSONAL'].includes(normalize(personal)))continue;
 
       const pausa=normalizePdfPauseValue(pausaRaw);
@@ -10419,8 +10446,12 @@ function repairShiftedPdfWorkerRow(items,current){
 
 function looksLikePhoneNumber(value){
   const raw=String(value||'').trim();
+  if(!/^(?:\+|00)?[\d\s().-]+$/.test(raw))return false;
   const digits=raw.replace(/\D/g,'');
-  return digits.length>=7&&digits.length<=15;
+  if(digits.length===9)return /^[6789]/.test(digits);
+  if(digits.length===11&&digits.startsWith('34'))return /^[6789]/.test(digits.slice(2));
+  if(digits.length===13&&digits.startsWith('0034'))return /^[6789]/.test(digits.slice(4));
+  return false;
 }
 
 function groupItemsIntoLines(items){
