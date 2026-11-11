@@ -9311,6 +9311,14 @@ function openServiceData(service){
 
   const days=getDays();
   state.activeDay = days.includes(previousDay) ? previousDay : (days[0] || '');
+  // A newly created service must never inherit stale selection/filter UI.
+  state.selected.clear();
+  state.workTeamFilters={};
+  state.workSorts={};
+  const workerSearch=document.getElementById('searchWorker');
+  if(workerSearch)workerSearch.value='';
+  const statusFilter=document.getElementById('quickStatusFilter');
+  if(statusFilter)statusFilter.value='ALL';
 
   renderScenarios();
   parkIntegratedSections();
@@ -9881,7 +9889,16 @@ async function importPdf(file){
       .withSuccessHandler(result=>{
         const service=result.service;
         const s=result.summary||{};
+        if(!Array.isArray(service?.workers)||service.workers.length!==parsed.workers.length){
+          showPdfStatus('La importación no ha devuelto todos los trabajadores. No se mostrará como completada; vuelve a abrir el servicio para comprobar los datos.','error');
+          return;
+        }
         openServiceData(service);
+        // Always show the imported day and clear any filters from a previous service.
+        if(service.workers.length&&!workersForActiveDay().length){
+          state.activeDay=service.workers[0].serviceDate||'SIN FECHA';
+          renderPersonnel();
+        }
         const changedNames=(s.changedNames||[]).length
           ? `<div class="hint" style="margin-top:8px"><strong>Horarios modificados:</strong> ${escapeHtml((s.changedNames||[]).join(', '))}</div>`
           : '';
