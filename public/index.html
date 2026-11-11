@@ -6830,7 +6830,27 @@
       .work-hide-icon-v11237 svg{width:20px!important;height:20px!important;}
     }
 
-  </style>
+  
+/* Fluid motion polish — original Crew Control interface */
+:root{--cc-ease:cubic-bezier(.22,1,.36,1);--cc-fast:180ms;--cc-medium:320ms}
+.code-pill{font-size:clamp(12px,1.1vw,15px)!important;letter-spacing:.045em!important;padding:7px 10px!important;border-radius:9px!important;max-width:min(42vw,340px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;user-select:all}
+.service-code{min-width:0}
+.service-top{transition:background-color var(--cc-medium) var(--cc-ease)}
+button,.btn,.file-button,.sidebar-btn,.control-toggle{transition:transform var(--cc-fast) var(--cc-ease),background-color var(--cc-fast) ease,color var(--cc-fast) ease,border-color var(--cc-fast) ease,box-shadow var(--cc-medium) var(--cc-ease),opacity var(--cc-fast) ease!important}
+button:not(:disabled):active,.btn:not(:disabled):active{transform:scale(.965)}
+@media(hover:hover){button:not(:disabled):hover,.btn:not(:disabled):hover{transform:translateY(-2px)}}
+input,textarea,select{transition:border-color 200ms ease,box-shadow 220ms ease,background-color 220ms ease!important}
+input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:2px}
+.card,.panel,.stat,.stat-card,.service-top,.work-group,.modal-card{transition:box-shadow 300ms var(--cc-ease),border-color 250ms ease,background-color 250ms ease,transform 300ms var(--cc-ease)}
+@media(hover:hover){.card:hover,.panel:hover,.stat-card:hover{box-shadow:0 12px 32px rgba(0,0,0,.055)}}
+#appScreen:not(.hidden),#startScreen:not(.hidden){animation:cc-enter 420ms var(--cc-ease) both}
+.modal:not(.hidden) .modal-card{animation:cc-modal 330ms var(--cc-ease) both}
+@keyframes cc-enter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes cc-modal{from{opacity:0;transform:translateY(15px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:700px){.code-pill{font-size:12px!important;letter-spacing:0!important;max-width:48vw;padding:7px 8px!important}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+</style>
 </head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
