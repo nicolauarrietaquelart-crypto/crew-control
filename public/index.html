@@ -9529,6 +9529,19 @@ window.addEventListener('resize',()=>{
   }
 });
 
+function clearStartScreenState(){
+  const status=document.getElementById('startStatus');
+  if(status){
+    status.textContent='';
+    status.className='status-box';
+  }
+  const btn=document.getElementById('newServiceBtn');
+  if(btn){
+    btn.disabled=false;
+    btn.textContent='Nuevo servicio';
+  }
+}
+
 function openExistingService(){
   const code=document.getElementById('serviceCodeInput').value.trim();
   if(!/^\d{6}$/.test(code)){
@@ -9621,6 +9634,7 @@ function showPdfStatusHtml(message,type='ok'){
 }
 
 function openServiceData(service){
+  clearStartScreenState();
   document.body.classList.add('control-sidebar-open');
   updateControlSidebarTop();
   const previousDay=state.activeDay;
@@ -9697,6 +9711,7 @@ function closeService(){
 }
 
 function finalizeCloseServiceView(){
+  clearStartScreenState();
   setMobileOperationalPanelV11234(false);
   restorePersonnelSidebarHome();
   document.body.classList.remove('control-sidebar-open');
