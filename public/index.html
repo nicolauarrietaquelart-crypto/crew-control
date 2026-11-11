@@ -7030,56 +7030,85 @@ body main.wrap{transition:width .38s cubic-bezier(.22,1,.36,1),margin-left .38s 
 }
 
 
-/* Unified dialog sizing: one authoritative layout, no forced full-screen height. */
+/* Standard modal system — consistent size, visible shadow, internal scrolling */
 .modal:not(.hidden){
- position:fixed!important;inset:0!important;display:flex!important;
- align-items:center!important;justify-content:center!important;
- padding:24px!important;overflow:hidden!important;
- background:rgba(15,18,24,.48)!important;
- backdrop-filter:blur(2px)!important;
+ position:fixed!important;inset:0!important;z-index:1000!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ padding:48px 30px!important;overflow:hidden!important;
+ background:rgba(16,20,27,.42)!important;
+ backdrop-filter:blur(2px)!important;-webkit-backdrop-filter:blur(2px)!important;
 }
 .modal:not(.hidden)>.modal-card{
- box-sizing:border-box!important;position:relative!important;
- width:min(760px,100%)!important;max-width:calc(100vw - 48px)!important;
- height:auto!important;min-height:0!important;max-height:calc(100dvh - 48px)!important;
- margin:auto!important;padding:18px 20px!important;
- display:block!important;overflow-y:auto!important;overflow-x:hidden!important;
+ position:relative!important;box-sizing:border-box!important;
+ flex:0 1 auto!important;display:flex!important;flex-direction:column!important;
+ width:min(760px,100%)!important;max-width:calc(100vw - 60px)!important;
+ height:auto!important;min-height:0!important;max-height:calc(100dvh - 96px)!important;
+ margin:auto!important;padding:16px 20px!important;
+ overflow-y:auto!important;overflow-x:hidden!important;
  border-radius:18px!important;background:#fff!important;
  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
- box-shadow:0 16px 46px rgba(0,0,0,.23)!important;
+ box-shadow:0 8px 24px rgba(0,0,0,.20)!important;
  scrollbar-width:thin!important;
+}
+.modal:not(.hidden)>.modal-card.modal-wide,
+.modal:not(.hidden)>.modal-card.integrated-modal-card-v129,
+.modal:not(.hidden)>.modal-card.bulk-changes-modal-v125{
+ width:min(860px,100%)!important;max-width:calc(100vw - 60px)!important;
+ padding:0!important;overflow:hidden!important;
+}
+.modal:not(.hidden)>.modal-card .modal-head,
+.modal:not(.hidden)>.modal-card .integrated-modal-head-v129{
+ flex:0 0 auto!important;position:relative!important;top:auto!important;
+ margin:0!important;padding:14px 18px!important;
+ background:#fff!important;color:#171719!important;
+ border-bottom:1px solid #ececf0!important;box-shadow:none!important;
+}
+.modal:not(.hidden)>.modal-card .modal-head h3{font-size:19px!important}
+.modal:not(.hidden)>.modal-card .integrated-modal-head-v129 .modal-sub{color:#747474!important}
+.modal:not(.hidden)>.modal-card .integrated-modal-body-v129{
+ flex:1 1 auto!important;min-height:0!important;max-height:none!important;
+ overflow-y:auto!important;overflow-x:hidden!important;
+ padding:12px 16px 16px!important;
+ scrollbar-width:thin!important;
+}
+.modal:not(.hidden)>.modal-card .modal-actions,
+.modal:not(.hidden)>.modal-card .modal-footer{
+ flex:0 0 auto!important;position:relative!important;bottom:auto!important;
+ background:#fff!important;box-shadow:none!important;
 }
 #workerModal:not(.hidden)>.modal-card{
  width:min(820px,100%)!important;
  display:grid!important;grid-template-rows:auto minmax(0,1fr) auto!important;
- overflow:hidden!important;padding:16px 20px 0!important;
+ overflow:hidden!important;padding:0!important;
 }
 #workerModal:not(.hidden) .modal-head{
- grid-row:1!important;margin:0!important;padding:0 0 9px!important;
- flex-shrink:0!important;
+ grid-row:1!important;padding:12px 18px 9px!important;
 }
 #workerModal:not(.hidden) .modal-grid{
  grid-row:2!important;min-height:0!important;overflow-y:auto!important;
- overflow-x:hidden!important;padding:8px 2px 12px!important;
- gap:8px 12px!important;scrollbar-gutter:auto!important;
+ overflow-x:hidden!important;padding:10px 18px!important;gap:8px 12px!important;
+ scrollbar-gutter:auto!important;
 }
 #workerModal:not(.hidden) .modal-actions{
  grid-row:3!important;position:relative!important;bottom:auto!important;
- margin:0 -20px!important;padding:10px 20px!important;
- background:#fff!important;box-shadow:none!important;
- border-top:1px solid #ececf0!important;flex-shrink:0!important;
+ margin:0!important;padding:10px 18px!important;
+ border-top:1px solid #ececf0!important;
 }
-#workerModal:not(.hidden) textarea{min-height:58px!important;height:68px!important}
-#workerModal:not(.hidden) .modal-head h3{font-size:19px!important}
+#workerModal:not(.hidden) textarea{height:68px!important;min-height:58px!important}
+.modal:not(.hidden)>.modal-card .modal-native-scroll-hidden-v11227{
+ scrollbar-width:thin!important;
+}
+.modal:not(.hidden)>.modal-custom-scroll-rail-v11227{display:none!important}
 @media(max-width:700px){
- .modal:not(.hidden){padding:10px!important}
- .modal:not(.hidden)>.modal-card{
+ .modal:not(.hidden){padding:20px 12px!important}
+ .modal:not(.hidden)>.modal-card,
+ .modal:not(.hidden)>.modal-card.modal-wide,
+ .modal:not(.hidden)>.modal-card.integrated-modal-card-v129{
   width:100%!important;max-width:100%!important;
-  max-height:calc(100dvh - 20px)!important;padding:14px!important;
+  max-height:calc(100dvh - 40px)!important;
  }
- #workerModal:not(.hidden)>.modal-card{padding:14px 14px 0!important}
  #workerModal:not(.hidden) .modal-grid{grid-template-columns:minmax(0,1fr)!important}
- #workerModal:not(.hidden) .modal-actions{margin:0 -14px!important;padding:10px 14px!important}
+ #workerModal:not(.hidden) .modal-actions{padding:10px 12px!important;flex-wrap:wrap!important}
 }
 </style>
 <link rel="manifest" href="/manifest.webmanifest">
