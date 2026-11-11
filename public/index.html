@@ -7064,6 +7064,17 @@ body > #teamColorPalette.team-palette-popover:not(.hidden){
  box-shadow:0 8px 22px rgba(0,0,0,.22)!important;
  max-width:calc(100vw - 32px)!important;
 }
+/* Modal elevation: no exterior box-shadow that can be clipped by scrolling layers.
+   The inset border provides consistent definition at every edge. */
+.modal:not(.hidden)>.modal-card,
+#workerModal:not(.hidden)>.modal-card,
+#scenariosTeamsModal:not(.hidden)>.modal-card{
+ box-shadow:0 0 0 1px rgba(0,0,0,.12)!important;
+ filter:none!important;
+}
+.modal:not(.hidden){
+ overflow:visible!important;
+}
 /* Standard modal system — consistent size, visible shadow, internal scrolling */
 .modal:not(.hidden){
  position:fixed!important;inset:0!important;z-index:1000!important;
@@ -7406,7 +7417,7 @@ body > #teamColorPalette.team-palette-popover:not(.hidden){
         <div class="modal-head integrated-modal-head-v129">
           <div>
             <h3>⚠ Incidencias</h3>
-            <div class="modal-sub">Consulta las incidencias del día y crea una nueva si hace falta.</div>
+            
           </div>
           <button class="modal-close" onclick="closeIntegratedSectionModal('incidentsBoardModal','incidentsBoardSection')">×</button>
         </div>
@@ -15047,7 +15058,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
     'height':'auto','min-height':'0',
     'max-height':mobile?'calc(100dvh - 40px)':'calc(100dvh - 88px)',
     'margin':'auto','border-radius':'18px',
-    'box-shadow':'0 10px 28px rgba(0,0,0,.18)',
+    'box-shadow':'0 0 0 1px rgba(0,0,0,.12)',
     'background':'#fff',
     'overflow-x':'hidden',
     'overflow-y':isWorker||isWide?'hidden':'auto',
@@ -15059,7 +15070,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
     set(card.querySelector('.modal-grid'),{'min-height':'0','overflow-y':'auto'});
    }
    if(modal.id==='scenariosTeamsModal'){
-    set(card,{'max-height':mobile?'calc(100dvh - 64px)':'calc(100dvh - 120px)','overflow':'visible','box-shadow':'0 8px 22px rgba(0,0,0,.19)'});
+    set(card,{'max-height':mobile?'calc(100dvh - 64px)':'calc(100dvh - 120px)','overflow':'visible','box-shadow':'0 0 0 1px rgba(0,0,0,.12)'});
    }
    if(isWide){
     set(card.querySelector('.integrated-modal-body-v129'),{
