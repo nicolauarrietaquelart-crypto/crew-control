@@ -7032,6 +7032,24 @@ body main.wrap{transition:width .38s cubic-bezier(.22,1,.36,1),margin-left .38s 
 
 /* Dialogs must stack above sticky header, sidebar and operational banner. */
 body > .modal:not(.hidden){z-index:50000!important;isolation:isolate!important}
+/* Compact scenarios window: no redundant heading, shadow inside viewport. */
+#scenariosTeamsModal:not(.hidden)>.modal-card{
+ position:relative!important;
+ width:min(780px,calc(100vw - 64px))!important;
+ max-height:calc(100dvh - 120px)!important;
+ overflow:visible!important;
+ box-shadow:0 8px 22px rgba(0,0,0,.19)!important;
+}
+#scenariosTeamsModal .integrated-modal-body-v129{
+ min-height:0!important;overflow-y:auto!important;
+ border-radius:18px!important;padding-top:42px!important;
+}
+#scenariosTeamsModal .scenarios-close-v114{
+ position:absolute!important;right:14px!important;top:12px!important;
+ z-index:20!important;display:grid!important;place-items:center!important;
+ width:34px!important;height:34px!important;border-radius:50%!important;
+ background:#f0f0f0!important;color:#111!important;
+}
 /* Standard modal system — consistent size, visible shadow, internal scrolling */
 .modal:not(.hidden){
  position:fixed!important;inset:0!important;z-index:1000!important;
@@ -7384,13 +7402,7 @@ body > .modal:not(.hidden){z-index:50000!important;isolation:isolate!important}
 
     <div id="scenariosTeamsModal" class="modal hidden" onclick="integratedSectionBackdropClick(event,'scenariosTeamsModal','scenariosTeamsSection')">
       <div class="modal-card integrated-modal-card-v129 modal-wide">
-        <div class="modal-head integrated-modal-head-v129">
-          <div>
-            <h3>▦ Escenarios y equipos</h3>
-            <div class="modal-sub">Gestiona escenarios, equipos y colores desde una sola ventana.</div>
-          </div>
-          <button class="modal-close" onclick="closeIntegratedSectionModal('scenariosTeamsModal','scenariosTeamsSection')">×</button>
-        </div>
+        <button type="button" class="modal-close scenarios-close-v114" aria-label="Cerrar escenarios y equipos" onclick="closeIntegratedSectionModal('scenariosTeamsModal','scenariosTeamsSection')">×</button>
         <div id="scenariosTeamsModalBody" class="integrated-modal-body-v129"></div>
       </div>
     </div>
@@ -15019,6 +15031,9 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
    if(isWorker){
     set(card,{'grid-template-rows':'auto minmax(0,1fr) auto'});
     set(card.querySelector('.modal-grid'),{'min-height':'0','overflow-y':'auto'});
+   }
+   if(modal.id==='scenariosTeamsModal'){
+    set(card,{'max-height':mobile?'calc(100dvh - 64px)':'calc(100dvh - 120px)','overflow':'visible','box-shadow':'0 8px 22px rgba(0,0,0,.19)'});
    }
    if(isWide){
     set(card.querySelector('.integrated-modal-body-v129'),{
