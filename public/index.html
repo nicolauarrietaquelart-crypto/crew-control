@@ -6992,6 +6992,33 @@ html:has(.modal:not(.hidden)),body:has(.modal:not(.hidden)){overflow:hidden!impo
 .modal:not(.hidden)>.modal-card .modal-grid{width:100%!important;min-width:0!important}
 .modal:not(.hidden)>.modal-card .modal-grid>*{min-width:0!important}
 @media(max-width:700px){.modal:not(.hidden){padding:10px!important}.modal:not(.hidden)>.modal-card{width:100%!important;max-height:calc(100dvh - 20px)!important;min-height:0!important;padding:16px!important;border-radius:18px!important}.modal:not(.hidden)>.modal-card .modal-grid{grid-template-columns:minmax(0,1fr)!important}.modal:not(.hidden)>.modal-card .modal-actions{position:sticky!important;bottom:-16px!important;padding:12px 0 calc(10px + env(safe-area-inset-bottom,0px))!important}}
+
+/* Crew Control · stable pager, sidebar motion and modal repair */
+.operational-work-pager-v11233{position:relative!important;isolation:isolate!important;width:100%!important;overflow:hidden!important}
+.operational-work-pager-v11233 #operationalWorkFilters{padding-left:52px!important;padding-right:52px!important;scroll-padding-inline:52px!important}
+.operational-work-pager-v11233 #operationalWorkPrevious,
+.operational-work-pager-v11233 #operationalWorkNext{position:absolute!important;top:50%!important;bottom:auto!important;margin:0!important;flex:none!important;min-width:42px!important;width:42px!important;height:44px!important;transform:translateY(-50%)!important;z-index:15!important;box-sizing:border-box!important;transition:background-color .22s ease,opacity .22s ease!important;background:#fff!important;box-shadow:0 0 0 5px #fff!important}
+.operational-work-pager-v11233 #operationalWorkPrevious{left:2px!important;right:auto!important}
+.operational-work-pager-v11233 #operationalWorkNext{right:2px!important;left:auto!important}
+.operational-work-pager-v11233 #operationalWorkPrevious:disabled,
+.operational-work-pager-v11233 #operationalWorkNext:disabled{opacity:.4!important;pointer-events:none!important}
+#sidebarCollapseBtn,#sidebarEdgeToggleBtn{transition:opacity .25s ease,background-color .25s ease,box-shadow .25s ease!important}
+@media(min-width:901px){
+ body.control-sidebar-open #personnelSidebar,
+ body.control-sidebar-open .personnel-sidebar,
+ body.control-sidebar-open .operational-sidebar{transition:transform .36s cubic-bezier(.2,.8,.2,1),opacity .28s ease,width .36s cubic-bezier(.2,.8,.2,1)!important}
+}
+.modal:not(.hidden){display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important;padding:clamp(12px,2vw,24px)!important;background:rgba(15,18,24,.38)!important;backdrop-filter:none!important}
+.modal:not(.hidden)>.modal-card{position:relative!important;display:flex!important;flex-direction:column!important;width:min(1120px,100%)!important;max-width:calc(100vw - 24px)!important;max-height:calc(100dvh - 32px)!important;min-height:0!important;margin:auto!important;padding:clamp(16px,2vw,26px)!important;border-radius:20px!important;background:#fff!important;box-shadow:0 14px 34px rgba(0,0,0,.12)!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important}
+.modal:not(.hidden)>.modal-card.modal-wide{width:min(1360px,100%)!important}
+.modal:not(.hidden)>.modal-card .modal-head{position:relative!important;min-height:0!important;margin:0 0 16px!important;padding:0 0 14px!important;flex-shrink:0!important}
+.modal:not(.hidden)>.modal-card .modal-actions{margin-top:auto!important}
+@media(max-width:700px){
+ .modal:not(.hidden){padding:8px!important;align-items:center!important}
+ .modal:not(.hidden)>.modal-card{max-width:calc(100vw - 16px)!important;max-height:calc(100dvh - 16px)!important;padding:16px!important;border-radius:20px!important}
+ .modal:not(.hidden)>.modal-card .modal-actions{position:sticky!important;bottom:-16px!important;background:#fff!important;padding:12px 0 calc(12px + env(safe-area-inset-bottom,0px))!important;z-index:2!important}
+}
+@media(prefers-reduced-motion:reduce){.modal:not(.hidden)>.modal-card{animation:none!important}}
 </style>
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#171719">
