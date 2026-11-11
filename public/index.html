@@ -6974,6 +6974,24 @@ body > .modal{position:fixed!important;inset:0!important;z-index:20000!important
 .modal:not(.hidden)>.modal-card{width:min(860px,100%)!important;max-width:100%!important;height:auto!important;min-height:0!important;max-height:calc(100dvh - 48px)!important;overflow-y:auto!important;border-radius:22px!important;background:#fff!important;box-shadow:0 16px 45px rgba(0,0,0,.12)!important;padding:clamp(16px,2vw,26px)!important;scrollbar-gutter:stable}
 .modal:not(.hidden)>.modal-card .modal-head,.modal:not(.hidden)>.modal-card .modal-actions{background:#fff!important;box-shadow:none!important}
 @media(max-width:700px){.modal:not(.hidden){padding:10px!important;align-items:center!important}.modal:not(.hidden)>.modal-card{width:100%!important;height:auto!important;max-height:calc(100dvh - 20px)!important;min-height:0!important;border-radius:20px!important;padding:16px!important}.modal:not(.hidden)>.modal-card .modal-grid{grid-template-columns:minmax(0,1fr)!important}}
+
+/* Crew Control: single color swatch, accessible preset palette */
+.team-row{grid-template-columns:minmax(150px,1.3fr) minmax(90px,.7fr) 46px 110px 44px!important}
+.team-row>.palette-trigger{width:42px!important;height:42px!important;min-height:42px!important;border-radius:10px!important;padding:4px!important}
+.team-row>.palette-trigger .palette-trigger-swatch{width:100%!important;height:100%!important;border-radius:7px!important}
+.team-palette-popover{box-shadow:0 10px 28px rgba(0,0,0,.12)!important}
+.team-palette-grid{grid-template-columns:repeat(7,minmax(0,1fr))!important;gap:7px!important}
+.team-palette-color{min-height:30px!important;border-radius:7px!important;transition:transform .18s ease,border-color .18s ease}
+@media(max-width:700px){.team-row{grid-template-columns:minmax(0,1fr) minmax(0,.75fr) 42px!important}.team-row>.check-label,.team-row>button:last-child{grid-column:auto}}
+/* Modal geometry: one scroll container, no nested overlays or phantom shadows */
+html:has(.modal:not(.hidden)),body:has(.modal:not(.hidden)){overflow:hidden!important}
+.modal:not(.hidden){position:fixed!important;inset:0!important;z-index:30000!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:clamp(12px,2.5vw,28px)!important;overflow:hidden!important;background:rgba(16,18,22,.30)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:none!important}
+.modal:not(.hidden)>.modal-card{position:relative!important;flex:0 1 auto!important;width:min(1040px,100%)!important;max-width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;max-height:calc(100dvh - 56px)!important;overflow-x:hidden!important;overflow-y:auto!important;margin:0 auto!important;padding:clamp(18px,2vw,28px)!important;border:1px solid #e8e8eb!important;border-radius:22px!important;background:#fff!important;box-shadow:0 12px 34px rgba(0,0,0,.11)!important;scrollbar-gutter:stable}
+.modal:not(.hidden)>.modal-card .modal-head{position:relative!important;top:auto!important;margin:0 0 16px!important;padding:0 0 14px!important;background:#fff!important;border-bottom:1px solid #eee!important;box-shadow:none!important}
+.modal:not(.hidden)>.modal-card .modal-actions,.modal:not(.hidden)>.modal-card .modal-footer{background:#fff!important;box-shadow:none!important}
+.modal:not(.hidden)>.modal-card .modal-grid{width:100%!important;min-width:0!important}
+.modal:not(.hidden)>.modal-card .modal-grid>*{min-width:0!important}
+@media(max-width:700px){.modal:not(.hidden){padding:10px!important}.modal:not(.hidden)>.modal-card{width:100%!important;max-height:calc(100dvh - 20px)!important;min-height:0!important;padding:16px!important;border-radius:18px!important}.modal:not(.hidden)>.modal-card .modal-grid{grid-template-columns:minmax(0,1fr)!important}.modal:not(.hidden)>.modal-card .modal-actions{position:sticky!important;bottom:-16px!important;padding:12px 0 calc(10px + env(safe-area-inset-bottom,0px))!important}}
 </style>
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#171719">
@@ -9666,9 +9684,6 @@ function teamRowHtml(team){
         oninput="updateTeam('${escapeAttr(team.id)}','name',this.value)">
       <input type="text" value="${escapeAttr(team.colorName)}" placeholder="Color"
         oninput="updateTeam('${escapeAttr(team.id)}','colorName',this.value)">
-      <input type="color" value="${escapeAttr(team.colorHex||'#BDBDBD')}"
-        onchange="handleTeamColorChange('${escapeAttr(team.id)}',this.value)"
-        title="Color libre">
       <button type="button" class="palette-trigger"
         onclick="openTeamColorPalette(event,'${escapeAttr(team.id)}',this)"
         title="Colores rápidos">
