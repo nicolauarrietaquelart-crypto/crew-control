@@ -11509,7 +11509,7 @@ function renderPersonnel(light=false){
       : '';
 
     const staffing=staffingSummaryForWork(trabajo,includedRows);
-    const readinessHtml=staffing.readiness
+    const readinessHtml=staffing.readiness && staffing.readiness.cls!=='critical'
       ? `<span class="readiness-badge ${staffing.readiness.cls}">${escapeHtml(staffing.readiness.label)}</span>`
       : '';
 
