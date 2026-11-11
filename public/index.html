@@ -7054,6 +7054,16 @@ body > #teamColorPalette.team-palette-popover:not(.hidden){
  position:fixed!important;z-index:2147483647!important;
  isolation:isolate!important;pointer-events:auto!important;
 }
+
+/* Keep dialogs comfortably inside the viewport so outer shadows are not cut. */
+#scenariosTeamsModal:not(.hidden)>.modal-card{
+ max-height:calc(100dvh - 144px)!important;
+ box-shadow:0 6px 18px rgba(0,0,0,.18)!important;
+}
+#teamColorPalette:not(.hidden){
+ box-shadow:0 8px 22px rgba(0,0,0,.22)!important;
+ max-width:calc(100vw - 32px)!important;
+}
 /* Standard modal system — consistent size, visible shadow, internal scrolling */
 .modal:not(.hidden){
  position:fixed!important;inset:0!important;z-index:1000!important;
@@ -9983,16 +9993,24 @@ function openTeamColorPalette(event,teamId,button){
   let left=rect.left+(rect.width/2)-(width/2);
   left=Math.max(10,Math.min(left,window.innerWidth-width-10));
 
-  // Altura aproximada para decidir si abrir arriba o abajo.
-  const estimatedHeight=245;
-  let top=rect.bottom+7;
-
-  if(top+estimatedHeight>window.innerHeight-10){
-    top=Math.max(10,rect.top-estimatedHeight-7);
-  }
-
-  pop.style.left=left+'px';
-  pop.style.top=top+'px';
+  // Use the real popover size and keep every edge inside the viewport.
+  // On a long scrolled dialog the trigger may be close to the screen bottom.
+  const viewportH=window.visualViewport?.height||window.innerHeight;
+  const viewportW=window.visualViewport?.width||window.innerWidth;
+  const margin=16;
+  pop.style.maxHeight=Math.max(120,viewportH-2*margin)+'px';
+  pop.style.overflowY='auto';
+  const actualHeight=pop.getBoundingClientRect().height;
+  const roomBelow=viewportH-rect.bottom-margin;
+  const roomAbove=rect.top-margin;
+  let top;
+  if(roomBelow>=actualHeight+8)top=rect.bottom+8;
+  else if(roomAbove>=actualHeight+8)top=rect.top-actualHeight-8;
+  else top=Math.max(margin,(viewportH-actualHeight)/2);
+  top=Math.max(margin,Math.min(top,viewportH-actualHeight-margin));
+  left=Math.max(margin,Math.min(left,viewportW-width-margin));
+  pop.style.left=Math.round(left)+'px';
+  pop.style.top=Math.round(top)+'px';
 }
 
 function closeTeamColorPalette(){
