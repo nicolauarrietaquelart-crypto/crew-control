@@ -6909,6 +6909,16 @@ body{font-family:'Plus Jakarta Sans',sans-serif!important}
 }
 @media(prefers-reduced-motion:no-preference){.modal-card{animation:crewModalSmooth .22s cubic-bezier(.2,.7,.2,1)}@keyframes crewModalSmooth{from{opacity:.7;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}}
 
+
+/* iPhone modal stacking and safe-area repair: overlay must sit above sticky header. */
+body > .modal{position:fixed!important;inset:0!important;z-index:20000!important;isolation:isolate}
+@media(max-width:700px){
+ body > .modal{padding:0!important;align-items:stretch!important}
+ body > .modal > .modal-card{height:100dvh!important;max-height:100dvh!important;min-height:0!important;overflow-y:auto!important;overscroll-behavior:contain!important}
+ body > .modal .modal-actions{position:sticky!important;bottom:calc(-18px - env(safe-area-inset-bottom,0px))!important;z-index:6;background:#fff!important;padding:12px 0 calc(12px + env(safe-area-inset-bottom,0px))!important;box-shadow:0 -8px 20px rgba(255,255,255,.94)}
+ body > .modal .modal-head{top:calc(-14px - env(safe-area-inset-top,0px))!important}
+}
+
 </style>
 </head>
 <body>
@@ -14737,6 +14747,18 @@ window.addEventListener('scroll',closeTeamColorPalette,true);
   });
 })();
 
+</script>
+<script>
+/* Place dialogs at document root so the sticky application header cannot cover them. */
+(function(){
+  function portalModals(){
+    document.querySelectorAll('.modal').forEach(function(modal){
+      if(modal.parentElement!==document.body)document.body.appendChild(modal);
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',portalModals,{once:true});
+  else portalModals();
+})();
 </script>
 </body>
 </html>
