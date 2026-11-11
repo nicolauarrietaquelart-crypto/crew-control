@@ -7036,6 +7036,15 @@ html:has(.modal:not(.hidden)),body:has(.modal:not(.hidden)){overflow:hidden!impo
  #workerModal .modal-actions .service-actions{width:100%!important;justify-content:flex-start!important}
  #workerModal .modal-actions button{min-height:38px!important}
 }
+
+/* Smaller hide icon and animated operational sidebar */
+.work-hide-btn-v11227.work-hide-icon-v11237{width:28px!important;min-width:28px!important;height:28px!important;border-radius:9px!important;padding:5px!important}
+.work-hide-btn-v11227.work-hide-icon-v11237 svg{width:17px!important;height:17px!important}
+@media(pointer:coarse){.work-hide-btn-v11227.work-hide-icon-v11237{width:30px!important;min-width:30px!important;height:30px!important}}
+@media(min-width:901px){
+.personnel-sidebar-v121.personnel-sidebar-portal-v1215{transition:transform .38s cubic-bezier(.22,1,.36,1),opacity .3s ease!important;will-change:transform}
+body main.wrap{transition:width .38s cubic-bezier(.22,1,.36,1),margin-left .38s cubic-bezier(.22,1,.36,1)!important}
+}
 </style>
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#171719">
@@ -7176,16 +7185,7 @@ html:has(.modal:not(.hidden)),body:has(.modal:not(.hidden)){overflow:hidden!impo
 
     <div id="integratedSectionParking" style="display:none"></div>
 
-    <section class="card">
-      <details>
-        <summary style="cursor:pointer;font-weight:800;font-size:16px">Registro de cambios</summary>
-        <div class="hint" style="margin:8px 0">Reimportaciones de PDF, cambios de personal, incidencias y cierre del servicio.</div>
-        <div class="service-actions" style="margin-bottom:10px">
-          <button class="secondary" onclick="refreshAudit()">Actualizar registro</button>
-        </div>
-        <div id="auditList" class="audit-list"></div>
-      </details>
-    </section>
+    
 
     <div id="mobileOperationalHome"></div>
 
@@ -11386,11 +11386,7 @@ function renderPersonnel(light=false){
           ${escapeHtml(trabajo)}
           ${readinessHtml}
           <span class="group-bulk-actions">
-            <button type="button"
-              class="group-bulk-btn"
-              onclick="event.preventDefault();event.stopPropagation();selectWorkGroupByStatus('${escapeJsString(trabajo)}','PENDIENTE')">
-              Pendientes
-            </button>
+            
             <button type="button"
               class="group-bulk-btn"
               onclick="event.preventDefault();event.stopPropagation();selectWorkGroupReserves('${escapeJsString(trabajo)}')">
@@ -12378,7 +12374,7 @@ function workerRowHtml(w){
         : `<select data-team-worker="${escapeAttr(w.id)}" onchange="changeWorkerTeam('${escapeAttr(w.id)}',this.value)">
             ${options}
           </select>
-          ${scenario?`<div class="stage-name">${escapeHtml(scenario.name)}</div>`:''}`}
+          ${scenario && (state.service?.scenarios||[]).length>1?`<div class="stage-name">${escapeHtml(scenario.name)}</div>`:''}`}}
     </td>
 
     <td class="mobile-vest">${workHasNoTeams(w.trabajo)?'—':vest}</td>
