@@ -1,0 +1,9 @@
+{
+  "name": "crew-control",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-11",
+  "assets": {"directory": "./public", "binding": "ASSETS"},
+  "d1_databases": [
+    {"binding": "DB", "database_name": "crew-control-db", "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID", "migrations_dir": "db/migrations"}
+  ]
+}
