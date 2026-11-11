@@ -8809,7 +8809,7 @@ const crewPersist=service=>{
 async function crewCheckRemoteChanges(){
   if(crewRemoteCheckInFlight||document.hidden||!state.service?.code||state.service.closed)return;
   if(Date.now()-crewLastLocalWrite<4000||state.workerSaveInFlight||
-    Object.keys(state.pendingWorkerUpdates||{}).length||state.workerSaveTimer||
+    Object.keys(state.pendingWorkerUpdates||{}).length||
     document.querySelector('.modal:not(.hidden)')||
     document.activeElement?.matches('input,textarea,select,[contenteditable="true"]'))return;
   const code=state.service.code;
