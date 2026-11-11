@@ -14992,6 +14992,8 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
 (function(){
  const apply=()=>{
   document.querySelectorAll('.modal').forEach(modal=>{
+   // Escape any transformed or isolated ancestor stacking context.
+   if(modal.parentElement!==document.body)document.body.appendChild(modal);
    const card=modal.querySelector(':scope > .modal-card');
    if(!card)return;
    const set=(el,props)=>{if(!el)return;for(const [k,v] of Object.entries(props))el.style.setProperty(k,v,'important')};
@@ -15000,7 +15002,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
    const isWorker=modal.id==='workerModal';
    const isWide=card.classList.contains('integrated-modal-card-v129')||card.classList.contains('modal-wide');
    const width=isWorker?820:isWide?780:720;
-   set(modal,{'position':'fixed','inset':'0','z-index':'50000','isolation':'isolate','padding':mobile?'20px 12px':'44px 30px','overflow':'visible','align-items':'center','justify-content':'center'});
+   set(modal,{'position':'fixed','inset':'0','z-index':'2147483000','isolation':'isolate','padding':mobile?'20px 12px':'44px 30px','overflow':'visible','align-items':'center','justify-content':'center'});
    set(card,{
     'width':mobile?'100%':`min(${width}px, calc(100vw - 60px))`,
     'max-width':mobile?'calc(100vw - 24px)':'calc(100vw - 60px)',
