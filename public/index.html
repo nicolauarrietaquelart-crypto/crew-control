@@ -8742,6 +8742,35 @@ const crewPersist=async service=>{
   await crewApi(service.code,'PUT',{service});
   return service;
 };
+// Default crew teams; only bootstrap when a service has no teams.
+const CREW_DEFAULT_TEAMS=[
+  ['LIGHTS','VERDE','#43F500',false],
+  ['AUDIO','MORADO','#5B397D',false],
+  ['VIDEO','AZUL','#0828EF',false],
+  ['BACKLINE','ROJO','#F01216',false],
+  ['LASER','NARANJA','#FF8800',false],
+  ['PUSHERS','AMARILLO','#FFF200',false],
+  ['LOADERS','NEGRO','#111111',false],
+  ['CARPS','PETRÓLEO','#286579',false],
+  ['EXTRA','BLANCO','#F3F1F6',false],
+  ['CREW HEAD','TURQUESA','#4BAFC6',true],
+  ['FORKLIFTER','NEGRO','#111111',true],
+  ['RESERVAS','GRIS','#777173',false]
+];
+function crewDefaultTeams(scenarioId){
+  return CREW_DEFAULT_TEAMS.map((d,i)=>({
+    id:'T_'+crypto.randomUUID(),scenarioId,name:d[0],
+    colorName:d[1],colorHex:d[2],noVest:d[3],sortOrder:i+1
+  }));
+}
+function crewEnsureDefaultStructure(service){
+  if(!service)return service;
+  const scenarios=Array.isArray(service.scenarios)?service.scenarios:[];
+  const teams=Array.isArray(service.teams)?service.teams:[];
+  if(teams.length)return service;
+  const first=scenarios[0]||{id:'S_'+crypto.randomUUID(),name:'PRINCIPAL',sortOrder:1};
+  return {...service,scenarios:scenarios.length?scenarios:[first],teams:crewDefaultTeams(first.id)};
+}
 async function crewD1Dispatch(method,args){
   const code=String(args[0]||state.service?.code||'');
   if(method==='replaceWorkersFromPdf'){
@@ -8778,8 +8807,7 @@ async function crewD1Dispatch(method,args){
   if(method==='addScenario'){
     const name=String(args[1]||'ESCENARIO').trim(),id='S_'+crypto.randomUUID();
     const scenario={id,name,sortOrder:(state.service?.scenarios||[]).length+1};
-    const defaults=[['CREW HEAD','', '#BDBDBD',true],['FORKLIFTER','', '#BDBDBD',true],['GENERAL','NARANJA','#F58220',false],['LUCES','VERDE','#43A047',false],['AUDIO','AMARILLO','#FDD835',false],['VIDEO','ROSA','#D81B60',false],['RESERVA','GRIS','#6B7280',false]];
-    const teams=[...(state.service?.teams||[]),...defaults.map((d,i)=>({id:'T_'+crypto.randomUUID(),scenarioId:id,name:d[0],colorName:d[1],colorHex:d[2],noVest:d[3],sortOrder:(state.service?.teams||[]).length+i+1}))];
+    const teams=[...(state.service?.teams||[]),...crewDefaultTeams(id)];
     const next={...state.service,scenarios:[...(state.service?.scenarios||[]),scenario],teams};
     await crewPersist(next);return next;
   }
@@ -8788,13 +8816,20 @@ async function crewD1Dispatch(method,args){
     return {movil:worker?.movil||'',services:worker?1:0,present:worker?.status==='PRESENTE'?1:0,noShow:worker?.status==='NO PRESENTADO'?1:0,incidents:(state.service?.incidents||[]).filter(i=>i.workerId===worker?.id).length,averageRating:0,totalActualMinutes:0,recent:worker?[{date:worker.serviceDate,trabajo:worker.trabajo,status:worker.status,actualStart:worker.actualStart,actualEnd:worker.actualEnd,actualPause:worker.actualPause}]:[]};
   }
   if(method==='generateClosedServicePdf')throw new Error('El PDF final todavía requiere un generador compatible con Cloudflare; los datos del servicio permanecen guardados en D1.');
-  if(method==='loadService')return (await crewApi(code)).service;
+  if(method==='loadService'){
+    const loaded=(await crewApi(code)).service;
+    const ready=crewEnsureDefaultStructure(loaded);
+    if(ready!==loaded && !loaded.closed)await crewPersist(ready);
+    return ready;
+  }
   if(method==='generateNewService'){
     const code=Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>b.toString(16).padStart(2,'0')).join('');
     const response=await fetch('/api/services',{method:'POST',headers:{'content-type':'application/json','x-service-code':code},body:JSON.stringify({name:''})});
     const result=await response.json();
     if(!response.ok)throw new Error(result.error||'No se pudo crear el servicio');
-    return (await crewApi(code)).service;
+    const createdService=crewEnsureDefaultStructure((await crewApi(code)).service);
+    await crewPersist(createdService);
+    return createdService;
   }
   if(method==='saveServiceMeta'){
     const next={...state.service,...args[1]};
