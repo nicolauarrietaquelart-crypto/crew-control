@@ -6939,6 +6939,10 @@ body > .modal{position:fixed!important;inset:0!important;z-index:20000!important
  @keyframes crewSlideIn{from{opacity:.65;transform:translateY(14px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* Shift visibility works identically for desktop table rows and mobile cards. */
+#personnelGroups [data-shift-key].shift-row-hidden,#personnelGroups [data-shift-key][hidden]{display:none!important}
+.shift-divider-btn{touch-action:manipulation;cursor:pointer}
 </style>
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#171719">
@@ -11419,7 +11423,8 @@ function rowsGroupedByEntryHtml(trabajo,rows){
 
             <button type="button" class="shift-divider-btn ${collapsed?'collapsed':''}"
               data-shift-summary="${escapeAttr(key)}"
-              onclick="toggleShiftGroup('${escapeJsString(trabajo)}','${escapeJsString(time)}')">
+              aria-expanded="${!collapsed}" aria-label="${collapsed?'Mostrar':'Ocultar'} trabajadores del turno ${escapeAttr(time)}"
+              onclick="event.preventDefault();event.stopPropagation();toggleShiftGroup('${escapeJsString(trabajo)}','${escapeJsString(time)}')">
               <span class="shift-clock-icon">
                 <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
               </span>
@@ -11438,23 +11443,26 @@ function rowsGroupedByEntryHtml(trabajo,rows){
 
 function toggleShiftGroup(trabajo,time){
   const key=shiftStateKey(trabajo,time);
-  state.collapsedShifts[key]=!state.collapsedShifts[key];
-
-  const details=[...document.querySelectorAll('#personnelGroups .work-group')]
-    .find(el=>(el.getAttribute('data-work-group')||'')===trabajo);
-  if(!details)return;
-
-  const collapsed=Boolean(state.collapsedShifts[key]);
-  details.querySelectorAll(`[data-shift-key="${cssEscape(key)}"]`).forEach(row=>{
+  const collapsed=!Boolean(state.collapsedShifts[key]);
+  state.collapsedShifts[key]=collapsed;
+  // The mobile layout renders table rows as cards. Toggle only rows belonging
+  // to the clicked shift, regardless of the active work-group container.
+  const group=[...document.querySelectorAll('#personnelGroups [data-work-group]')]
+    .find(el=>el.getAttribute('data-work-group')===trabajo);
+  if(!group)return;
+  group.querySelectorAll('[data-shift-key]').forEach(row=>{
+    if(row.getAttribute('data-shift-key')!==key)return;
     row.classList.toggle('shift-row-hidden',collapsed);
+    row.hidden=collapsed;
+    row.style.setProperty('display',collapsed?'none':'','important');
+    row.setAttribute('aria-hidden',String(collapsed));
   });
-
-  const button=details.querySelector(`[data-shift-summary="${cssEscape(key)}"]`);
-  if(button){
+  group.querySelectorAll('[data-shift-summary]').forEach(button=>{
+    if(button.getAttribute('data-shift-summary')!==key)return;
     button.classList.toggle('collapsed',collapsed);
     button.setAttribute('aria-expanded',String(!collapsed));
-  }
-  // Sin innerHTML: no pierdes scroll, selección, ni estado de otros turnos.
+    button.setAttribute('aria-label',(collapsed?'Mostrar':'Ocultar')+' trabajadores del turno '+time);
+  });
 }
 
 function sortHeaderHtml(trabajo,key,label){
