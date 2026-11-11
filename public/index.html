@@ -6850,6 +6850,38 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:2
 @media(max-width:700px){.code-pill{font-size:12px!important;letter-spacing:0!important;max-width:48vw;padding:7px 8px!important}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 
+
+/* Crew Control motion system v2 — GPU-friendly, scoped and accessible */
+:root{--fluid-ease:cubic-bezier(.22,1,.36,1);--fluid-spring:cubic-bezier(.2,1.3,.35,1);--fluid-quick:150ms;--fluid-normal:280ms;--fluid-slow:440ms}
+html{scroll-behavior:smooth;scroll-padding-top:16px}
+body{transition:background-color var(--fluid-slow) ease}
+button,a,[role="button"],.file-button,.control-toggle,.day-tab,.nav-item,.tab{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button:not(:disabled),a,[role="button"]{transition:transform var(--fluid-quick) var(--fluid-ease),box-shadow var(--fluid-normal) var(--fluid-ease),background-color var(--fluid-normal) ease,border-color var(--fluid-normal) ease,color var(--fluid-normal) ease,opacity var(--fluid-normal) ease!important}
+@media(hover:hover){button:not(:disabled):hover,[role="button"]:hover{filter:brightness(1.025)}}
+button:not(:disabled):active,[role="button"]:active{transform:scale(.965)!important}
+button:focus-visible,a:focus-visible,[role="button"]:focus-visible{outline:2px solid var(--orange);outline-offset:3px}
+input,textarea,select{transition:box-shadow var(--fluid-normal) var(--fluid-ease),border-color var(--fluid-normal) ease,background-color var(--fluid-normal) ease,transform var(--fluid-quick) ease!important}
+input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px rgba(245,130,32,.12)}
+.card,.modal-card,.service-top,.login-card,.sidebar,.toolbar,.control-sidebar,.control-panel,.work-group,.team-card,.stat-card,.status-box,.panel{transition:box-shadow var(--fluid-slow) var(--fluid-ease),background-color var(--fluid-normal) ease,border-color var(--fluid-normal) ease,transform var(--fluid-normal) var(--fluid-ease)}
+details>summary{cursor:pointer;transition:background-color var(--fluid-normal) ease,color var(--fluid-normal) ease}
+details>summary::marker{transition:color var(--fluid-normal) ease}
+details[open]>summary{animation:fluid-highlight var(--fluid-slow) ease}
+@keyframes fluid-highlight{from{background-color:rgba(245,130,32,.09)}to{background-color:transparent}}
+#startScreen:not(.hidden),#appScreen:not(.hidden){animation:fluid-screen-in 470ms var(--fluid-ease) both}
+@keyframes fluid-screen-in{from{opacity:.45;transform:translate3d(0,14px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
+.modal:not(.hidden){animation:fluid-overlay-in 230ms ease-out both}
+.modal:not(.hidden) .modal-card,.modal:not(.hidden) .modal-content{animation:fluid-dialog-in 360ms var(--fluid-spring) both}
+@keyframes fluid-overlay-in{from{opacity:0}to{opacity:1}}
+@keyframes fluid-dialog-in{from{opacity:.5;transform:translate3d(0,18px,0) scale(.985)}to{opacity:1;transform:translate3d(0,0,0) scale(1)}}
+.status-box,.save-state{transition:opacity var(--fluid-normal) ease,color var(--fluid-normal) ease,background-color var(--fluid-normal) ease}
+table tbody tr{transition:background-color 180ms ease,box-shadow 180ms ease}
+@media(hover:hover){table tbody tr:hover{background-color:rgba(245,130,32,.045)}}
+details .work-group-arrow{transition:transform 320ms var(--fluid-spring)!important}
+#serviceCodeBadge{font-size:clamp(12px,1vw,14px)!important;letter-spacing:.035em!important;line-height:1.35!important;padding:7px 10px!important}
+.fluid-refresh{animation:fluid-refresh 260ms ease-out}
+@keyframes fluid-refresh{from{opacity:.65}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
 </style>
 </head>
 <body>
@@ -14575,6 +14607,34 @@ window.addEventListener('resize',updateOperationalWorkNextButton);
 document.addEventListener('click',closeTeamColorPalette);
 window.addEventListener('resize',closeTeamColorPalette);
 window.addEventListener('scroll',closeTeamColorPalette,true);
+
+
+/* Lightweight motion orchestration: no per-row animations or layout thrashing. */
+(function setupFluidMotion(){
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const refreshTargets=['scenarioList','serviceCodeBadge','startStatus','saveState'];
+  const observers=[];
+  for(const id of refreshTargets){
+    const node=document.getElementById(id);
+    if(!node)continue;
+    let scheduled=false;
+    const observer=new MutationObserver(()=>{
+      if(scheduled||node.classList.contains('hidden'))return;
+      scheduled=true;
+      requestAnimationFrame(()=>{
+        scheduled=false;
+        node.classList.remove('fluid-refresh');
+        void node.offsetWidth;
+        node.classList.add('fluid-refresh');
+      });
+    });
+    observer.observe(node,{childList:true,characterData:true,subtree:false});
+    observers.push(observer);
+  }
+  document.addEventListener('animationend',e=>{
+    if(e.target.classList?.contains('fluid-refresh'))e.target.classList.remove('fluid-refresh');
+  });
+})();
 
 </script>
 </body>
