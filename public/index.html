@@ -10675,28 +10675,21 @@ function looksLikeShiftBundle(value){
 }
 
 function normalizePdfPauseValue(value){
-  // A blank cell is zero; a populated cell must not silently become zero.
+  // Operational pauses are whole hours only (0, 1, 2 or 3).
   const raw=String(value??'').trim().replace(/\s+/g,' ');
   if(!raw||/^(?:-|—|SIN PAUSA|NO PAUSA)$/i.test(raw))return '00:00';
-  const formatted=minutes=>String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0');
-  const clock=raw.match(/^(\d{1,2})[:](\d{1,2})(?::00)?$/);
+  let hours=null;
+  const clock=raw.match(/^(\d{1,2}):(\d{2})(?::00)?$/);
   if(clock){
-    const h=Number(clock[1]),m=Number(clock[2]);
-    return m<60&&h<=12?formatted(h*60+m):'00:00';
+    if(Number(clock[2])!==0)return '00:00';
+    hours=Number(clock[1]);
+  }else{
+    const match=raw.match(/^(\d{1,2})(?:[.,]0+)?\s*(?:H|HR|HRS|HORAS?)?$/i);
+    if(match)hours=Number(match[1]);
   }
-  const mins=raw.match(/^(\d{1,3})\s*(?:MIN|MINS|MINUTOS?)$/i);
-  if(mins)return formatted(Number(mins[1]));
-  const hrs=raw.match(/^(\d{1,2}(?:[.,]\d{1,2})?)\s*(?:H|HR|HRS|HORAS?)$/i);
-  if(hrs)return formatted(Math.round(Number(hrs[1].replace(',','.'))*60));
-  const numeric=raw.match(/^(\d{1,3})(?:[.,](\d{1,2}))?$/);
-  if(numeric){
-    const value=Number(raw.replace(',','.'));
-    if(value===0)return '00:00';
-    // Bare 15/30/45/60/90/120 are minutes; 0.5/1/1.5/2 are hours.
-    if(!numeric[2]&&value>3&&value<=180)return formatted(value);
-    if(value>=0&&value<=3)return formatted(Math.round(value*60));
-  }
-  return '00:00';
+  return Number.isInteger(hours)&&hours>=0&&hours<=3
+    ?String(hours).padStart(2,'0')+':00'
+    :'00:00';
 }
 
 function personLikePdfText(value){
