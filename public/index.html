@@ -6943,6 +6943,12 @@ body > .modal{position:fixed!important;inset:0!important;z-index:20000!important
 /* Shift visibility works identically for desktop table rows and mobile cards. */
 #personnelGroups [data-shift-key].shift-row-hidden,#personnelGroups [data-shift-key][hidden]{display:none!important}
 .shift-divider-btn{touch-action:manipulation;cursor:pointer}
+
+/* Team tint on mobile cards and desktop rows; subdued, non-interactive. */
+@media(max-width:900px){
+  tr[data-worker-row][style*="--crew-team-tint"]{background:var(--crew-team-tint)!important;}
+  tr[data-worker-row][style*="--crew-team-tint"] td{background:transparent!important;}
+}
 </style>
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#171719">
@@ -8771,6 +8777,21 @@ function crewEnsureDefaultStructure(service){
   const first=scenarios[0]||{id:'S_'+crypto.randomUUID(),name:'PRINCIPAL',sortOrder:1};
   return {...service,scenarios:scenarios.length?scenarios:[first],teams:crewDefaultTeams(first.id)};
 }
+function crewAutoAssignSpecialRoles(service){
+  if(!service||!Array.isArray(service.workers)||!Array.isArray(service.teams))return service;
+  let changed=false;
+  const workers=service.workers.map(w=>{
+    if(w.teamId||w.isReserve)return w;
+    const role=String(w.especialidad||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toUpperCase();
+    const target=/\\bCREW\\s*HEAD\\b/.test(role)?'CREW HEAD':/\\bFORKLIFT(?:ER)?\\b/.test(role)?'FORKLIFTER':null;
+    if(!target)return w;
+    const team=service.teams.find(t=>String(t.name||'').toUpperCase()===target);
+    if(!team)return w;
+    changed=true;
+    return {...w,teamId:team.id,scenarioId:team.scenarioId};
+  });
+  return changed?{...service,workers}:service;
+}
 async function crewD1Dispatch(method,args){
   const code=String(args[0]||state.service?.code||'');
   if(method==='replaceWorkersFromPdf'){
@@ -8792,7 +8813,7 @@ async function crewD1Dispatch(method,args){
       return {...oldWorker,...w,id:oldWorker.id,sortOrder:index+1,status:oldWorker.status,teamId:oldWorker.teamId,scenarioId:oldWorker.scenarioId,arrivalAt:oldWorker.arrivalAt,notes:oldWorker.notes,actualStart:oldWorker.actualStart,actualEnd:oldWorker.actualEnd,actualPause:oldWorker.actualPause,actualDiet:oldWorker.actualDiet,ratingUniformidad:oldWorker.ratingUniformidad,ratingActitud:oldWorker.ratingActitud,ratingPuntualidad:oldWorker.ratingPuntualidad,included:oldWorker.included};
     });
     const removed=previous.length-matched;
-    const next={...old,...(parsed.meta||{}),pdfName:parsed.meta?.pdfName||old.pdfName,workers,blocks:parsed.blocks||[],code};
+    const next=crewAutoAssignSpecialRoles({...old,...(parsed.meta||{}),pdfName:parsed.meta?.pdfName||old.pdfName,workers,blocks:parsed.blocks||[],code});
     await crewPersist(next);
     return {service:next,summary:{matched,added,removed,scheduleChanged,pauseChanged,dietChanged,coordinatorChanged,movedToReserve,changedNames}};
   }
@@ -8818,7 +8839,8 @@ async function crewD1Dispatch(method,args){
   if(method==='generateClosedServicePdf')throw new Error('El PDF final todavía requiere un generador compatible con Cloudflare; los datos del servicio permanecen guardados en D1.');
   if(method==='loadService'){
     const loaded=(await crewApi(code)).service;
-    const ready=crewEnsureDefaultStructure(loaded);
+    const structured=crewEnsureDefaultStructure(loaded);
+    const ready=crewAutoAssignSpecialRoles(structured);
     if(ready!==loaded && !loaded.closed)await crewPersist(ready);
     return ready;
   }
@@ -11528,6 +11550,7 @@ function setWorkSort(trabajo,key){
 
 function workerSortValue(w,key){
   const team=state.service.teams.find(t=>t.id===w.teamId);
+  const teamTint=team&&/^#[0-9a-f]{6}$/i.test(team.colorHex||'')?team.colorHex+'18':'';
   const scenario=team?state.service.scenarios.find(s=>s.id===team.scenarioId):null;
 
   switch(key){
@@ -12208,7 +12231,7 @@ function workerRowHtml(w){
   const shiftKey=shiftStateKey(w.trabajo||'SIN TIPO',workerEntryTime(w));
   const shiftCollapsed=Boolean(state.collapsedShifts[shiftKey]);
 
-  return `<tr data-worker-row="${escapeAttr(w.id)}" data-shift-key="${escapeAttr(shiftKey)}"
+  return `<tr style="${teamTint?`--crew-team-tint:${teamTint};background-color:${teamTint}`:''}" data-worker-row="${escapeAttr(w.id)}" data-shift-key="${escapeAttr(shiftKey)}"
     aria-selected="${state.selected.has(w.id)?'true':'false'}"
     onclick="handleWorkerRowClick(event,'${escapeAttr(w.id)}')"
     class="${w.included?'':'excluded'} ${shiftCollapsed?'shift-row-hidden':''} ${state.selected.has(w.id)?'worker-row-selected':''}">
