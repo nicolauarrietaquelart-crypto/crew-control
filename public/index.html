@@ -14984,5 +14984,57 @@ window.addEventListener('scroll',closeTeamColorPalette,true);
 <script>
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}),{once:true})}
 </script>
+
+<script>
+/* Dialog layout guard: inline important values beat legacy modal-wide rules. */
+(function(){
+ const apply=()=>{
+  document.querySelectorAll('.modal').forEach(modal=>{
+   const card=modal.querySelector(':scope > .modal-card');
+   if(!card)return;
+   const set=(el,props)=>{if(!el)return;for(const [k,v] of Object.entries(props))el.style.setProperty(k,v,'important')};
+   const mobile=window.innerWidth<=700;
+   const pad=mobile?12:44;
+   const isWorker=modal.id==='workerModal';
+   const isWide=card.classList.contains('integrated-modal-card-v129')||card.classList.contains('modal-wide');
+   const width=isWorker?820:isWide?780:720;
+   set(modal,{'padding':mobile?'20px 12px':'44px 30px','overflow':'visible','align-items':'center','justify-content':'center'});
+   set(card,{
+    'width':mobile?'100%':`min(${width}px, calc(100vw - 60px))`,
+    'max-width':mobile?'calc(100vw - 24px)':'calc(100vw - 60px)',
+    'height':'auto','min-height':'0',
+    'max-height':mobile?'calc(100dvh - 40px)':'calc(100dvh - 88px)',
+    'margin':'auto','border-radius':'18px',
+    'box-shadow':'0 10px 28px rgba(0,0,0,.18)',
+    'background':'#fff',
+    'overflow-x':'hidden',
+    'overflow-y':isWorker||isWide?'hidden':'auto',
+    'display':isWorker?'grid':isWide?'flex':'block',
+    'flex-direction':isWide?'column':'initial'
+   });
+   if(isWorker){
+    set(card,{'grid-template-rows':'auto minmax(0,1fr) auto'});
+    set(card.querySelector('.modal-grid'),{'min-height':'0','overflow-y':'auto'});
+   }
+   if(isWide){
+    set(card.querySelector('.integrated-modal-body-v129'),{
+     'min-height':'0','max-height':'none','flex':'1 1 auto',
+     'overflow-y':'auto','overflow-x':'hidden'
+    });
+   }
+   const rail=modal.querySelector('.modal-custom-scroll-rail-v11227');
+   if(rail)set(rail,{'display':'none'});
+  });
+ };
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
+ window.addEventListener('resize',apply,{passive:true});
+ document.addEventListener('click',()=>requestAnimationFrame(apply),true);
+ const observer=new MutationObserver(records=>{
+  if(records.some(r=>r.attributeName==='class'))requestAnimationFrame(apply);
+ });
+ const start=()=>document.querySelectorAll('.modal').forEach(m=>observer.observe(m,{attributes:true,attributeFilter:['class']}));
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
+</script>
 </body>
 </html>
