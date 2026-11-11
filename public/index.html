@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -6881,6 +6884,30 @@ details .work-group-arrow{transition:transform 320ms var(--fluid-spring)!importa
 .fluid-refresh{animation:fluid-refresh 260ms ease-out}
 @keyframes fluid-refresh{from{opacity:.65}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+
+/* Plus Jakarta Sans throughout the application, including form controls and overlays. */
+html,body,button,input,select,textarea,option{font-family:'Plus Jakarta Sans',sans-serif!important}
+body{font-family:'Plus Jakarta Sans',sans-serif!important}
+.modal{box-sizing:border-box;overflow:hidden}
+.modal-card{box-sizing:border-box;overscroll-behavior:contain}
+@media(max-width:700px){
+  .modal{inset:0!important;padding:0!important;align-items:stretch!important;justify-content:stretch!important}
+  .modal-card{
+    width:100%!important;max-width:none!important;height:100dvh!important;
+    max-height:100dvh!important;margin:0!important;border-radius:0!important;
+    padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(18px + env(safe-area-inset-bottom,0px))!important;
+    overflow-y:auto!important;overflow-x:hidden!important;
+    -webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;
+  }
+  .modal-head{position:sticky;top:calc(-14px - env(safe-area-inset-top,0px));z-index:5;background:#fff;padding:10px 0 12px;margin-top:-10px;border-bottom:1px solid #eee}
+  .modal-grid{grid-template-columns:minmax(0,1fr)!important;gap:14px!important}
+  .modal-grid>*{min-width:0!important;max-width:100%}
+  .modal-card input,.modal-card select,.modal-card textarea{max-width:100%;box-sizing:border-box;font-size:16px}
+  .modal-card button{max-width:100%}
+  .modal-card .modal-actions,.modal-card .modal-footer{display:flex;flex-wrap:wrap;gap:8px}
+}
+@media(prefers-reduced-motion:no-preference){.modal-card{animation:crewModalSmooth .22s cubic-bezier(.2,.7,.2,1)}@keyframes crewModalSmooth{from{opacity:.7;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}}
 
 </style>
 </head>
