@@ -9272,9 +9272,8 @@ function openServiceData(service){
     if(String(state.service?.code||'')===openedServiceCode)renderAudit();
   });
 
-  startFirebaseRealtime(service.code).catch(err=>{
-    console.error('[Firebase realtime]',firebaseErrorMessage(err));
-  });
+  // D1 is authoritative; do not start the legacy Firebase realtime listener.
+  // Refresh is handled through the Workers API on explicit reload.
 }
 
 function closeService(){
