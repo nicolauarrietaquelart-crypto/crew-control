@@ -6968,6 +6968,12 @@ body > .modal{position:fixed!important;inset:0!important;z-index:20000!important
  .modal:not(.hidden)>.modal-card{width:100%!important;max-width:100%!important;max-height:calc(100dvh - 16px)!important;min-height:min(360px,calc(100dvh - 16px))!important;border-radius:20px!important;padding:16px!important;}
  .modal:not(.hidden)>.modal-card.integrated-modal-card-v129{padding:0!important;}
 }
+
+/* Diálogos: proporciones consistentes, sin sombras superpuestas */
+.modal:not(.hidden){background:rgba(16,18,23,.34)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;align-items:center!important;justify-content:center!important;padding:clamp(12px,2vw,24px)!important}
+.modal:not(.hidden)>.modal-card{width:min(860px,100%)!important;max-width:100%!important;height:auto!important;min-height:0!important;max-height:calc(100dvh - 48px)!important;overflow-y:auto!important;border-radius:22px!important;background:#fff!important;box-shadow:0 16px 45px rgba(0,0,0,.12)!important;padding:clamp(16px,2vw,26px)!important;scrollbar-gutter:stable}
+.modal:not(.hidden)>.modal-card .modal-head,.modal:not(.hidden)>.modal-card .modal-actions{background:#fff!important;box-shadow:none!important}
+@media(max-width:700px){.modal:not(.hidden){padding:10px!important;align-items:center!important}.modal:not(.hidden)>.modal-card{width:100%!important;height:auto!important;max-height:calc(100dvh - 20px)!important;min-height:0!important;border-radius:20px!important;padding:16px!important}.modal:not(.hidden)>.modal-card .modal-grid{grid-template-columns:minmax(0,1fr)!important}}
 </style>
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#171719">
