@@ -10911,9 +10911,14 @@ function normalizePhone(v){
   return x;
 }
 function normalizeTime(v){
-  const x=String(v||'').trim(),m=x.match(/^(\d{1,2})[:.,](\d{1,2})$/);
+  const x=String(v??'').trim();
+  // PDF extraction can merge a clock with the adjacent duration column.
+  // Use only the first valid HH:MM token for time fields.
+  const m=x.match(/(?:^|[^\d])(\d{1,2})[:.,](\d{2})(?!\d)/);
   if(!m)return x;
-  return String(Number(m[1])).padStart(2,'0')+':'+String(Number(m[2])).padStart(2,'0');
+  const h=Number(m[1]),min=Number(m[2]);
+  if(h>23||min>59)return x;
+  return String(h).padStart(2,'0')+':'+String(min).padStart(2,'0');
 }
 function normalizeDietFromPdf(value){
   const raw=String(value??'').trim();
@@ -12498,7 +12503,7 @@ function workerRowHtml(w){
         : `<select data-team-worker="${escapeAttr(w.id)}" onchange="changeWorkerTeam('${escapeAttr(w.id)}',this.value)">
             ${options}
           </select>
-          ${scenario && (state.service?.scenarios||[]).length>1?`<div class="stage-name">${escapeHtml(scenario.name)}</div>`:''}`}}
+          ${scenario && (state.service?.scenarios||[]).length>1?`<div class="stage-name">${escapeHtml(scenario.name)}</div>`:''}`}
     </td>
 
     <td class="mobile-vest">${workHasNoTeams(w.trabajo)?'—':vest}</td>
@@ -12514,12 +12519,12 @@ function scheduleValueHtml(planned,actual){
 
 
 function scheduleRangeHtml(w){
-  const plannedStart=w.inicio||'—';
-  const plannedEnd=w.fin||'—';
+  const plannedStart=normalizeTime(w.inicio)||'—';
+  const plannedEnd=normalizeTime(w.fin)||'—';
   const planned=`<span class="schedule-planned">${escapeHtml(plannedStart)} – ${escapeHtml(plannedEnd)}</span>`;
 
-  const realStart=w.actualStart||'';
-  const realEnd=w.actualEnd||'';
+  const realStart=normalizeTime(w.actualStart)||'';
+  const realEnd=normalizeTime(w.actualEnd)||'';
   const hasReal=Boolean(realStart||realEnd);
 
   if(!hasReal){
