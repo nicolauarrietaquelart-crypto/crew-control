@@ -160,6 +160,8 @@
     .modal-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:16px}
     .modal-head h3{margin:0;font-size:20px}.modal-sub{color:var(--muted);font-size:12px;margin-top:4px}
     .modal-close{min-height:34px;width:34px;padding:0;border-radius:50%;background:#eee}
+    .modal-close svg{display:block;width:18px;height:18px;flex:none;pointer-events:none}
+    .modal-close{display:inline-flex;align-items:center;justify-content:center}
     .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.modal-grid .full{grid-column:1/-1}
     .planned-box{background:#f7f7f7;border:1px solid #e8e8e8;border-radius:9px;padding:10px;font-size:12px}
     .arrival-record{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#eef8f1;border:1px solid #b9dfc5;border-radius:9px;padding:9px 10px}
@@ -7427,7 +7429,7 @@ body > .modal:not(.hidden){
             <h3>⚠ Incidencias</h3>
             
           </div>
-          <button class="modal-close" onclick="closeIntegratedSectionModal('incidentsBoardModal','incidentsBoardSection')">×</button>
+          <button class="modal-close" onclick="closeIntegratedSectionModal('incidentsBoardModal','incidentsBoardSection')"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
         <div id="incidentsBoardModalBody" class="integrated-modal-body-v129"></div>
       </div>
@@ -7435,7 +7437,7 @@ body > .modal:not(.hidden){
 
     <div id="scenariosTeamsModal" class="modal hidden" onclick="integratedSectionBackdropClick(event,'scenariosTeamsModal','scenariosTeamsSection')">
       <div class="modal-card integrated-modal-card-v129 modal-wide">
-        <button type="button" class="modal-close scenarios-close-v114" aria-label="Cerrar escenarios y equipos" onclick="closeIntegratedSectionModal('scenariosTeamsModal','scenariosTeamsSection')">×</button>
+        <button type="button" class="modal-close scenarios-close-v114" aria-label="Cerrar escenarios y equipos" onclick="closeIntegratedSectionModal('scenariosTeamsModal','scenariosTeamsSection')"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         <div id="scenariosTeamsModalBody" class="integrated-modal-body-v129"></div>
       </div>
     </div>
@@ -7447,7 +7449,7 @@ body > .modal:not(.hidden){
             <h3 id="modalWorkerName">Trabajador</h3>
             <div id="modalWorkerSub" class="modal-sub"></div>
           </div>
-          <button class="modal-close" onclick="closeWorkerModal()">×</button>
+          <button class="modal-close" onclick="closeWorkerModal()"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
 
         <div class="modal-grid">
@@ -7548,7 +7550,7 @@ body > .modal:not(.hidden){
             <h3>Añadir trabajador</h3>
             <div id="addWorkerSub" class="modal-sub"></div>
           </div>
-          <button class="modal-close" onclick="closeAddWorkerModal()">×</button>
+          <button class="modal-close" onclick="closeAddWorkerModal()"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
 
         <div class="modal-grid">
@@ -7626,7 +7628,7 @@ body > .modal:not(.hidden){
             <h3>Editar selección</h3>
             <div id="bulkChangesSub" class="modal-sub">Aplicar acciones sobre la selección</div>
           </div>
-          <button class="modal-close bulk-close-v125" onclick="closeBulkChangesModal()">×</button>
+          <button class="modal-close bulk-close-v125" onclick="closeBulkChangesModal()"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
 
         <div class="modal-grid bulk-changes-grid-v125">
@@ -7727,7 +7729,7 @@ body > .modal:not(.hidden){
             <h3>Valorar seleccionados</h3>
             <div id="bulkRatingSub" class="modal-sub">Aplicar estrellas a varios trabajadores</div>
           </div>
-          <button class="modal-close" onclick="closeBulkRatingModal()">×</button>
+          <button class="modal-close" onclick="closeBulkRatingModal()"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
 
         <div class="bulk-modal-grid">
@@ -7762,7 +7764,7 @@ body > .modal:not(.hidden){
             <h3>Reportar incidencia</h3>
             <div class="modal-sub">Puede ser general del servicio o vinculada a un trabajador.</div>
           </div>
-          <button class="modal-close" onclick="closeIncidentModal()">×</button>
+          <button class="modal-close" onclick="closeIncidentModal()"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
 
         <div class="modal-grid">
@@ -7854,7 +7856,7 @@ body > .modal:not(.hidden){
             <h3 id="teamMembersTitle">—</h3>
             <div id="teamMembersSub" class="modal-sub"></div>
           </div>
-          <button class="modal-close" onclick="closeTeamMembersModal()">×</button>
+          <button class="modal-close" onclick="closeTeamMembersModal()"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
 
         <div id="teamMembersStats" class="team-members-stats"></div>
@@ -7879,7 +7881,7 @@ body > .modal:not(.hidden){
             <h3 id="staffingTitle">Planificar equipos</h3>
             <div id="staffingSub" class="modal-sub"></div>
           </div>
-          <button class="modal-close" onclick="closeStaffingModal()">×</button>
+          <button class="modal-close" onclick="closeStaffingModal()"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
 
         <div class="hint" style="margin:0 0 10px">
@@ -7921,7 +7923,7 @@ body > .modal:not(.hidden){
             <h3 id="historyTitle">Historial del trabajador</h3>
             <div id="historySub" class="modal-sub"></div>
           </div>
-          <button class="modal-close" onclick="closeHistoryModal()">×</button>
+          <button class="modal-close" onclick="closeHistoryModal()"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
         <div id="historyContent"></div>
       </div>
