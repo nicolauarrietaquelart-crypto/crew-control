@@ -8625,6 +8625,50 @@ const crewPersist=async service=>{
 };
 async function crewD1Dispatch(method,args){
   const code=String(args[0]||state.service?.code||'');
+  if(method==='replaceWorkersFromPdf'){
+    const parsed=args[1]||{},old=state.service||{},previous=old.workers||[];
+    const key=w=>[String(w.personal||'').trim().toLocaleUpperCase(),String(w.serviceDate||''),String(w.trabajo||'').trim().toLocaleUpperCase()].join('|');
+    const buckets=new Map();
+    for(const w of previous){const k=key(w);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(w)}
+    let matched=0,added=0,scheduleChanged=0,pauseChanged=0,dietChanged=0,coordinatorChanged=0,movedToReserve=0;
+    const changedNames=[];
+    const workers=(parsed.workers||[]).map((w,index)=>{
+      const oldWorker=(buckets.get(key(w))||[]).shift();
+      if(!oldWorker){added++;return {...w,id:w.id||crypto.randomUUID(),sortOrder:index+1,status:'PENDIENTE',included:true}}
+      matched++;
+      if(oldWorker.inicio!==w.inicio||oldWorker.fin!==w.fin){scheduleChanged++;changedNames.push(w.personal||'')}
+      if(oldWorker.pausa!==w.pausa)pauseChanged++;
+      if(Number(oldWorker.nDieta||0)!==Number(w.nDieta||0))dietChanged++;
+      if(Boolean(oldWorker.isCoordinator)!==Boolean(w.isCoordinator))coordinatorChanged++;
+      if(!oldWorker.isReserve&&w.isReserve)movedToReserve++;
+      return {...oldWorker,...w,id:oldWorker.id,sortOrder:index+1,status:oldWorker.status,teamId:oldWorker.teamId,scenarioId:oldWorker.scenarioId,arrivalAt:oldWorker.arrivalAt,notes:oldWorker.notes,actualStart:oldWorker.actualStart,actualEnd:oldWorker.actualEnd,actualPause:oldWorker.actualPause,actualDiet:oldWorker.actualDiet,ratingUniformidad:oldWorker.ratingUniformidad,ratingActitud:oldWorker.ratingActitud,ratingPuntualidad:oldWorker.ratingPuntualidad,included:oldWorker.included};
+    });
+    const removed=previous.length-matched;
+    const next={...old,...(parsed.meta||{}),pdfName:parsed.meta?.pdfName||old.pdfName,workers,blocks:parsed.blocks||[],code};
+    await crewPersist(next);
+    return {service:next,summary:{matched,added,removed,scheduleChanged,pauseChanged,dietChanged,coordinatorChanged,movedToReserve,changedNames}};
+  }
+  if(method==='duplicateServiceSetup'){
+    const newCode=Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>b.toString(16).padStart(2,'0')).join('');
+    const res=await fetch('/api/services',{method:'POST',headers:{'content-type':'application/json','x-service-code':newCode},body:JSON.stringify({name:state.service?.serviceName||''})});
+    const created=await res.json();if(!res.ok)throw new Error(created.error||'Error al duplicar');
+    const original=state.service||{};
+    const copy={...original,code:newCode,closed:false,workers:[],incidents:[],requirements:[],blocks:[],pdfName:'',scenarios:(original.scenarios||[]).map(x=>({...x})),teams:(original.teams||[]).map(x=>({...x}))};
+    await crewPersist(copy);return copy;
+  }
+  if(method==='addScenario'){
+    const name=String(args[1]||'ESCENARIO').trim(),id='S_'+crypto.randomUUID();
+    const scenario={id,name,sortOrder:(state.service?.scenarios||[]).length+1};
+    const defaults=[['CREW HEAD','', '#BDBDBD',true],['FORKLIFTER','', '#BDBDBD',true],['GENERAL','NARANJA','#F58220',false],['LUCES','VERDE','#43A047',false],['AUDIO','AMARILLO','#FDD835',false],['VIDEO','ROSA','#D81B60',false],['RESERVA','GRIS','#6B7280',false]];
+    const teams=[...(state.service?.teams||[]),...defaults.map((d,i)=>({id:'T_'+crypto.randomUUID(),scenarioId:id,name:d[0],colorName:d[1],colorHex:d[2],noVest:d[3],sortOrder:(state.service?.teams||[]).length+i+1}))];
+    const next={...state.service,scenarios:[...(state.service?.scenarios||[]),scenario],teams};
+    await crewPersist(next);return next;
+  }
+  if(method==='getWorkerHistory'){
+    const worker=(state.service?.workers||[]).find(w=>String(w.id)===String(args[1]));
+    return {movil:worker?.movil||'',services:worker?1:0,present:worker?.status==='PRESENTE'?1:0,noShow:worker?.status==='NO PRESENTADO'?1:0,incidents:(state.service?.incidents||[]).filter(i=>i.workerId===worker?.id).length,averageRating:0,totalActualMinutes:0,recent:worker?[{date:worker.serviceDate,trabajo:worker.trabajo,status:worker.status,actualStart:worker.actualStart,actualEnd:worker.actualEnd,actualPause:worker.actualPause}]:[]};
+  }
+  if(method==='generateClosedServicePdf')throw new Error('El PDF final todavía requiere un generador compatible con Cloudflare; los datos del servicio permanecen guardados en D1.');
   if(method==='loadService')return (await crewApi(code)).service;
   if(method==='generateNewService'){
     const code=Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>b.toString(16).padStart(2,'0')).join('');
