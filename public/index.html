@@ -6919,7 +6919,33 @@ body > .modal{position:fixed!important;inset:0!important;z-index:20000!important
  body > .modal .modal-head{top:calc(-14px - env(safe-area-inset-top,0px))!important}
 }
 
+
+/* Consistent neutral surface and polished motion for worker and bulk dialogs. */
+.modal{--dialog-bg:#fff;--dialog-field:#fff;--dialog-line:#e5e7eb}
+.modal .modal-card{background:var(--dialog-bg)!important;color:#171719}
+.modal .modal-head,.modal .modal-actions,.modal .modal-footer{background:var(--dialog-bg)!important}
+.modal .modal-card input,.modal .modal-card select,.modal .modal-card textarea{background:var(--dialog-field);border-color:var(--dialog-line)}
+.modal .modal-card .planned-box,.modal .modal-card .arrival-record{background:#f8f9fa;border-color:var(--dialog-line)}
+.modal .modal-card .modal-grid,.modal .modal-card .full{background:transparent}
+.modal .modal-card button{transition:background-color .18s ease,color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s cubic-bezier(.2,.8,.2,1)}
+@media(hover:hover){.modal .modal-card button:hover{transform:translateY(-1px)}}
+.modal .modal-card button:active{transform:scale(.98)}
+.modal .modal-card input:focus,.modal .modal-card select:focus,.modal .modal-card textarea:focus{outline:2px solid rgba(245,130,32,.25);outline-offset:1px}
+@media(prefers-reduced-motion:no-preference){
+ .modal:not(.hidden){animation:crewFadeIn .2s ease-out}
+ .modal:not(.hidden)>.modal-card{animation:crewSlideIn .28s cubic-bezier(.2,.8,.2,1)}
+ .card,.service-top,.group-card{transition:box-shadow .22s ease,border-color .22s ease,background-color .22s ease}
+ @keyframes crewFadeIn{from{opacity:0}to{opacity:1}}
+ @keyframes crewSlideIn{from{opacity:.65;transform:translateY(14px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#171719">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Crew Control">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
 </head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
@@ -14759,6 +14785,9 @@ window.addEventListener('scroll',closeTeamColorPalette,true);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',portalModals,{once:true});
   else portalModals();
 })();
+</script>
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}),{once:true})}
 </script>
 </body>
 </html>
