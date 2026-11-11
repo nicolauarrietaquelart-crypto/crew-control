@@ -44,6 +44,7 @@ export default {
       let result;
       if(!expected){
         result=await env.DB.prepare('INSERT OR IGNORE INTO service_snapshots(service_id,snapshot,updated_at) VALUES(?,?,CURRENT_TIMESTAMP)').bind(service.id,serialized).run();
+        if(!result.meta?.changes)result=await env.DB.prepare("UPDATE service_snapshots SET snapshot=?,updated_at=CURRENT_TIMESTAMP WHERE service_id=? AND json_extract(snapshot,'$._syncRevision') IS NULL").bind(serialized,service.id).run();
       }else{
         result=await env.DB.prepare("UPDATE service_snapshots SET snapshot=?,updated_at=CURRENT_TIMESTAMP WHERE service_id=? AND json_extract(snapshot,'$._syncRevision')=?").bind(serialized,service.id,expected).run();
       }
