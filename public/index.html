@@ -7398,6 +7398,17 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
    background:#fffaf7!important;
  }
 }
+</style><style id="crew-mobile-work-scope-v11259">
+@media(max-width:900px){
+ .crew-mobile-day-shift-v11256 .crew-mds-work-line{overflow:hidden;gap:5px}
+ .crew-mobile-day-shift-v11256 .crew-mds-track{display:flex;align-items:center;gap:6px;min-width:0;flex:1 1 auto;overflow-x:auto;scrollbar-width:none;scroll-behavior:smooth;overscroll-behavior-x:contain}
+ .crew-mobile-day-shift-v11256 .crew-mds-track::-webkit-scrollbar{display:none}
+ .crew-mobile-day-shift-v11256 .crew-mds-work-line .crew-mds-label{min-width:30px}
+ .crew-mobile-day-shift-v11256 .crew-mds-arrow{flex:0 0 28px;height:34px;display:grid;place-items:center;border:1px solid #e5e5e5;border-radius:10px;background:#fff;color:#191919;padding:0;cursor:pointer}
+ .crew-mobile-day-shift-v11256 .crew-mds-arrow svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+ .crew-mobile-day-shift-v11256 .crew-mds-arrow:disabled{opacity:.3;cursor:default}
+ .crew-mobile-day-shift-v11256 .crew-mds-arrow:not(:disabled):active{background:#ffe8d6}
+}
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
@@ -9879,7 +9890,10 @@ function openServiceData(service){
   const initialPdfStatus=document.getElementById('initialPdfStatus');
   if(initialPdfStatus){initialPdfStatus.innerHTML='';initialPdfStatus.className='status-box';}
   const previousDay=state.service?.code===service.code?state.activeDay:null;
-  if(state.service?.code!==service.code)crewMobileShiftV11256='ALL';
+  if(state.service?.code!==service.code){
+    crewMobileShiftV11256='ALL';
+    crewMobileWorkV11259='ALL';
+  }
   state.service=service;
   state.service.workOrder=Array.isArray(state.service.workOrder)?state.service.workOrder.map(String):[];
   state.service.hiddenWorkTypes=Array.isArray(state.service.hiddenWorkTypes)?state.service.hiddenWorkTypes.map(String):[];
@@ -9964,6 +9978,7 @@ function finalizeCloseServiceView(){
   if(initialStatus){initialStatus.innerHTML='';initialStatus.className='status-box';}
   state.activeDay='';
   crewMobileShiftV11256='ALL';
+  crewMobileWorkV11259='ALL';
   state.selected.clear();
   state.pendingWorkerUpdates={};
   document.getElementById('serviceCodeInput').value='';
@@ -11328,32 +11343,78 @@ function setActiveDay(day){
 }
 
 let crewMobileShiftV11256='ALL';
+let crewMobileWorkV11259='ALL';
+function crewMobileScopeRowsV11259(){
+  if(!state.service)return[];
+  return state.service.workers.filter(w=>
+    w.included &&
+    (w.serviceDate||'SIN FECHA')===state.activeDay &&
+    (crewMobileWorkV11259==='ALL'||normalize(w.trabajo||'SIN TIPO')===normalize(crewMobileWorkV11259))
+  );
+}
+function crewMobileWorkTypesV11259(){
+  if(!state.service)return[];
+  const types=[...new Set(state.service.workers.filter(w=>
+    w.included&&(w.serviceDate||'SIN FECHA')===state.activeDay
+  ).map(w=>w.trabajo||'SIN TIPO'))];
+  return orderedWorkTypes(types).filter(w=>!isWorkTypeHidden(w));
+}
+function crewMobileRefreshScopeV11259(){
+  state.selected.clear();
+  renderPersonnel(true);
+}
 function crewMobileDayShiftChooseDayV11256(day){
   crewMobileShiftV11256='ALL';
   setActiveDay(day);
 }
+function crewMobileDayShiftChooseWorkV11259(work){
+  crewMobileWorkV11259=work||'ALL';
+  crewMobileShiftV11256='ALL';
+  crewMobileRefreshScopeV11259();
+}
+function crewMobileWorkArrowV11259(direction){
+  const works=['ALL',...crewMobileWorkTypesV11259()];
+  const index=Math.max(0,works.findIndex(w=>normalize(w)===normalize(crewMobileWorkV11259)));
+  crewMobileDayShiftChooseWorkV11259(works[Math.max(0,Math.min(works.length-1,index+direction))]);
+}
 function crewMobileDayShiftChooseShiftV11256(shift){
   crewMobileShiftV11256=shift;
-  state.selected.clear();
-  renderPersonnel(true);
+  crewMobileRefreshScopeV11259();
 }
 function renderCrewMobileDayShiftV11256(){
   const host=document.getElementById('crewMobileDayShiftV11256');
   if(!host||!state.service)return;
-  const days=getDays();
-  const rows=state.service.workers.filter(w=>w.included&&(w.serviceDate||'SIN FECHA')===state.activeDay);
+  const days=getDays(),allRows=state.service.workers.filter(w=>
+    w.included&&(w.serviceDate||'SIN FECHA')===state.activeDay
+  );
+  const types=crewMobileWorkTypesV11259();
+  if(crewMobileWorkV11259!=='ALL'&&!types.some(w=>normalize(w)===normalize(crewMobileWorkV11259))){
+    crewMobileWorkV11259='ALL';
+  }
+  const rows=crewMobileScopeRowsV11259();
   const shifts=[...new Set(rows.map(workerEntryTime))].sort((a,b)=>{
     if(a==='SIN HORA')return 1;
     if(b==='SIN HORA')return -1;
     return clockToMinutes(a)-clockToMinutes(b);
   });
-  if(crewMobileShiftV11256!=='ALL'&&!shifts.includes(crewMobileShiftV11256))crewMobileShiftV11256='ALL';
+  if(crewMobileShiftV11256!=='ALL'&&!shifts.includes(crewMobileShiftV11256)){
+    crewMobileShiftV11256='ALL';
+  }
+  const makeButton=(value,label,count,active,fn)=>'<button type="button" class="crew-mds-pill '+(active?'active':'')+'" onclick="'+fn+'('+JSON.stringify(value).replace(/"/g,'&quot;')+')" aria-pressed="'+active+'">'+escapeHtml(label)+' <span class="crew-mds-count">'+count+'</span></button>';
   const dayControls=days.length>1?'<div class="crew-mds-line"><span class="crew-mds-label">Día</span>'+
-    days.map((day,index)=>'<button type="button" class="crew-mds-pill '+(day===state.activeDay?'active':'')+'" onclick="crewMobileDayShiftChooseDayV11256('+JSON.stringify(day).replace(/"/g,'&quot;')+')">'+escapeHtml(dayLabel(day))+' <span class="crew-mds-count">'+rowsForCrewDayV11256(day)+'</span></button>').join('')+'</div>':'';
+    days.map(day=>makeButton(day,dayLabel(day),rowsForCrewDayV11256(day),day===state.activeDay,'crewMobileDayShiftChooseDayV11256')).join('')+'</div>':'';
+  const iconLeft='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
+  const iconRight='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
+  const index=['ALL',...types].findIndex(w=>normalize(w)===normalize(crewMobileWorkV11259));
+  const workControls=types.length?'<div class="crew-mds-line crew-mds-work-line"><span class="crew-mds-label">Tipo</span><button type="button" class="crew-mds-arrow" aria-label="Tipo anterior" '+(index<=0?'disabled':'')+' onclick="crewMobileWorkArrowV11259(-1)">'+iconLeft+'</button><div class="crew-mds-track">'+
+    ['ALL',...types].map(work=>makeButton(work,work==='ALL'?'TODO':work,work==='ALL'?allRows.length:allRows.filter(w=>normalize(w.trabajo||'SIN TIPO')===normalize(work)).length,normalize(work)===normalize(crewMobileWorkV11259),'crewMobileDayShiftChooseWorkV11259')).join('')+
+    '</div><button type="button" class="crew-mds-arrow" aria-label="Tipo siguiente" '+(index>=types.length?'disabled':'')+' onclick="crewMobileWorkArrowV11259(1)">'+iconRight+'</button></div>':'';
   const shiftControls=shifts.length>1?'<div class="crew-mds-line"><span class="crew-mds-label">Turno</span>'+
-    ['ALL',...shifts].map(shift=>'<button type="button" class="crew-mds-pill '+(crewMobileShiftV11256===shift?'active':'')+'" onclick="crewMobileDayShiftChooseShiftV11256('+JSON.stringify(shift).replace(/"/g,'&quot;')+')">'+escapeHtml(shift==='ALL'?'Todos':shift)+' <span class="crew-mds-count">'+(shift==='ALL'?rows.length:rows.filter(w=>workerEntryTime(w)===shift).length)+'</span></button>').join('')+'</div>':'';
-  host.innerHTML=dayControls+shiftControls;
-  host.hidden=!(dayControls||shiftControls);
+    ['ALL',...shifts].map(shift=>makeButton(shift,shift==='ALL'?'Todos':shift,shift==='ALL'?rows.length:rows.filter(w=>workerEntryTime(w)===shift).length,crewMobileShiftV11256===shift,'crewMobileDayShiftChooseShiftV11256')).join('')+'</div>':'';
+  host.innerHTML=dayControls+workControls+shiftControls;
+  host.hidden=!(dayControls||workControls||shiftControls);
+  const active=host.querySelector('.crew-mds-work-line .crew-mds-pill.active');
+  if(active)active.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});
 }
 function rowsForCrewDayV11256(day){
   return state.service.workers.filter(w=>w.included&&(w.serviceDate||'SIN FECHA')===day).length;
@@ -11366,6 +11427,7 @@ function workersForActiveDay(){
   return state.service.workers.filter(w=>{
     if(!w.included)return false;
     if((w.serviceDate||'SIN FECHA')!==state.activeDay)return false;
+    if(window.matchMedia('(max-width: 900px)').matches && crewMobileWorkV11259!=='ALL' && normalize(w.trabajo||'SIN TIPO')!==normalize(crewMobileWorkV11259))return false;
     if(window.matchMedia('(max-width: 900px)').matches && crewMobileShiftV11256!=='ALL' && workerEntryTime(w)!==crewMobileShiftV11256)return false;
 
     if(quickFilter==='RESERVA'&&!w.isReserve)return false;
@@ -14413,7 +14475,9 @@ function updateSidebarUtilityBadges(){
 function getDayOperationalMetrics(){
   if(!state.service)return null;
 
-  const workers=operationalWorkersForSummary();
+  const workers=window.matchMedia('(max-width: 900px)').matches
+    ?crewMobileScopeRowsV11259().filter(w=>crewMobileShiftV11256==='ALL'||workerEntryTime(w)===crewMobileShiftV11256)
+    :operationalWorkersForSummary();
 
   const present=workers.filter(w=>w.status==='PRESENTE').length;
   const contacted=workers.filter(w=>w.status==='CONTACTADO').length;
