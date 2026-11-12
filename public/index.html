@@ -7293,6 +7293,40 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  #mobileOperationalDrawerV11234,#mobileOperationalToggleV11234{display:none!important}
  #crewMobileBottomV11238{z-index:1001}
 }
+</style><style id="crew-compact-table-modal-v11244">
+/* Smaller mobile bulk editor with visible title and usable scrolling. */
+@media(max-width:900px){
+ #bulkChangesModal{padding:12px!important;align-items:center!important}
+ #bulkChangesModal .bulk-changes-modal-v125{width:min(460px,100%)!important;max-height:min(82dvh,680px)!important;border-radius:17px!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
+ #bulkChangesModal .bulk-changes-head-v125{flex:0 0 auto!important;min-height:0!important;padding:11px 15px!important;gap:8px!important}
+ #bulkChangesModal .bulk-changes-head-v125 h3{font-size:16px!important}
+ #bulkChangesModal .bulk-changes-head-v125 .modal-sub{font-size:10px!important}
+ #bulkChangesModal .bulk-changes-grid-v125{overflow-y:auto!important;min-height:0!important;padding:12px 14px 4px!important;gap:9px!important;grid-template-columns:1fr!important}
+ #bulkChangesModal .bulk-changes-grid-v125 label{font-size:11px!important;margin-bottom:3px!important}
+ #bulkChangesModal .bulk-changes-grid-v125 select,#bulkChangesModal .bulk-changes-grid-v125 input{min-height:36px!important;font-size:13px!important;padding:6px 9px!important}
+ #bulkChangesModal .bulk-modal-shortcuts-v125{padding:7px 14px!important;flex-shrink:0!important}
+ #bulkChangesModal .bulk-shortcut-v125{min-height:35px!important;font-size:16px!important}
+ #bulkChangesModal .modal-actions{padding:8px 14px 12px!important;flex-shrink:0!important}
+}
+@media(min-width:901px){
+ /* Restore natural content widths, allow scrolling instead of overlapping columns. */
+ #personnelGroups .work-group .table-wrap{width:100%;max-width:100%;overflow-x:auto!important}
+ #personnelGroups .work-group .table-wrap table{table-layout:fixed!important;min-width:1250px!important;width:100%!important;border-collapse:collapse!important}
+ #personnelGroups .work-group .table-wrap thead th:nth-child(1){width:4%!important}
+ #personnelGroups .work-group .table-wrap thead th:nth-child(2){width:15%!important}
+ #personnelGroups .work-group .table-wrap thead th:nth-child(3){width:17%!important}
+ #personnelGroups .work-group .table-wrap thead th:nth-child(4){width:12%!important}
+ #personnelGroups .work-group .table-wrap thead th:nth-child(5){width:11%!important}
+ #personnelGroups .work-group .table-wrap thead th:nth-child(6){width:6%!important}
+ #personnelGroups .work-group .table-wrap thead th:nth-child(7){width:7%!important}
+ #personnelGroups .work-group .table-wrap thead th:nth-child(8){width:10%!important}
+ #personnelGroups .work-group .table-wrap thead th:nth-child(9){width:12%!important}
+ #personnelGroups .work-group .table-wrap thead th:nth-child(10){width:3%!important}
+ #personnelGroups .work-group .table-wrap thead th:nth-child(11){width:3%!important}
+ #personnelGroups .work-group .table-wrap tbody td{min-width:0!important;overflow:hidden!important;white-space:normal!important;overflow-wrap:anywhere!important}
+ #personnelGroups .work-group .table-wrap tbody td select{max-width:100%!important;min-width:0!important}
+ #personnelGroups .work-group .table-wrap tbody td .worker-open{white-space:normal!important;overflow-wrap:anywhere!important}
+}
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
