@@ -7181,6 +7181,29 @@ body > .modal:not(.hidden){
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Crew Control">
 <link rel="icon" type="image/svg+xml" href="/icon.svg">
+<style id="crew-mobile-bottom-v11238">
+@media(max-width:900px){
+ #mobileOperationalToggleV11234{display:none!important}
+ body.control-sidebar-open #crewMobileBottomV11238{display:grid}
+ #crewMobileBottomV11238{position:fixed;bottom:0;left:0;right:0;z-index:1001;grid-template-columns:repeat(4,minmax(0,1fr)) 54px;align-items:stretch;gap:3px;padding:9px max(8px,env(safe-area-inset-right)) calc(9px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));background:rgba(255,255,255,.96);border-top:1px solid #dedede;box-shadow:0 -8px 28px rgba(0,0,0,.09);backdrop-filter:blur(16px)}
+ #crewMobileBottomV11238 .crew-metric{min-width:0;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:4px}
+ #crewMobileBottomV11238 strong{font-size:clamp(13px,3.6vw,19px);font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+ #crewMobileBottomV11238 small{font-size:clamp(8px,2vw,10px);color:#555;line-height:1.1}
+ #crewMobileBottomV11238 .crew-metric:first-child strong{color:#168447}
+ #crewMobileBottomV11238 .crew-metric:nth-child(3) strong{color:#bd2626}
+ #crewMobileSettingsV11238{border:0;border-radius:14px;background:#151515;color:white;display:grid;place-items:center;min-height:51px;cursor:pointer}
+ #crewMobileSettingsV11238 svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+ body.control-sidebar-open main.wrap{padding-bottom:calc(100px + env(safe-area-inset-bottom))!important}
+ .mobile-operational-drawer-v11234{transition:opacity .28s ease,transform .32s cubic-bezier(.22,1,.36,1),visibility .32s!important}
+ .mobile-operational-drawer-v11234.mobile-ops-expanded-v11234{transform:translateY(0)!important}
+}
+@media(min-width:901px){
+ .personnel-sidebar-v121.personnel-sidebar-portal-v1215{transition:transform .38s cubic-bezier(.22,1,.36,1),opacity .3s ease,box-shadow .3s ease!important;will-change:transform}
+ body.control-sidebar-open main.wrap{transition:margin-left .38s cubic-bezier(.22,1,.36,1),width .38s cubic-bezier(.22,1,.36,1)!important}
+}
+#crewMobileBottomV11238{display:none}
+@media(max-width:900px){body.control-sidebar-open #crewMobileBottomV11238{display:grid}}
+</style>
 </head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
@@ -7214,6 +7237,13 @@ body > .modal:not(.hidden){
 <div id="mobileOperationalDrawerV11234" class="mobile-operational-drawer-v11234"
   aria-hidden="true"></div>
 
+<nav id="crewMobileBottomV11238" aria-label="Resumen y ajustes de control operativo">
+ <div class="crew-metric"><strong id="crewBottomPresent">0/0</strong><small>Presentes</small></div>
+ <div class="crew-metric"><strong id="crewBottomContact">0</strong><small>Contactados</small></div>
+ <div class="crew-metric"><strong id="crewBottomAbsent">0</strong><small>Ausentes</small></div>
+ <div class="crew-metric"><strong id="crewBottomUnassigned">0</strong><small>Sin equipo</small></div>
+ <button id="crewMobileSettingsV11238" type="button" onclick="toggleMobileOperationalPanelV11234()" aria-label="Abrir ajustes operativos" aria-controls="mobileOperationalDrawerV11234"><svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.99l-1.77 1.77a1.8 1.8 0 0 0-1.99-.36l-1.08.45-.35 2.15h-2.5l-.35-2.15-1.08-.45a1.8 1.8 0 0 0-1.99.36l-1.77-1.77A1.8 1.8 0 0 0 7.24 15l-.45-1.08-2.15-.35v-2.5l2.15-.35L7.24 9a1.8 1.8 0 0 0-.36-1.99l1.77-1.77a1.8 1.8 0 0 0 1.99.36l1.08-.45.35-2.15h2.5l.35 2.15 1.08.45a1.8 1.8 0 0 0 1.99-.36l1.77 1.77A1.8 1.8 0 0 0 19.4 9l.45 1.08 2.15.35v2.5l-2.15.35Z"/></svg></button>
+</nav>
 <main class="wrap">
   <section id="startScreen" class="card login-card">
     <h2>Acceder a un servicio</h2>
@@ -9646,7 +9676,7 @@ function openServiceData(service){
   clearStartScreenState();
   document.body.classList.add('control-sidebar-open');
   updateControlSidebarTop();
-  const previousDay=state.activeDay;
+  const previousDay=state.service?.code===service.code?state.activeDay:null;
   state.service=service;
   state.service.workOrder=Array.isArray(state.service.workOrder)?state.service.workOrder.map(String):[];
   state.service.hiddenWorkTypes=Array.isArray(state.service.hiddenWorkTypes)?state.service.hiddenWorkTypes.map(String):[];
@@ -10286,7 +10316,7 @@ async function importPdf(file){
           ? `<div class="hint" style="margin-top:8px"><strong>Horarios modificados:</strong> ${escapeHtml((s.changedNames||[]).join(', '))}</div>`
           : '';
         const details=`
-          <div><strong>PDF actualizado.</strong></div>
+          <div><strong>${s.matched||s.removed?'PDF actualizado.':'PDF cargado correctamente.'}</strong></div>
           <div class="import-summary">
             <span class="import-chip">${s.matched||0} conservados</span>
             <span class="import-chip">${s.added||0} nuevos</span>
@@ -14126,6 +14156,8 @@ function renderOperationalDashboard(){
     if(el && el.textContent!==values[index])el.textContent=values[index];
   });
 
+  const mobileValues=[['crewBottomPresent',values[0]],['crewBottomContact',values[1]],['crewBottomAbsent',values[2]],['crewBottomUnassigned',values[3]]];
+  mobileValues.forEach(([id,value])=>{const el=document.getElementById(id);if(el&&el.textContent!==value)el.textContent=value;});
   updateScopeSelectButton();
   updateSidebarUtilityBadges();
 }
