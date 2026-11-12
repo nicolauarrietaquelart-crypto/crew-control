@@ -7665,7 +7665,23 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  #scenariosTeamsModal:not(.hidden)>.modal-card{max-height:calc(100dvh - 32px)!important}
 }
 </style>
-</head>
+<style id="crew-plan-single-scroll-and-vest">
+@media(max-width:900px){#crewMobilePdfActions,#crewMobilePdfActions:not(.hidden){display:none!important}}
+#scenariosTeamsModal:not(.hidden)>.modal-card{height:auto!important;max-height:min(780px,calc(100dvh - 64px))!important;overflow:hidden!important;display:flex!important;flex-direction:column!important}
+#scenariosTeamsModalBody{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;max-height:none!important;scrollbar-width:thin!important}
+#scenariosTeamsModalBody #crewTeamsPlanningV11263,
+#scenariosTeamsModalBody #crewTeamsPlanningFormV11263,
+#scenariosTeamsModalBody #crewTeamsPlanningFormV11263>.modal-card,
+#scenariosTeamsModalBody #staffingTeamPlanningArea,
+#scenariosTeamsModalBody #staffingRows,
+#scenariosTeamsModalBody .planned-box{height:auto!important;max-height:none!important;overflow:visible!important;overscroll-behavior:auto!important}
+#scenariosTeamsModalBody #crewTeamsPlanningFormV11263>.modal-card{position:static!important;box-shadow:none!important;border:0!important;display:block!important;width:100%!important}
+#staffingRows .crew-plan-clickable{cursor:pointer!important;transition:background .18s,border-color .18s}
+#staffingRows .crew-plan-clickable:hover,#staffingRows .crew-plan-clickable:focus-visible{background:#fff3e7!important;border-color:#f58220!important}
+#staffingRows .crew-plan-clickable input{cursor:text}
+#staffingRows .crew-vest-icon{display:inline-block;flex:none;vertical-align:middle}
+@media(max-width:900px){#scenariosTeamsModal:not(.hidden)>.modal-card{max-height:calc(100dvh - 32px)!important}}
+</style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
     <span id="sidebarEdgeToggleGlyph"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span>
@@ -7759,7 +7775,7 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
           <input id="venue" type="text" oninput="scheduleMetaSave()"></div>
       </div>
 
-      <div id="crewMobilePdfActions" class="hidden">
+      <div id="crewMobilePdfActions" class="hidden" style="display:none!important">
   <label class="crew-mobile-pdf-button" for="pdfInput"><svg viewBox="0 0 24 24"><path d="M12 16V4m-5 5 5-5 5 5M4 17v4h16v-4"/></svg>Resubir PDF</label>
   <button type="button" class="crew-mobile-pdf-button" onclick="downloadServicePdf()"><svg viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></svg>Descargar PDF</button>
 </div>
@@ -13092,6 +13108,10 @@ function toggleStaffingNoTeamsUI(){
 }
 
 
+function crewVestIcon(color){
+  const safe=/^#[0-9a-fA-F]{3,8}$/.test(color)?color:'#BDBDBD';
+  return '<svg class="crew-vest-icon" viewBox="0 0 36 40" width="25" height="28" aria-hidden="true"><path d="M11 2h14l3 6 6 5-5 10-3-3v18H10V20l-3 3-5-10 6-5z" fill="'+safe+'" stroke="#333" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 2l4 9 4-9M10 22h16M10 29h16" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="2"/><path d="M18 11v27" stroke="#333" stroke-width="1"/></svg>';
+}
 function renderStaffingRows(){
   const rows=state.service.workers.filter(w=>
     w.serviceDate===state.activeDay &&
@@ -13127,9 +13147,9 @@ function renderStaffingRows(){
         const count=counts[team.id]||{assigned:0,present:0};
         const value=Number(state.staffingDraft[team.id]||0);
 
-        return `<div class="requirement-row">
+        return `<div class="requirement-row crew-plan-clickable" role="button" tabindex="0" aria-label="Ver personal de ${escapeAttr(team.name)}" onclick="if(!event.target.closest('input,button,select,a'))openTeamMembersModal('${escapeJsString(state.staffingWork)}','${escapeJsString(team.id)}')" onkeydown="if((event.key==='Enter'||event.key===' ')&&event.target===this){event.preventDefault();openTeamMembersModal('${escapeJsString(state.staffingWork)}','${escapeJsString(team.id)}')}">
           <button type="button" class="requirement-team crew-plan-team-open" onclick="openTeamMembersModal('${escapeJsString(state.staffingWork)}','${escapeJsString(team.id)}')" title="Ver personal de este equipo" aria-label="Ver personal de ${escapeAttr(team.name)}">
-            <span class="team-dot" style="background:${escapeAttr(team.noVest?'#BDBDBD':team.colorHex||'#ddd')}"></span>
+            ${team.noVest?'<span class="team-dot" style="background:#BDBDBD"></span>':crewVestIcon(team.colorHex||'#BDBDBD')}
             <span>${escapeHtml(team.name)}</span>
             ${team.noVest?'<span class="hint" style="margin:0">sin chaleco</span>':''}
             <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
