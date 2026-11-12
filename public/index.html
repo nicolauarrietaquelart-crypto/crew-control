@@ -7839,25 +7839,39 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
 .team-member-card select.status.status-NO-PRESENTADO,select.status[data-status-worker].status-NO-PRESENTADO{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23171717%22%20stroke-width%3D%222.4%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M5%205%2019%2019M19%205%205%2019%22%2F%3E%3C%2Fsvg%3E")!important;}
  .team-member-card select.status option,select.status[data-status-worker] option{font-size:16px!important;color:#111!important}
 }
-</style><style id="crew-login-photo-background-v118">
-/* Background photo only on the service access screen, behind readable controls. */
-#startScreen.login-card{
- position:relative!important;isolation:isolate!important;overflow:hidden!important;
- background:rgba(12,12,12,.72)!important;color:#fff!important;
+</style><style id="crew-login-photo-background-v119">
+/* Actual access-page background, not a hidden pseudo-element behind the card. */
+body:has(#startScreen:not(.hidden))::before{
+ content:""!important;position:fixed!important;inset:-24px!important;
+ z-index:0!important;pointer-events:none!important;
+ background-image:url("https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg")!important;
+ background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important;
+ filter:blur(12px)!important;transform:scale(1.04)!important;
 }
-#startScreen.login-card::before{
- content:"";position:absolute;inset:-18px;z-index:-2;
- background:url("https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg") center center/cover no-repeat;
- filter:blur(9px);transform:scale(1.05);pointer-events:none;
+body:has(#startScreen:not(.hidden))::after{
+ content:""!important;position:fixed!important;inset:0!important;
+ z-index:0!important;pointer-events:none!important;
+ background:rgba(10,12,16,.48)!important;
 }
-#startScreen.login-card::after{
- content:"";position:absolute;inset:0;z-index:-1;
- background:linear-gradient(120deg,rgba(0,0,0,.66),rgba(0,0,0,.43));
- pointer-events:none;
+body:has(#startScreen:not(.hidden)) > *{position:relative;z-index:1}
+body:has(#startScreen:not(.hidden)) #startScreen.login-card{
+ position:relative!important;z-index:2!important;isolation:isolate!important;
+ background:rgba(255,255,255,.90)!important;color:#111!important;
+ border:1px solid rgba(255,255,255,.8)!important;
+ backdrop-filter:blur(16px)!important;-webkit-backdrop-filter:blur(16px)!important;
 }
-#startScreen.login-card h2,#startScreen.login-card .lead{color:#fff!important}
-#startScreen.login-card .or{color:#f2f2f2!important}
-#startScreen.login-card input{background:#fff!important;color:#151515!important}
+body:has(#startScreen:not(.hidden)) #startScreen.login-card::before,
+body:has(#startScreen:not(.hidden)) #startScreen.login-card::after{
+ content:none!important;display:none!important;
+}
+body:has(#startScreen:not(.hidden)) #startScreen.login-card h2,
+body:has(#startScreen:not(.hidden)) #startScreen.login-card .lead{color:#111!important}
+body:has(#startScreen:not(.hidden)) #startScreen.login-card .or{color:#666!important}
+@media(max-width:700px){
+ body:has(#startScreen:not(.hidden)) #startScreen.login-card{
+ background:rgba(255,255,255,.92)!important;
+ }
+}
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
