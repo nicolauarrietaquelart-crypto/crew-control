@@ -7847,7 +7847,7 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  pointer-events:none!important;opacity:0;
  background-position:center;background-size:cover;background-repeat:no-repeat;
  filter:blur(12px);transform:scale(1.04);
- transition:opacity 2s ease-in-out;
+ transition:opacity 1.8s ease-in-out;
  visibility:hidden;
 }
 body:has(#startScreen:not(.hidden)) .crew-access-photo-slide{visibility:visible}
@@ -16247,11 +16247,11 @@ function notifyClosedServiceWhatsApp(person){
    const incoming = 1 - visible;
    const nextLayer = layers[incoming];
    nextLayer.style.backgroundImage = 'url("' + photos[next] + '")';
-   // The image starts completely transparent and blends over the outgoing photo.
-   // Keep the outgoing photo opaque until the new photo finishes fading in.
+   // Crossfade both layers at once; the outgoing slide becomes fully transparent
+   // before its background URL is ever reused on the following cycle.
    nextLayer.classList.add('is-active');
-   await new Promise(resolve => window.setTimeout(resolve, 2000));
    layers[visible].classList.remove('is-active');
+   await new Promise(resolve => window.setTimeout(resolve, 1800));
    current = next;
    visible = incoming;
   } finally {
