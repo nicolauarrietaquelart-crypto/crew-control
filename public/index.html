@@ -7543,6 +7543,14 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  #crewMobilePdfActions .crew-mobile-pdf-button svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
  #crewMobileSettingsV11238 svg{display:block!important;width:23px!important;height:23px!important;stroke:currentColor!important;fill:none!important;stroke-width:2!important;stroke-linecap:round!important;stroke-linejoin:round!important}
 }
+</style><style id="crew-pdf-compact-actions">
+#sidebarPdfManager .sidebar-pdf-v11227{display:flex!important;align-items:center!important;flex-wrap:nowrap!important;gap:10px!important}
+#sidebarPdfManager .sidebar-pdf-copy-v11227{flex:1 1 auto!important;min-width:0!important}
+#sidebarPdfManager #pdfFileName{display:none!important}
+#sidebarPdfManager .crew-pdf-action-pair{display:flex!important;align-items:center!important;gap:7px!important;flex:0 0 auto!important}
+#sidebarPdfManager .crew-pdf-action-pair .sidebar-pdf-action-v11227{position:static!important;inset:auto!important;margin:0!important;flex:0 0 auto!important}
+#sidebarPdfManager .crew-pdf-action-pair .crew-pdf-download{width:43px!important;height:43px!important;min-width:43px!important;min-height:43px!important;max-width:43px!important;padding:0!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;aspect-ratio:1!important;border-radius:12px!important}
+#sidebarPdfManager .crew-pdf-action-pair .crew-pdf-download svg{width:19px!important;height:19px!important;flex-shrink:0!important}
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
@@ -7768,10 +7776,12 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
             <input id="pdfInput" type="file" accept=".pdf,application/pdf">
             <div class="sidebar-pdf-copy-v11227">
               <strong>PDF personal</strong>
-              <span id="pdfFileName">Sin PDF</span>
+              <span id="pdfFileName" style="display:none">Sin PDF</span>
             </div>
-            <label class="sidebar-pdf-action-v11227" for="pdfInput" title="Resubir PDF">↻ PDF</label>
-            <button type="button" class="sidebar-pdf-action-v11227 crew-pdf-download" onclick="downloadServicePdf()" title="Descargar PDF original" aria-label="Descargar PDF original"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></svg></button>
+            <div class="crew-pdf-action-pair">
+              <label class="sidebar-pdf-action-v11227" for="pdfInput" title="Resubir PDF">↻ PDF</label>
+              <button type="button" class="sidebar-pdf-action-v11227 crew-pdf-download" onclick="downloadServicePdf()" title="Descargar PDF original" aria-label="Descargar PDF original"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></svg></button>
+            </div>
           </div>
           <div id="pdfStatus" class="status-box sidebar-pdf-status-v11227"></div>
         </div>
