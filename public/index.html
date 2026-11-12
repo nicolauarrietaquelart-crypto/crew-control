@@ -11834,11 +11834,11 @@ function normalizeTime(v){
   return String(h).padStart(2,'0')+':'+String(min).padStart(2,'0');
 }
 function normalizeDietFromPdf(value){
-  const raw=String(value??'').trim();
-  // DIETA is a count, not a time or an arbitrary number from another column.
-  if(!/^[0-9]{1,2}$/.test(raw))return 0;
-  const count=Number(raw);
-  return count>=0&&count<=4?count:0;
+  const raw=String(value??'').trim().replace(/\s+/g,'');
+  // Penny Wise PDFs may encode the number of diets as 1:00 (one diet).
+  // Accept integer counts and the equivalent hour:00 format, never minutes.
+  const match=raw.match(/^([0-4])(?:[:.,]00)?$/);
+  return match?Number(match[1]):0;
 }
 
 function dateId(v){return String(v||'').replace(/\D/g,'')||'NODATE'}
