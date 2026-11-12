@@ -7327,42 +7327,6 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
 #personnelGroups>.work-group{transition:background-color .18s ease,border-color .18s ease!important;animation:none!important}
 #personnelGroups>.work-group>.work-group-head{transition:background-color .18s ease!important;animation:none!important;transform:none!important}
 #personnelGroups>.work-group>.work-group-head .work-group-title{transition:none!important}
-</style><style id="crew-selection-first-cell-fix-v11255">
-@media(min-width:901px){
- /* The first data cell was display:none in v11.2.12, leaving an empty
-    column where Chrome could not paint the selection background. */
- #personnelGroups .work-group .table-wrap table thead th:first-child,
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row] > td.mobile-check{
-   display:table-cell!important;
-   visibility:visible!important;
-   width:24px!important;
-   padding:0!important;
- }
- #personnelGroups .work-group .table-wrap table thead th:first-child{font-size:0!important}
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row] > td.mobile-check input{display:none!important}
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected{
-   background:transparent!important;
-   box-shadow:none!important;
- }
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td{
-   background:#fff9f4!important;
-   background-image:none!important;
-   border-top:1px solid rgba(245,130,32,.28)!important;
-   border-bottom:1px solid rgba(245,130,32,.28)!important;
-   box-shadow:none!important;
- }
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td:first-child{
-   background:#ffd4b1!important;
-   border-left:5px solid #f58220!important;
- }
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td:nth-child(2){background:#ffd4b1!important}
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td:nth-child(3){background:#ffdec3!important}
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td:nth-child(4){background:#ffe6d3!important}
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td:nth-child(5){background:#ffebdc!important}
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td:nth-child(6){background:#fff0e5!important}
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td:nth-child(7){background:#fff4ec!important}
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td:nth-child(n+8){background:#fff9f4!important}
-}
 </style><style id="crew-mobile-day-shift-style-v11256">
 .crew-mobile-day-shift-v11256{display:none}
 @media(max-width:900px){
@@ -7375,6 +7339,37 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  .crew-mobile-day-shift-v11256 .crew-mds-pill.active{background:#171717;color:#fff;border-color:#171717}
  .crew-mobile-day-shift-v11256 .crew-mds-pill:not(.active):hover{background:#fff1e5;border-color:#f58220}
  .crew-mobile-day-shift-v11256 .crew-mds-count{opacity:.7;font-size:10px;margin-left:3px}
+}
+</style><style id="crew-selection-solid-edge-v11257">
+@media(min-width:901px){
+ /* First column is reserved for a hidden checkbox. Explicitly paint it. */
+ #personnelGroups .work-group .table-wrap table col:first-child{width:36px!important}
+ #personnelGroups .work-group .table-wrap table tr[data-worker-row] > td.mobile-check{
+   display:table-cell!important;visibility:visible!important;opacity:1!important;
+   background:transparent!important;padding:0!important;width:36px!important;
+ }
+ #personnelGroups .work-group .table-wrap table tr[data-worker-row] > td.mobile-check input{display:none!important}
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected{
+   background:transparent!important;box-shadow:none!important;
+ }
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td{
+   background:#fffaf6!important;border-top:1px solid #f8c9a5!important;border-bottom:1px solid #f8c9a5!important;box-shadow:none!important;
+ }
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-check{
+   background:#ffdabd!important;border-left:5px solid #f58220!important;
+ }
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-status{
+   background:#ffdabd!important;position:relative!important;
+ }
+ /* Bridge old hidden-checkbox column even if a legacy display rule wins. */
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-status::before{
+   content:"";position:absolute;top:0;bottom:0;left:-42px;width:42px;background:#ffdabd;pointer-events:none;z-index:2;
+ }
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-name{background:#ffe2cc!important}
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-role{background:#ffe9d8!important}
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-schedule{background:#fff0e4!important}
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-pause{background:#fff5ed!important}
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-diet{background:#fff8f2!important}
 }
 </style></head>
 <body>
@@ -9220,6 +9215,21 @@ function crewEnsureDefaultStructure(service){
   const first=scenarios[0]||{id:'S_'+crypto.randomUUID(),name:'PRINCIPAL',sortOrder:1};
   return {...service,scenarios:scenarios.length?scenarios:[first],teams:crewDefaultTeams(first.id)};
 }
+function crewAssignDefaultSpecialtyTeam(worker,teams,scenarios){
+  if(!worker||worker.teamId)return worker;
+  const category=normalize(worker.especialidad||'');
+  let target='';
+  if(/\\bCREW\\s*HEAD\\b/.test(category))target='CREW HEAD';
+  else if(/\\bFORKLIFT(?:ER)?\\b/.test(category))target='FORKLIFTER';
+  if(!target)return worker;
+  const ordered=[...(teams||[])].filter(t=>normalize(t.name)===target).sort((a,b)=>{
+    const sa=(scenarios||[]).find(s=>s.id===a.scenarioId)?.sortOrder??999;
+    const sb=(scenarios||[]).find(s=>s.id===b.scenarioId)?.sortOrder??999;
+    return Number(sa)-Number(sb);
+  });
+  const team=ordered[0];
+  return team?{...worker,teamId:team.id,scenarioId:team.scenarioId||''}:worker;
+}
 async function crewD1Dispatch(method,args){
   const code=String(args[0]||state.service?.code||'');
   if(method==='replaceWorkersFromPdf'){
@@ -9231,14 +9241,14 @@ async function crewD1Dispatch(method,args){
     const changedNames=[];
     const workers=(parsed.workers||[]).map((w,index)=>{
       const oldWorker=(buckets.get(key(w))||[]).shift();
-      if(!oldWorker){added++;return {...w,id:w.id||crypto.randomUUID(),sortOrder:index+1,status:'PENDIENTE',included:true}}
+      if(!oldWorker){added++;return crewAssignDefaultSpecialtyTeam({...w,id:w.id||crypto.randomUUID(),sortOrder:index+1,status:'PENDIENTE',included:true},old.teams,old.scenarios)}
       matched++;
       if(oldWorker.inicio!==w.inicio||oldWorker.fin!==w.fin){scheduleChanged++;changedNames.push(w.personal||'')}
       if(oldWorker.pausa!==w.pausa)pauseChanged++;
       if(Number(oldWorker.nDieta||0)!==Number(w.nDieta||0))dietChanged++;
       if(Boolean(oldWorker.isCoordinator)!==Boolean(w.isCoordinator))coordinatorChanged++;
       if(!oldWorker.isReserve&&w.isReserve)movedToReserve++;
-      return {...oldWorker,...w,id:oldWorker.id,sortOrder:index+1,status:oldWorker.status,teamId:oldWorker.teamId,scenarioId:oldWorker.scenarioId,arrivalAt:oldWorker.arrivalAt,notes:oldWorker.notes,actualStart:oldWorker.actualStart,actualEnd:oldWorker.actualEnd,actualPause:oldWorker.actualPause,actualDiet:oldWorker.actualDiet,ratingUniformidad:oldWorker.ratingUniformidad,ratingActitud:oldWorker.ratingActitud,ratingPuntualidad:oldWorker.ratingPuntualidad,included:oldWorker.included};
+      return crewAssignDefaultSpecialtyTeam({...oldWorker,...w,id:oldWorker.id,sortOrder:index+1,status:oldWorker.status,teamId:oldWorker.teamId,scenarioId:oldWorker.scenarioId,arrivalAt:oldWorker.arrivalAt,notes:oldWorker.notes,actualStart:oldWorker.actualStart,actualEnd:oldWorker.actualEnd,actualPause:oldWorker.actualPause,actualDiet:oldWorker.actualDiet,ratingUniformidad:oldWorker.ratingUniformidad,ratingActitud:oldWorker.ratingActitud,ratingPuntualidad:oldWorker.ratingPuntualidad,included:oldWorker.included},old.teams,old.scenarios);
     });
     const removed=previous.length-matched;
     const next={...old,...(parsed.meta||{}),serviceName:String(parsed.meta?.reference||'').trim()||old.serviceName||'',pdfName:parsed.meta?.pdfName||old.pdfName,workers,blocks:parsed.blocks||[],code};
