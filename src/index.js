@@ -21,12 +21,29 @@ export default {
     await env.DB.prepare('INSERT INTO services(id,code,name,service_date,venue) VALUES(?,?,?,?,?)').bind(id,accessCode,str(v.name,200),str(v.service_date,20),str(v.venue,200)).run();
     return json({ok:true,id,code:accessCode},201);
    }
-   const match=p.match(/^\/api\/services\/([^/]+)(?:\/(workers|teams|scenarios|incidents|requirements))?$/);
+   const match=p.match(/^\/api\/services\/([^/]+)(?:\/(workers|teams|scenarios|incidents|requirements|pdf))?$/);
    if(match){
     const code=decodeURIComponent(match[1]),section=match[2];
     if(code!==accessCode)return err('Código de servicio incorrecto',403);
     const service=await env.DB.prepare('SELECT * FROM services WHERE code=?').bind(code).first();
     if(!service)return err('Service not found',404);
+    if(section==='pdf'){
+      await env.DB.prepare('CREATE TABLE IF NOT EXISTS service_pdf_files (service_id TEXT PRIMARY KEY, filename TEXT NOT NULL, content BLOB NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)').run();
+      if(m==='PUT'){
+        if(service.closed)return err('Service is closed',409);
+        const bytes=await request.arrayBuffer();
+        if(!bytes.byteLength||bytes.byteLength>8000000)return err('PDF vacío o superior a 8 MB',413);
+        const name=str(request.headers.get('x-pdf-filename')||'personal.pdf',180).replace(/[\\/]/g,'_');
+        if(new Uint8Array(bytes).slice(0,5).some((b,i)=>b!==[37,80,68,70,45][i]))return err('El archivo no es un PDF válido',400);
+        await env.DB.prepare('INSERT INTO service_pdf_files(service_id,filename,content,updated_at) VALUES(?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(service_id) DO UPDATE SET filename=excluded.filename,content=excluded.content,updated_at=CURRENT_TIMESTAMP').bind(service.id,name,bytes).run();
+        return json({ok:true,filename:name});
+      }
+      if(m==='GET'){
+        const row=await env.DB.prepare('SELECT filename,content FROM service_pdf_files WHERE service_id=?').bind(service.id).first();
+        if(!row)return err('No hay un PDF original guardado para este servicio',404);
+        return new Response(row.content,{headers:{'content-type':'application/pdf','content-disposition':"attachment; filename*=UTF-8''"+encodeURIComponent(row.filename),'cache-control':'no-store'}});
+      }
+    }
     if(!section&&m==='GET'&&url.searchParams.get('format')==='snapshot'){
       const row=await env.DB.prepare('SELECT snapshot FROM service_snapshots WHERE service_id=?').bind(service.id).first();
       return json({ok:true,service:row?.snapshot?JSON.parse(row.snapshot):{code:service.code,serviceName:service.name,serviceDate:service.service_date,venue:service.venue,closed:!!service.closed,workers:[],teams:[],scenarios:[],incidents:[],requirements:[],workOrder:[],hiddenWorkTypes:[]}});
