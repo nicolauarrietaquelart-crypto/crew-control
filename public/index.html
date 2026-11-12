@@ -7477,6 +7477,49 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
 #crewTeamsPlanningFormV11263>.modal-card{display:block!important;position:static!important;transform:none!important;width:100%!important;max-width:none!important;max-height:none!important;overflow:visible!important;box-shadow:none!important;border:1px solid #e9e9e9!important;border-radius:16px!important;padding:14px!important;margin:8px 0!important}
 #crewTeamsPlanningFormV11263 .modal-head{border-radius:12px!important}
 @media(max-width:900px){.crew-team-work-list-v11263 button{flex-wrap:wrap}.crew-team-work-list-v11263 button>span:last-child{white-space:normal}.crew-teams-tabs-v11263 button{font-size:12px;padding:8px 5px}}
+
+/* Mobile staffing planning responsive fix */
+@media(max-width:640px){
+ #staffingModal .modal-card,#crewTeamsPlanningFormV11263 .modal-card,
+ #staffingTeamPlanningArea,#staffingRows,#staffingRows .planned-box{
+   min-width:0!important;max-width:100%!important;box-sizing:border-box;
+ }
+ #staffingRows .planned-box{padding:12px!important;overflow:hidden}
+ #staffingRows .requirement-row{
+   display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) minmax(0,1fr);
+   align-items:center;gap:8px;padding:13px 0;min-width:0;
+ }
+ #staffingRows .requirement-team{
+   grid-column:1/-1;display:flex;align-items:center;gap:9px;
+   min-width:0;flex-wrap:wrap;overflow-wrap:anywhere;font-size:13px;
+ }
+ #staffingRows .requirement-row>input[type=number]{
+   grid-column:1;display:block;width:100%!important;min-width:0!important;
+   max-width:100%;box-sizing:border-box;min-height:42px;padding:8px 9px;font-size:15px;
+ }
+ #staffingRows .requirement-row>input[type=number]::placeholder{font-size:12px}
+ #staffingRows .requirement-current{
+   min-width:0;text-align:center;font-size:11px;line-height:1.35;overflow-wrap:anywhere;
+ }
+ #staffingRows .requirement-current strong{display:block;font-size:16px;line-height:1.3}
+ #staffingTeamPlanningArea .copy-plan-row{
+   display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:stretch;min-width:0;
+ }
+ #staffingTeamPlanningArea .copy-plan-row select{
+   width:100%!important;min-width:0!important;max-width:100%;box-sizing:border-box;text-overflow:ellipsis;
+ }
+ #staffingTeamPlanningArea .copy-plan-row button{
+   width:auto!important;min-width:0!important;white-space:nowrap;padding-inline:12px;
+ }
+}
+@media(max-width:360px){
+ #staffingRows .requirement-row{
+   grid-template-columns:minmax(0,1fr) minmax(0,.9fr) minmax(0,.9fr);gap:5px;
+ }
+ #staffingRows .requirement-row>input[type=number]{padding:7px 5px}
+ #staffingTeamPlanningArea .copy-plan-row{grid-template-columns:minmax(0,1fr)}
+ #staffingTeamPlanningArea .copy-plan-row button{width:100%!important}
+}
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
