@@ -1,18 +1,28 @@
 {
-  "name": "Crew Control — Operaciones de personal",
+  "name": "Crew Control | Penny Wise",
   "short_name": "Crew Control",
-  "description": "Gestión operativa de personal por servicio",
+  "description": "Control operativo y gestión de personal de Penny Wise",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f4f5f7",
+  "display_override": [
+    "standalone"
+  ],
+  "background_color": "#f3f3f3",
   "theme_color": "#171719",
   "icons": [
     {
       "src": "/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
   ]
 }
