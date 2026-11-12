@@ -7297,29 +7297,29 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
 @media(min-width:901px){
  /* One shared pixel-based grid: no clipped vest/rating, no conflicting percentage widths. */
  #personnelGroups .work-group .table-wrap{display:block!important;width:100%!important;max-width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-gutter:stable}
- #personnelGroups .work-group .table-wrap table{display:table!important;table-layout:fixed!important;width:1380px!important;min-width:1380px!important;max-width:none!important;border-collapse:collapse!important;margin:0!important}
+ #personnelGroups .work-group .table-wrap table{display:table!important;table-layout:fixed!important;width:1320px!important;min-width:1320px!important;max-width:none!important;border-collapse:collapse!important;margin:0!important}
  #personnelGroups .work-group .table-wrap thead{display:table-header-group!important}
  #personnelGroups .work-group .table-wrap tbody{display:table-row-group!important}
  #personnelGroups .work-group .table-wrap tr{display:table-row!important}
  #personnelGroups .work-group .table-wrap th,#personnelGroups .work-group .table-wrap td{display:table-cell!important;box-sizing:border-box!important;min-width:0!important;max-width:none!important;padding:8px 6px!important;vertical-align:middle!important;overflow:visible!important;white-space:normal!important;text-align:left!important}
- #personnelGroups .work-group .table-wrap col:nth-child(1){width:48px!important}
- #personnelGroups .work-group .table-wrap col:nth-child(2){width:170px!important}
- #personnelGroups .work-group .table-wrap col:nth-child(3){width:220px!important}
+ #personnelGroups .work-group .table-wrap col:nth-child(1){width:24px!important}
+ #personnelGroups .work-group .table-wrap col:nth-child(2){width:150px!important}
+ #personnelGroups .work-group .table-wrap col:nth-child(3){width:214px!important}
  #personnelGroups .work-group .table-wrap col:nth-child(4){width:145px!important}
  #personnelGroups .work-group .table-wrap col:nth-child(5){width:130px!important}
  #personnelGroups .work-group .table-wrap col:nth-child(6){width:85px!important}
  #personnelGroups .work-group .table-wrap col:nth-child(7){width:95px!important}
  #personnelGroups .work-group .table-wrap col:nth-child(8){width:115px!important}
- #personnelGroups .work-group .table-wrap col:nth-child(9){width:205px!important}
+ #personnelGroups .work-group .table-wrap col:nth-child(9){width:185px!important}
  #personnelGroups .work-group .table-wrap col:nth-child(10){width:90px!important}
  #personnelGroups .work-group .table-wrap col:nth-child(11){width:77px!important}
  #personnelGroups .work-group .table-wrap td.mobile-vest,#personnelGroups .work-group .table-wrap td.mobile-rating{white-space:normal!important;overflow-wrap:normal!important;word-break:normal!important;font-size:11px!important}
  #personnelGroups .work-group .table-wrap td.mobile-vest .vest{display:inline-block!important;max-width:100%!important;white-space:normal!important;overflow-wrap:break-word!important}
  #personnelGroups .work-group .table-wrap td.mobile-rating .rating-mini{white-space:nowrap!important}
  #personnelGroups .work-group .table-wrap td select{width:100%!important;min-width:0!important;max-width:100%!important}
- #personnelGroups .work-group .table-wrap tr.worker-row-selected{background:none!important;box-shadow:none!important}
- #personnelGroups .work-group .table-wrap tr.worker-row-selected>td{background:linear-gradient(90deg,rgba(255,122,20,.12),rgba(255,255,255,.97))!important;border-top:1px solid rgba(245,130,32,.35)!important;border-bottom:1px solid rgba(245,130,32,.35)!important}
- #personnelGroups .work-group .table-wrap tr.worker-row-selected>td:first-child{box-shadow:inset 5px 0 0 #f58220!important}
+
+
+
  .personnel-layout-v121 .personnel-main-v121,.personnel-layout-v121 .personnel-groups-fast{min-width:0!important}
 }
 </style><style id="crew-group-entry-stability-v11249">
@@ -7327,6 +7327,21 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
 #personnelGroups>.work-group{transition:background-color .18s ease,border-color .18s ease!important;animation:none!important}
 #personnelGroups>.work-group>.work-group-head{transition:background-color .18s ease!important;animation:none!important;transform:none!important}
 #personnelGroups>.work-group>.work-group-head .work-group-title{transition:none!important}
+</style><style id="crew-select-and-selection-v11250">
+/* Compact left selection track, and status starts directly beside it. */
+@media(min-width:901px){
+ #personnelGroups .work-group .table-wrap th:first-child,#personnelGroups .work-group .table-wrap td:first-child{padding-left:2px!important;padding-right:2px!important}
+ #personnelGroups .work-group .table-wrap th:nth-child(2),#personnelGroups .work-group .table-wrap td:nth-child(2){padding-left:3px!important}
+ #personnelGroups .work-group .table-wrap tr[data-worker-row].worker-row-selected>td{background-color:rgba(255,135,35,.055)!important;background-image:none!important;border-top:1px solid rgba(245,130,32,.24)!important;border-bottom:1px solid rgba(245,130,32,.24)!important}
+ #personnelGroups .work-group .table-wrap tr[data-worker-row].worker-row-selected>td:nth-child(1){background-color:rgba(255,135,35,.19)!important;box-shadow:inset 4px 0 #f58220!important}
+ #personnelGroups .work-group .table-wrap tr[data-worker-row].worker-row-selected>td:nth-child(2){background-color:rgba(255,135,35,.15)!important}
+ #personnelGroups .work-group .table-wrap tr[data-worker-row].worker-row-selected>td:nth-child(3){background-color:rgba(255,135,35,.115)!important}
+ #personnelGroups .work-group .table-wrap tr[data-worker-row].worker-row-selected>td:nth-child(4){background-color:rgba(255,135,35,.085)!important}
+}
+/* Uniform rounded controls. Native option popups retain OS/browser appearance. */
+select{border-radius:12px!important;transition:border-color .16s ease,background-color .16s ease,box-shadow .16s ease!important}
+select:not(:disabled):hover{border-color:#f6a66d!important;background-color:#fff6ef!important;box-shadow:0 0 0 2px rgba(245,130,32,.07)!important}
+select:not(:disabled):focus{border-color:#f58220!important;outline:0!important;box-shadow:0 0 0 3px rgba(245,130,32,.14)!important}
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
