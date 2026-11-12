@@ -4235,7 +4235,7 @@
 
     /* Rows: plain translucent fills only. */
     tbody tr:not(.shift-divider-row) td{
-      background:rgba(255,255,255,.92)!important;
+      background:rgba(255,255,255,.78)!important;
     }
 
     tbody tr:not(.shift-divider-row):hover td{
@@ -7861,9 +7861,25 @@ body:has(#startScreen:not(.hidden))::after{
  background:rgba(10,12,16,.48)!important;
 }
 body:has(#startScreen:not(.hidden)) > *{position:relative;z-index:1}
+/* Center the login card in the visible photo area, independently of device width. */
+body:has(#startScreen:not(.hidden)) main.wrap{
+ min-height:calc(100vh - 78px);
+ min-height:calc(100dvh - 78px);
+ display:flex!important;
+ flex-direction:column;
+ align-items:center;
+ justify-content:center;
+ padding-top:20px!important;
+ padding-bottom:24px!important;
+}
+body:has(#startScreen:not(.hidden)) #startScreen.login-card{
+ width:min(620px,100%)!important;
+ margin:0 auto!important;
+ flex:0 0 auto;
+}
 body:has(#startScreen:not(.hidden)) #startScreen.login-card{
  position:relative!important;z-index:2!important;isolation:isolate!important;
- background:rgba(255,255,255,.90)!important;color:#111!important;
+ background:rgba(255,255,255,.76)!important;color:#111!important;
  border:1px solid rgba(255,255,255,.8)!important;
  backdrop-filter:blur(16px)!important;-webkit-backdrop-filter:blur(16px)!important;
 }
