@@ -7409,6 +7409,21 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  .crew-mobile-day-shift-v11256 .crew-mds-arrow:disabled{opacity:.3;cursor:default}
  .crew-mobile-day-shift-v11256 .crew-mds-arrow:not(:disabled):active{background:#ffe8d6}
 }
+</style><style id="crew-mobile-management-actions-v11260">
+@media(max-width:900px){
+ .crew-mobile-day-shift-v11256 .crew-mds-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;border-top:1px solid #f0f0f0;margin-top:9px;padding-top:9px}
+ .crew-mobile-day-shift-v11256 .crew-mds-action{display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;min-height:39px;border-radius:11px;border:1px solid #e4e4e4;background:#fff;font:inherit;font-weight:750;font-size:12px;color:#171717;padding:7px 9px;cursor:pointer;transition:background .15s,border-color .15s}
+ .crew-mobile-day-shift-v11256 .crew-mds-action svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round;flex:none}
+ .crew-mobile-day-shift-v11256 .crew-mds-action-plan{background:#171717;border-color:#171717;color:#fff}
+ .crew-mobile-day-shift-v11256 .crew-mds-action:not(.crew-mds-action-plan):active{background:#fff1e6;border-color:#f58220}
+ .crew-mobile-day-shift-v11256 .crew-mds-action-plan:active{background:#303030}
+ .crew-mobile-day-shift-v11256 .crew-mds-action:disabled{opacity:.4;cursor:not-allowed}
+ .crew-mobile-day-shift-v11256 .crew-mds-action b{display:grid;place-items:center;min-width:19px;height:19px;border-radius:8px;background:#f58220;color:#111;font-size:10px}
+ .crew-mobile-day-shift-v11256 .crew-mds-picker{display:flex;flex-direction:column;gap:5px;margin-top:8px;padding:9px;border-radius:12px;background:#f7f7f7}
+ .crew-mobile-day-shift-v11256 .crew-mds-picker strong{font-size:11px;margin:0 0 3px}
+ .crew-mobile-day-shift-v11256 .crew-mds-picker button{border:1px solid #e4e4e4;border-radius:9px;background:#fff;color:#111;font:inherit;font-size:12px;font-weight:700;text-align:left;padding:9px 10px}
+ .crew-mobile-day-shift-v11256 .crew-mds-picker button:active{background:#fff1e6;border-color:#f58220}
+}
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
@@ -11381,6 +11396,23 @@ function crewMobileDayShiftChooseShiftV11256(shift){
   crewMobileShiftV11256=shift;
   crewMobileRefreshScopeV11259();
 }
+let crewMobilePlanningPickerV11260=false;
+function crewMobileOpenPlanningV11260(){
+  if(!state.service||state.service.closed)return;
+  if(crewMobileWorkV11259!=='ALL'){
+    crewMobilePlanningPickerV11260=false;
+    openStaffingModal(crewMobileWorkV11259);
+    return;
+  }
+  crewMobilePlanningPickerV11260=!crewMobilePlanningPickerV11260;
+  renderCrewMobileDayShiftV11256();
+}
+function crewMobilePlanForWorkV11260(work){
+  if(!state.service||state.service.closed)return;
+  crewMobilePlanningPickerV11260=false;
+  renderCrewMobileDayShiftV11256();
+  openStaffingModal(work);
+}
 function renderCrewMobileDayShiftV11256(){
   const host=document.getElementById('crewMobileDayShiftV11256');
   if(!host||!state.service)return;
@@ -11411,7 +11443,18 @@ function renderCrewMobileDayShiftV11256(){
     '</div><button type="button" class="crew-mds-arrow" aria-label="Tipo siguiente" '+(index>=types.length?'disabled':'')+' onclick="crewMobileWorkArrowV11259(1)">'+iconRight+'</button></div>':'';
   const shiftControls=shifts.length>1?'<div class="crew-mds-line"><span class="crew-mds-label">Turno</span>'+
     ['ALL',...shifts].map(shift=>makeButton(shift,shift==='ALL'?'Todos':shift,shift==='ALL'?rows.length:rows.filter(w=>workerEntryTime(w)===shift).length,crewMobileShiftV11256===shift,'crewMobileDayShiftChooseShiftV11256')).join('')+'</div>':'';
-  host.innerHTML=dayControls+workControls+shiftControls;
+  const incidentCount=(state.service.incidents||[]).filter(i=>i.serviceDate===state.activeDay &&
+    (crewMobileWorkV11259==='ALL'||!i.trabajo||i.trabajo==='GENERAL'||normalize(i.trabajo)===normalize(crewMobileWorkV11259))).length;
+  const planIcon='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18M3 12h18M3 17h18M8 4v16M16 4v16"/></svg>';
+  const incidentIcon='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 9v5M12 18h.01"/></svg>';
+  const canPlan=!state.service.closed;
+  const actions='<div class="crew-mds-actions">'+
+    '<button type="button" class="crew-mds-action crew-mds-action-plan" onclick="crewMobileOpenPlanningV11260()" '+(canPlan?'':'disabled')+'>'+planIcon+'<span>Planificar equipos</span></button>'+
+    '<button type="button" class="crew-mds-action" onclick="openIncidentsBoardModal()">'+incidentIcon+'<span>Incidencias</span>'+(incidentCount?'<b>'+incidentCount+'</b>':'')+'</button></div>';
+  const planningPicker=crewMobilePlanningPickerV11260&&crewMobileWorkV11259==='ALL'
+    ?'<div class="crew-mds-picker"><strong>Selecciona el tipo de servicio</strong>'+
+      types.map(work=>'<button type="button" onclick="crewMobilePlanForWorkV11260('+JSON.stringify(work).replace(/"/g,'&quot;')+')">'+escapeHtml(work)+'</button>').join('')+'</div>':'';
+  host.innerHTML=dayControls+workControls+shiftControls+actions+planningPicker;
   host.hidden=!(dayControls||workControls||shiftControls);
   const active=host.querySelector('.crew-mds-work-line .crew-mds-pill.active');
   const track=host.querySelector('.crew-mds-track');
