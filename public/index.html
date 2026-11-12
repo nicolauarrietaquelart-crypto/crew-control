@@ -7165,6 +7165,15 @@ body > .modal:not(.hidden){
  #workerModal:not(.hidden) .modal-grid{grid-template-columns:minmax(0,1fr)!important}
  #workerModal:not(.hidden) .modal-actions{padding:10px 12px!important;flex-wrap:wrap!important}
 }
+
+/* Mobile worker dialog: prevent name clipping and unify close controls. */
+#workerModal .modal-head{display:flex;align-items:flex-start;min-width:0;gap:12px}
+#workerModal .modal-head>div:first-child{flex:1 1 0;min-width:0;max-width:100%}
+#workerModal #modalWorkerName{max-width:100%;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important;line-height:1.18}
+#workerModal #modalWorkerSub{overflow-wrap:anywhere;white-space:normal}
+#workerModal .modal-close{flex:0 0 36px;color:#111!important;stroke:#111!important;background:#f0f0f0!important}
+#workerModal .modal-close svg{stroke:#111!important}
+@media(max-width:700px){#workerModal .modal-card{box-sizing:border-box;max-width:calc(100vw - 20px)!important;overflow-x:hidden!important}#workerModal .modal-head{width:100%;box-sizing:border-box}#workerModal #modalWorkerName{font-size:clamp(18px,5vw,24px)!important}}
 </style>
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#171719">
@@ -7490,7 +7499,7 @@ body > .modal:not(.hidden){
             <label class="field">Pausa aplicada</label>
             <input id="modalActualPause" type="time" step="900" onchange="this.dataset.usePdf='0'">
             <div class="compact-actions">
-              <button id="modalPauseServiceBtn" type="button" class="secondary mini-btn" onclick="setPauseFromPdf()">Según servicio</button>
+              
               <button type="button" class="secondary mini-btn" onclick="setNoPause()">Sin pausa</button>
             </div>
           </div>
@@ -7498,7 +7507,7 @@ body > .modal:not(.hidden){
           <div>
             <label class="field">N.º dietas aplicado</label>
             <select id="modalActualDiet">
-              <option id="modalDietServiceOption" value="__PDF__">Según servicio</option>
+              
               <option value="0">0 · Sin dieta</option>
               <option value="1">1 dieta</option>
               <option value="2">2 dietas</option>
@@ -13082,7 +13091,7 @@ function applyBulk(){
     }
 
     if(dietValue){
-      w.actualDiet=dietValue==='__PDF__'?null:Number(dietValue);
+      w.actualDiet=Number(dietValue);
       u.actualDiet=w.actualDiet;
     }
 
@@ -14784,20 +14793,10 @@ function openWorkerModal(id){
   document.getElementById('modalActualPause').dataset.usePdf=
     (w.actualPause===undefined||w.actualPause===null||w.actualPause==='')?'1':'0';
 
-  const pauseServiceBtn=document.getElementById('modalPauseServiceBtn');
-  if(pauseServiceBtn){
-    pauseServiceBtn.textContent=`Según servicio · ${formatPauseLabel(w.pausa||'00:00')}`;
-  }
-
-  const dietServiceOption=document.getElementById('modalDietServiceOption');
-  if(dietServiceOption){
-    const serviceDiet=Number(w.nDieta||0);
-    dietServiceOption.textContent=
-      `Según servicio · ${serviceDiet===0?'sin dieta':serviceDiet===1?'1 dieta':`${serviceDiet} dietas`}`;
-  }
-
-  document.getElementById('modalActualDiet').value=
-    (w.actualDiet===undefined||w.actualDiet===null||w.actualDiet==='')?'__PDF__':String(w.actualDiet);
+  document.getElementById('modalActualPause').dataset.usePdf='0';
+  document.getElementById('modalActualDiet').value=String(
+    w.actualDiet===undefined||w.actualDiet===null||w.actualDiet==='' ? Number(w.nDieta||0) : Number(w.actualDiet)
+  );
 
   document.getElementById('modalWorkerReserve').checked=Boolean(w.isReserve);
   document.getElementById('modalNotes').value=w.notes||'';
@@ -14867,7 +14866,7 @@ function saveWorkerModal(){
   w.actualEnd=document.getElementById('modalActualEnd').value||'';
 
   const pauseInput=document.getElementById('modalActualPause');
-  w.actualPause=pauseInput.dataset.usePdf==='1'?'':(pauseInput.value||'00:00');
+  w.actualPause=pauseInput.value||'00:00';
 
   const dietValue=document.getElementById('modalActualDiet').value;
   w.actualDiet=dietValue==='__PDF__'?null:Number(dietValue);
