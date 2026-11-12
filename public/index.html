@@ -7327,34 +7327,41 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
 #personnelGroups>.work-group{transition:background-color .18s ease,border-color .18s ease!important;animation:none!important}
 #personnelGroups>.work-group>.work-group-head{transition:background-color .18s ease!important;animation:none!important;transform:none!important}
 #personnelGroups>.work-group>.work-group-head .work-group-title{transition:none!important}
-</style><style id="crew-selected-row-continuous-v11254">
+</style><style id="crew-selection-first-cell-fix-v11255">
 @media(min-width:901px){
-  /* A continuous-looking warm wash with no white selection column. */
-  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected{
-    background:rgba(245,130,32,.045)!important;
-    box-shadow:none!important;
-  }
-  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td{
-    background-color:rgba(245,130,32,.045)!important;
-    background-image:none!important;
-    border-top:1px solid rgba(245,130,32,.24)!important;
-    border-bottom:1px solid rgba(245,130,32,.24)!important;
-    box-shadow:none!important;
-  }
-  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:first-child,
-  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td.mobile-check{
-    background:#ffd9ba!important;
-    background-image:none!important;
-    border-left:5px solid #f58220!important;
-    box-shadow:none!important;
-  }
-  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(2){background:#ffddc3!important}
-  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(3){background:#ffe3ce!important}
-  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(4){background:#ffe8d8!important}
-  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(5){background:#ffedde!important}
-  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(6){background:#fff1e6!important}
-  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(7){background:#fff5ee!important}
-  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(n+8){background:#fff9f5!important}
+ /* The first data cell was display:none in v11.2.12, leaving an empty
+    column where Chrome could not paint the selection background. */
+ #personnelGroups .work-group .table-wrap table thead th:first-child,
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row] > td.mobile-check{
+   display:table-cell!important;
+   visibility:visible!important;
+   width:24px!important;
+   padding:0!important;
+ }
+ #personnelGroups .work-group .table-wrap table thead th:first-child{font-size:0!important}
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row] > td.mobile-check input{display:none!important}
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected{
+   background:transparent!important;
+   box-shadow:none!important;
+ }
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td{
+   background:#fff9f4!important;
+   background-image:none!important;
+   border-top:1px solid rgba(245,130,32,.28)!important;
+   border-bottom:1px solid rgba(245,130,32,.28)!important;
+   box-shadow:none!important;
+ }
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td:first-child{
+   background:#ffd4b1!important;
+   border-left:5px solid #f58220!important;
+ }
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td:nth-child(2){background:#ffd4b1!important}
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td:nth-child(3){background:#ffdec3!important}
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td:nth-child(4){background:#ffe6d3!important}
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td:nth-child(5){background:#ffebdc!important}
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td:nth-child(6){background:#fff0e5!important}
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td:nth-child(7){background:#fff4ec!important}
+ #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td:nth-child(n+8){background:#fff9f4!important}
 }
 </style></head>
 <body>
