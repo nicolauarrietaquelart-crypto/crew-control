@@ -7895,6 +7895,14 @@ body:has(#startScreen:not(.hidden)) #startScreen.login-card .or{color:#666!impor
  background:rgba(255,255,255,.92)!important;
  }
 }
+/* No operational controls should appear before a service is opened. */
+body:has(#startScreen:not(.hidden)) #mobileOperationalToggleV11234,
+body:has(#startScreen:not(.hidden)) #sidebarEdgeToggleBtn,
+body:has(#startScreen:not(.hidden)) #crewMobileBottomV11238,
+body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
+ display:none!important;
+ visibility:hidden!important;
+}
 </style></head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
