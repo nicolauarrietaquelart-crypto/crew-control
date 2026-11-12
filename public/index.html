@@ -7204,7 +7204,15 @@ body > .modal:not(.hidden){
 #crewMobileBottomV11238{display:none}
 @media(max-width:900px){body.control-sidebar-open #crewMobileBottomV11238{display:grid}}
 </style>
-</head>
+<style id="crew-motion-v11239">
+@media(min-width:901px){
+ .personnel-sidebar-v121.personnel-sidebar-portal-v1215{transition:transform .24s cubic-bezier(.2,.8,.2,1),opacity .2s ease!important}
+ body.control-sidebar-open main.wrap{transition:margin-left .24s cubic-bezier(.2,.8,.2,1),width .24s cubic-bezier(.2,.8,.2,1)!important}
+}
+button,.card,.dashboard-metric,.import-chip{transition:background-color .18s ease,border-color .18s ease,box-shadow .2s ease,opacity .18s ease,transform .2s cubic-bezier(.2,.8,.2,1)}
+button:active{transform:scale(.98)}
+@media(prefers-reduced-motion:reduce){button,.card,.dashboard-metric,.import-chip{transition:none!important}}
+</style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
     <span id="sidebarEdgeToggleGlyph">›</span>
@@ -10360,6 +10368,19 @@ async function parsePennyWisePdf(file){
     }));
 
     const lines=groupItemsIntoLines(items);
+    // Read reference by PDF text geometry, not by a merged whole-line string.
+    // Headers often place the next field in the same visual row.
+    if(pageNumber===1 && !meta.reference){
+      for(const row of lines){
+        const ordered=row.slice().sort((a,b)=>a.x-b.x);
+        const idx=ordered.findIndex(i=>/\\bREFERENCIA\\s*[:：]/i.test(i.text));
+        if(idx<0)continue;
+        const label=ordered[idx], inline=label.text.replace(/^.*?\\bREFERENCIA\\s*[:：]\\s*/i,'').trim();
+        const tail=ordered.slice(idx+1).filter(i=>i.x>=label.x).map(i=>i.text);
+        const candidate=[inline,...tail].join(' ').split(/\\s+(?:M[ÓO]VIL|CONTACTO|RECINTO|FECHA|DIRECCI[ÓO]N|TEL[ÉE]FONO)\\s*[:：]/i)[0].trim();
+        if(candidate && candidate.length<150){meta.reference=candidate;break;}
+      }
+    }
     const pageLayout=detectPdfColumnLayout(lines,width);
 
     for(const lineItems of lines){
@@ -10377,8 +10398,10 @@ async function parsePennyWisePdf(file){
       }
 
       if(pageNumber===1){
-        if(!meta.reference&&upper.includes('REFERENCIA:')){
-          meta.reference=extractBetween(lineText,'REFERENCIA:',['MÓVIL:','MOVIL:','CONTACTO:']);
+        if(!meta.reference&&/\\bREFERENCIA\\s*[:：]/i.test(lineText)){
+          const match=lineText.match(/\\bREFERENCIA\\s*[:：]\\s*(.*)$/i);
+          const raw=(match?.[1]||'').split(/\\s+(?:M[ÓO]VIL|CONTACTO|RECINTO|FECHA|DIRECCI[ÓO]N|TEL[ÉE]FONO)\\s*[:：]/i)[0].trim();
+          if(raw && !/^(?:SERVICIO|REFERENCIA|N[º°.]|[-–—])$/i.test(raw))meta.reference=raw;
         }
         if(!meta.venue&&upper.includes('RECINTO:')){
           meta.venue=extractBetween(lineText,'RECINTO:',['DIRECCIÓN:','DIRECCION:','TELÉFONO:','TELEFONO:']);
