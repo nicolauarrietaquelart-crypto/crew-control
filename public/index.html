@@ -7801,6 +7801,26 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  #scenariosTeamsModal #staffingTeamPlanningArea,
  #scenariosTeamsModal #staffingRows{padding-left:4px!important;padding-right:4px!important}
 }
+</style><style id="crew-remove-empty-modal-top-v116">
+/* No blank header strip: keep the close control accessible in the content corner. */
+#bulkChangesModal .bulk-changes-modal-v125,
+#incidentsBoardModal .integrated-modal-card-v129{position:relative!important}
+#bulkChangesModal .bulk-changes-head-v125,
+#incidentsBoardModal .integrated-modal-head-v129{
+ position:static!important;height:0!important;min-height:0!important;
+ padding:0!important;margin:0!important;border:0!important;
+ background:transparent!important;overflow:visible!important;
+}
+#bulkChangesModal .bulk-changes-head-v125>div,
+#incidentsBoardModal .integrated-modal-head-v129>div{display:none!important}
+#bulkChangesModal .bulk-changes-head-v125>.modal-close,
+#incidentsBoardModal .integrated-modal-head-v129>.modal-close{
+ position:absolute!important;top:14px!important;right:16px!important;
+ z-index:12!important;margin:0!important;
+ background:#f0f0f0!important;color:#111!important;
+}
+#bulkChangesModal .bulk-changes-grid-v125{padding-top:72px!important}
+#incidentsBoardModal .integrated-modal-body-v129{padding-top:60px!important}
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
