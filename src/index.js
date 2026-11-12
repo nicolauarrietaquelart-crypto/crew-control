@@ -33,15 +33,15 @@ export default {
         if(service.closed)return err('Service is closed',409);
         const bytes=await request.arrayBuffer();
         if(!bytes.byteLength||bytes.byteLength>8000000)return err('PDF vacío o superior a 8 MB',413);
-        const name=str(request.headers.get('x-pdf-filename')||'personal.pdf',180).replace(/[\\/]/g,'_');
+        const name=str(decodeURIComponent(request.headers.get('x-pdf-filename')||'personal.pdf'),180).replace(/[\\/]/g,'_');
         if(new Uint8Array(bytes).slice(0,5).some((b,i)=>b!==[37,80,68,70,45][i]))return err('El archivo no es un PDF válido',400);
-        await env.DB.prepare('INSERT INTO service_pdf_files(service_id,filename,content,updated_at) VALUES(?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(service_id) DO UPDATE SET filename=excluded.filename,content=excluded.content,updated_at=CURRENT_TIMESTAMP').bind(service.id,name,bytes).run();
+        await env.DB.prepare('INSERT INTO service_pdf_files(service_id,filename,content,updated_at) VALUES(?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(service_id) DO UPDATE SET filename=excluded.filename,content=excluded.content,updated_at=CURRENT_TIMESTAMP').bind(service.id,name,new Uint8Array(bytes)).run();
         return json({ok:true,filename:name});
       }
       if(m==='GET'){
         const row=await env.DB.prepare('SELECT filename,content FROM service_pdf_files WHERE service_id=?').bind(service.id).first();
         if(!row)return err('No hay un PDF original guardado para este servicio',404);
-        return new Response(row.content,{headers:{'content-type':'application/pdf','content-disposition':"attachment; filename*=UTF-8''"+encodeURIComponent(row.filename),'cache-control':'no-store'}});
+        return new Response(new Uint8Array(row.content),{headers:{'content-type':'application/pdf','content-disposition':"attachment; filename*=UTF-8''"+encodeURIComponent(row.filename),'cache-control':'no-store'}});
       }
     }
     if(!section&&m==='GET'&&url.searchParams.get('format')==='snapshot'){
