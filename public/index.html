@@ -7424,6 +7424,41 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  .crew-mobile-day-shift-v11256 .crew-mds-picker button{border:1px solid #e4e4e4;border-radius:9px;background:#fff;color:#111;font:inherit;font-size:12px;font-weight:700;text-align:left;padding:9px 10px}
  .crew-mobile-day-shift-v11256 .crew-mds-picker button:active{background:#fff1e6;border-color:#f58220}
 }
+</style><style id="crew-drag-target-clean-v11261">
+/* Single rounded drop target, without layered orange outlines or header stripes. */
+#personnelGroups .work-group.work-drop-target-v11227,
+#personnelGroups .work-group.touch-work-target-v11235{
+  position:relative!important;
+  isolation:isolate!important;
+  z-index:8!important;
+  border:1px solid rgba(245,130,32,.8)!important;
+  border-radius:22px!important;
+  outline:none!important;
+  outline-offset:0!important;
+  box-shadow:0 0 0 3px rgba(245,130,32,.13),0 9px 24px rgba(22,22,22,.09)!important;
+  background:#fffaf6!important;
+  transition:border-color .16s ease,box-shadow .18s ease,background-color .18s ease!important;
+}
+#personnelGroups .work-group.work-drop-target-v11227>.work-group-head,
+#personnelGroups .work-group.touch-work-target-v11235>.work-group-head{
+  border-radius:20px 20px 0 0!important;
+  outline:0!important;
+  box-shadow:none!important;
+  border:0!important;
+  background:linear-gradient(105deg,#24201e,#171619)!important;
+}
+#personnelGroups .work-group.work-drop-target-v11227:not([open])>.work-group-head,
+#personnelGroups .work-group.touch-work-target-v11235:not([open])>.work-group-head{
+  border-radius:20px!important;
+}
+#personnelGroups .work-group.work-drop-target-v11227:before,
+#personnelGroups .work-group.touch-work-target-v11235:before{
+  content:none!important;
+}
+@media(prefers-reduced-motion:reduce){
+ #personnelGroups .work-group.work-drop-target-v11227,
+ #personnelGroups .work-group.touch-work-target-v11235{transition:none!important}
+}
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
