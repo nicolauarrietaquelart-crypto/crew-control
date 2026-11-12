@@ -7216,6 +7216,35 @@ button:active{transform:scale(.98)}
 header .brand{display:flex;align-items:center;gap:14px}
 header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);height:auto;max-height:64px;object-fit:contain;flex:0 0 auto}
 @media(max-width:700px){header .brand{gap:9px}header .crew-pennywise-logo-v11240{width:clamp(100px,29vw,150px);max-height:45px}header .brand h1{font-size:13px!important}header .brand .subtitle{font-size:9px!important}}
+</style><style id="crew-group-alignment-v11241">
+/* Reserve one consistent action column for every work type, independent of title length. */
+.work-group-head .work-group-title{display:flex!important;align-items:center!important;min-width:0;flex:1 1 auto;gap:9px!important}
+.work-group-head .work-hide-btn-v11227{margin-left:auto!important;flex:0 0 34px!important;width:34px!important;height:34px!important;display:inline-grid!important;place-items:center!important;order:20}
+.work-group-head .work-group-arrow{margin:0!important;flex:0 0 20px!important;width:20px!important;height:24px!important;display:inline-grid!important;place-items:center!important;order:21;transition:transform .2s cubic-bezier(.2,.8,.2,1)!important}
+.work-group-head .work-group-arrow svg{display:block}
+.work-group[open]>.work-group-head .work-group-arrow{transform:rotate(90deg)}
+.work-group-head .work-group-meta{flex:0 0 auto!important}
+@media(min-width:901px){
+ .work-group-head .work-group-title{max-width:calc(100% - 160px)}
+ .work-group .table-wrap table{width:100%;table-layout:fixed}
+ .work-group .table-wrap thead th,.work-group .table-wrap tbody td{box-sizing:border-box;text-align:left;vertical-align:middle}
+ .work-group .table-wrap thead th:nth-child(1){width:5%}
+ .work-group .table-wrap thead th:nth-child(2){width:17%}
+ .work-group .table-wrap thead th:nth-child(3){width:20%}
+ .work-group .table-wrap thead th:nth-child(4){width:10%}
+ .work-group .table-wrap thead th:nth-child(5){width:11%}
+ .work-group .table-wrap thead th:nth-child(6){width:6%}
+ .work-group .table-wrap thead th:nth-child(7){width:6%}
+ .work-group .table-wrap thead th:nth-child(8){width:10%}
+ .work-group .table-wrap thead th:nth-child(9){width:15%}
+ .work-group .table-wrap thead th:nth-child(n+10){width:0;padding-left:0;padding-right:0}
+ .work-group .table-wrap tbody td{overflow-wrap:anywhere}
+}
+@media(max-width:900px){
+ .work-group-head .work-group-title{gap:7px!important}
+ .work-group-head .work-hide-btn-v11227{flex-basis:32px!important;width:32px!important;height:32px!important}
+ .work-group-head .work-group-meta{max-width:36%;font-size:10px}
+}
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
@@ -11645,7 +11674,7 @@ function renderPersonnel(light=false){
             title="Ocultar este tipo de servicio" aria-label="Ocultar ${escapeAttr(trabajo)}">
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.7 5.1A10.9 10.9 0 0 1 12 5c5 0 9.3 4.1 10 7-.2.9-1.2 2.5-2.7 3.9"/><path d="M6.2 6.2C4.1 7.6 2.5 9.7 2 12c.7 2.9 5 7 10 7 1.9 0 3.7-.6 5.2-1.5"/><path d="M10 10a3 3 0 0 0 4 4"/></svg>
           </button>
-          <span class="work-group-arrow">›</span>
+          <span class="work-group-arrow"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></span>
         </div>
         <div class="work-group-meta">
           <span class="meta-dot">●</span> ${includedRows.length}
