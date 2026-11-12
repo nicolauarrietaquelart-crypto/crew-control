@@ -11431,22 +11431,9 @@ function crewMobileDayShiftChooseShiftV11256(shift){
   crewMobileShiftV11256=shift;
   crewMobileRefreshScopeV11259();
 }
-let crewMobilePlanningPickerV11260=false;
-function crewMobileOpenPlanningV11260(){
-  if(!state.service||state.service.closed)return;
-  if(crewMobileWorkV11259!=='ALL'){
-    crewMobilePlanningPickerV11260=false;
-    openStaffingModal(crewMobileWorkV11259);
-    return;
-  }
-  crewMobilePlanningPickerV11260=!crewMobilePlanningPickerV11260;
-  renderCrewMobileDayShiftV11256();
-}
-function crewMobilePlanForWorkV11260(work){
-  if(!state.service||state.service.closed)return;
-  crewMobilePlanningPickerV11260=false;
-  renderCrewMobileDayShiftV11256();
-  openStaffingModal(work);
+function crewMobileOpenTeamsV11262(){
+  if(!state.service)return;
+  openScenariosTeamsModal();
 }
 function renderCrewMobileDayShiftV11256(){
   const host=document.getElementById('crewMobileDayShiftV11256');
@@ -11484,12 +11471,9 @@ function renderCrewMobileDayShiftV11256(){
   const incidentIcon='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 9v5M12 18h.01"/></svg>';
   const canPlan=!state.service.closed;
   const actions='<div class="crew-mds-actions">'+
-    '<button type="button" class="crew-mds-action crew-mds-action-plan" onclick="crewMobileOpenPlanningV11260()" '+(canPlan?'':'disabled')+'>'+planIcon+'<span>Planificar equipos</span></button>'+
+    '<button type="button" class="crew-mds-action crew-mds-action-plan" onclick="crewMobileOpenTeamsV11262()">'+planIcon+'<span>Equipos y chalecos</span></button>'+
     '<button type="button" class="crew-mds-action" onclick="openIncidentsBoardModal()">'+incidentIcon+'<span>Incidencias</span>'+(incidentCount?'<b>'+incidentCount+'</b>':'')+'</button></div>';
-  const planningPicker=crewMobilePlanningPickerV11260&&crewMobileWorkV11259==='ALL'
-    ?'<div class="crew-mds-picker"><strong>Selecciona el tipo de servicio</strong>'+
-      types.map(work=>'<button type="button" onclick="crewMobilePlanForWorkV11260('+JSON.stringify(work).replace(/"/g,'&quot;')+')">'+escapeHtml(work)+'</button>').join('')+'</div>':'';
-  host.innerHTML=dayControls+workControls+shiftControls+actions+planningPicker;
+  host.innerHTML=dayControls+workControls+shiftControls+actions;
   host.hidden=!(dayControls||workControls||shiftControls);
   const active=host.querySelector('.crew-mds-work-line .crew-mds-pill.active');
   const track=host.querySelector('.crew-mds-track');
