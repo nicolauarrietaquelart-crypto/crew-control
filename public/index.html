@@ -7620,7 +7620,18 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
 #staffingRows .crew-plan-team-open svg{margin-left:auto;flex-shrink:0;color:#777;transition:transform .2s}
 #staffingRows .crew-plan-team-open:hover{background:#fff0e2!important}
 #staffingRows .crew-plan-team-open:hover svg{transform:translateX(3px);color:#f58220}
-</style></head>
+</style><style id="crew-mobile-operational-cleanup">
+@media(max-width:900px){
+ /* These summaries already live in the fixed bottom bar. */
+ #stats.sidebar-duplicate-stats-v128,
+ #selectedCounter,
+ .personnel-sidebar-v121 .crew-guard-call,
+ #mobileOperationalDrawerV11234 .stats,
+ #mobileOperationalDrawerV11234 .selected-counter,
+ #mobileOperationalDrawerV11234 .crew-guard-call{display:none!important}
+}
+</style>
+</head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
     <span id="sidebarEdgeToggleGlyph"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span>
