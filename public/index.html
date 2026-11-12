@@ -7322,6 +7322,11 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  #personnelGroups .work-group .table-wrap tr.worker-row-selected>td:first-child{box-shadow:inset 5px 0 0 #f58220!important}
  .personnel-layout-v121 .personnel-main-v121,.personnel-layout-v121 .personnel-groups-fast{min-width:0!important}
 }
+</style><style id="crew-group-entry-stability-v11249">
+/* No position/transform animations while the service initially populates. */
+#personnelGroups>.work-group{transition:background-color .18s ease,border-color .18s ease!important;animation:none!important}
+#personnelGroups>.work-group>.work-group-head{transition:background-color .18s ease!important;animation:none!important;transform:none!important}
+#personnelGroups>.work-group>.work-group-head .work-group-title{transition:none!important}
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
@@ -11801,19 +11806,18 @@ function renderPersonnel(light=false){
     }
   });
 
-  // Stable keyed DOM reconciliation: untouched blocks never detach/repaint.
-  let cursor=host.firstElementChild;
-  nextNodes.forEach(node=>{
-    if(node===cursor){
-      cursor=cursor.nextElementSibling;
-    }else{
-      host.insertBefore(node,cursor);
+  // Reconcile in one pass: remove stale groups first, then move only
+  // nodes that are actually out of order. Avoid repeated insertions during load.
+  const wanted=new Set(nextNodes);
+  for(const child of [...host.children]){
+    if(!wanted.has(child))child.remove();
+  }
+  for(let index=nextNodes.length-1;index>=0;index--){
+    const node=nextNodes[index];
+    const following=index+1<nextNodes.length?nextNodes[index+1]:null;
+    if(node.parentElement!==host || node.nextElementSibling!==following){
+      host.insertBefore(node,following);
     }
-  });
-  while(cursor){
-    const next=cursor.nextElementSibling;
-    cursor.remove();
-    cursor=next;
   }
 
   // Restaurar selects.
