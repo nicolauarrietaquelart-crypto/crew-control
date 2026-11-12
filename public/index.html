@@ -7264,6 +7264,35 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  .mobile-operational-drawer-v11234 .sidebar-duplicate-stats-v128{display:none!important}
  .work-group-head .work-drag-handle-v11227{touch-action:none!important}
 }
+</style><style id="crew-table-mobile-fix-v11243">
+/* Hide icon before the group name, in a consistent leading position. */
+.work-group-head .work-group-title{display:flex!important;align-items:center!important;gap:8px!important;max-width:none!important;min-width:0!important}
+.work-group-head .work-hide-btn-v11227{order:0!important;margin:0 5px 0 0!important;flex:0 0 34px!important}
+.work-group-head .work-drag-handle-v11227{order:0!important;flex-shrink:0}
+.work-group-head .group-bulk-actions{order:0!important}
+.work-group-head .work-group-arrow{order:0!important;margin-left:6px!important}
+@media(min-width:901px){
+ .work-group .table-wrap{overflow-x:auto!important}
+ .work-group .table-wrap table{table-layout:fixed!important;width:100%!important;min-width:1100px!important;border-collapse:separate;border-spacing:0}
+ .work-group .table-wrap thead th:nth-child(1){width:4%!important}
+ .work-group .table-wrap thead th:nth-child(2){width:15%!important}
+ .work-group .table-wrap thead th:nth-child(3){width:17%!important}
+ .work-group .table-wrap thead th:nth-child(4){width:12%!important}
+ .work-group .table-wrap thead th:nth-child(5){width:11%!important}
+ .work-group .table-wrap thead th:nth-child(6){width:6%!important}
+ .work-group .table-wrap thead th:nth-child(7){width:7%!important}
+ .work-group .table-wrap thead th:nth-child(8){width:10%!important}
+ .work-group .table-wrap thead th:nth-child(9){width:12%!important}
+ .work-group .table-wrap thead th:nth-child(10){width:3%!important}
+ .work-group .table-wrap thead th:nth-child(11){width:3%!important}
+ .work-group .table-wrap thead th,.work-group .table-wrap tbody td{padding:8px 6px!important;overflow:hidden;text-overflow:ellipsis;white-space:normal;vertical-align:middle}
+ .work-group .table-wrap tbody td select{width:100%;min-width:0}
+ .work-group .table-wrap tbody td .role{white-space:normal;overflow-wrap:anywhere}
+}
+@media(max-width:900px){
+ #mobileOperationalDrawerV11234,#mobileOperationalToggleV11234{display:none!important}
+ #crewMobileBottomV11238{z-index:1001}
+}
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
@@ -7295,7 +7324,7 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  <div class="crew-metric"><strong id="crewBottomContact">0</strong><small>Contactados</small></div>
  <div class="crew-metric"><strong id="crewBottomAbsent">0</strong><small>Ausentes</small></div>
  <div class="crew-metric"><strong id="crewBottomUnassigned">0</strong><small>Sin equipo</small></div>
- <button id="crewMobileSettingsV11238" type="button" onclick="toggleMobileOperationalPanelV11234()" aria-label="Abrir ajustes operativos" aria-controls="mobileOperationalDrawerV11234"><svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.99l-1.77 1.77a1.8 1.8 0 0 0-1.99-.36l-1.08.45-.35 2.15h-2.5l-.35-2.15-1.08-.45a1.8 1.8 0 0 0-1.99.36l-1.77-1.77A1.8 1.8 0 0 0 7.24 15l-.45-1.08-2.15-.35v-2.5l2.15-.35L7.24 9a1.8 1.8 0 0 0-.36-1.99l1.77-1.77a1.8 1.8 0 0 0 1.99.36l1.08-.45.35-2.15h2.5l.35 2.15 1.08.45a1.8 1.8 0 0 0 1.99-.36l1.77 1.77A1.8 1.8 0 0 0 19.4 9l.45 1.08 2.15.35v2.5l-2.15.35Z"/></svg></button>
+ <button id="crewMobileSettingsV11238" type="button" onclick="openBulkChangesModal()" aria-label="Abrir edición masiva" aria-controls="mobileOperationalDrawerV11234"><svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.99l-1.77 1.77a1.8 1.8 0 0 0-1.99-.36l-1.08.45-.35 2.15h-2.5l-.35-2.15-1.08-.45a1.8 1.8 0 0 0-1.99.36l-1.77-1.77A1.8 1.8 0 0 0 7.24 15l-.45-1.08-2.15-.35v-2.5l2.15-.35L7.24 9a1.8 1.8 0 0 0-.36-1.99l1.77-1.77a1.8 1.8 0 0 0 1.99.36l1.08-.45.35-2.15h2.5l.35 2.15 1.08.45a1.8 1.8 0 0 0 1.99-.36l1.77 1.77A1.8 1.8 0 0 0 19.4 9l.45 1.08 2.15.35v2.5l-2.15.35Z"/></svg></button>
 </nav>
 <main class="wrap">
   <section id="startScreen" class="card login-card">
@@ -11665,6 +11694,12 @@ function renderPersonnel(light=false){
             ondragstart="workDragStart(event,'${escapeJsString(trabajo)}')"
             ondragend="workDragEnd()"
             title="Arrastrar">⋮⋮</span>
+          <button type="button"
+            class="work-hide-btn-v11227 work-hide-icon-v11237"
+            onclick="event.preventDefault();event.stopPropagation();hideWorkType('${escapeJsString(trabajo)}')"
+            title="Ocultar este tipo de servicio" aria-label="Ocultar ${escapeAttr(trabajo)}">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.7 5.1A10.9 10.9 0 0 1 12 5c5 0 9.3 4.1 10 7-.2.9-1.2 2.5-2.7 3.9"/><path d="M6.2 6.2C4.1 7.6 2.5 9.7 2 12c.7 2.9 5 7 10 7 1.9 0 3.7-.6 5.2-1.5"/><path d="M10 10a3 3 0 0 0 4 4"/></svg>
+          </button>
           ${escapeHtml(trabajo)}
           ${readinessHtml}
           <span class="group-bulk-actions">
@@ -11688,12 +11723,6 @@ function renderPersonnel(light=false){
               onclick="event.preventDefault();event.stopPropagation();moveWorkType('${escapeJsString(trabajo)}',1)"
               title="Bajar">↓</button>
           </span>
-          <button type="button"
-            class="work-hide-btn-v11227 work-hide-icon-v11237"
-            onclick="event.preventDefault();event.stopPropagation();hideWorkType('${escapeJsString(trabajo)}')"
-            title="Ocultar este tipo de servicio" aria-label="Ocultar ${escapeAttr(trabajo)}">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.7 5.1A10.9 10.9 0 0 1 12 5c5 0 9.3 4.1 10 7-.2.9-1.2 2.5-2.7 3.9"/><path d="M6.2 6.2C4.1 7.6 2.5 9.7 2 12c.7 2.9 5 7 10 7 1.9 0 3.7-.6 5.2-1.5"/><path d="M10 10a3 3 0 0 0 4 4"/></svg>
-          </button>
           <span class="work-group-arrow"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></span>
         </div>
         <div class="work-group-meta">
