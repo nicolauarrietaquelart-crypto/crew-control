@@ -7598,16 +7598,7 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
     <div id="closedBanner" class="closed-banner">
       <div><strong>SERVICIO CERRADO</strong><div id="closedBannerText" class="hint" style="color:#ddd;margin-top:3px"></div></div>
       <div class="service-actions">
-        <details id="crewCloseNotify" class="crew-close-notify">
-          <summary>Notificar del cierre a: <span aria-hidden="true">⌄</span></summary>
-          <div class="crew-close-notify-people">
-            <button type="button" onclick="notifyClosedServiceWhatsApp('alvaro')">Álvaro</button>
-            <button type="button" onclick="notifyClosedServiceWhatsApp('fran')">Fran</button>
-            <button type="button" onclick="notifyClosedServiceWhatsApp('carlos')">Carlos</button>
-            <button type="button" onclick="notifyClosedServiceWhatsApp('blai')">Blai</button>
-          </div>
-        </details>
-        <button class="secondary" onclick="requestReopenService()">Reabrir servicio</button>
+        <button class="secondary" type="button" onclick="openCrewCloseNotify()" title="Notificar cierre por WhatsApp">Notificar cierre</button>
       </div>
     </div>
 
@@ -7677,6 +7668,9 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
         <aside class="personnel-sidebar-v121">
           <div class="section-title personnel-sidebar-title-v121">
             <h2>Control operativo</h2>
+            <a class="crew-guard-call" href="tel:+34670514308" title="Llamar a guardia de Penny: 670 514 308" aria-label="Llamar a guardia de Penny">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 3.09 5.18 2 2 0 0 1 5.08 3h3a2 2 0 0 1 2 1.72l.47 3a2 2 0 0 1-.57 1.73l-1.3 1.3a16 16 0 0 0 4.57 4.57l1.3-1.3a2 2 0 0 1 1.73-.57l3 .47A2 2 0 0 1 22 16.92Z"/></svg>
+            </a>
             <button type="button" id="sidebarCollapseBtn" class="sidebar-collapse-toggle-v11224" onclick="toggleOperationalSidebar()" title="Ocultar panel" aria-label="Ocultar panel">
               <span id="sidebarCollapseGlyph"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6"/><path d="m19 6-6 6 6 6"/></svg></span>
             </button>
@@ -9476,9 +9470,21 @@ async function crewD1Dispatch(method,args){
   }
   if(method==='closeService'||method==='reopenService'){
     const closed=method==='closeService';
-    const response=await fetch('/api/services/'+encodeURIComponent(code),{method:'PATCH',headers:{'content-type':'application/json','x-service-code':code},body:JSON.stringify({closed})});
-    const result=await response.json();if(!response.ok)throw new Error(result.error||'No se pudo cambiar el estado');
-    return {ok:true,service:{...state.service,closed},closedAt:closed?new Date().toISOString():''};
+    // Store the state in the authoritative D1 snapshot, not only in the SQL metadata row.
+    // Wait for queued edits before closing to avoid a stale snapshot reopening the service.
+    await crewSaveQueue;
+    const current=await crewApi(code);
+    const remote=current.service;
+    if(!remote)throw new Error('No se ha encontrado el servicio');
+    const closedAt=closed?new Date().toISOString():'';
+    const next={...remote,closed,closedAt,_syncRevision:remote._syncRevision};
+    const result=await crewApi(code,'PUT',{service:next,revision:String(remote._syncRevision||'')});
+    if(state.service?.code===code){
+      state.service.closed=closed;
+      state.service.closedAt=closedAt;
+      state.service._syncRevision=result.revision;
+    }
+    return {ok:true,service:next,closedAt};
   }
   if(method==='saveTeamRequirements'){
     const [code,serviceDate,trabajo,requirements,noTeams]=args;
@@ -14870,8 +14876,7 @@ function applyClosedState(){
     const when=state.service.closedAt?new Date(state.service.closedAt).toLocaleString('es-ES'):'';
     document.getElementById('closedBannerText').textContent=
       `Cerrado ${when}. Los cambios están bloqueados.`;
-    const notify=document.getElementById('crewCloseNotify');
-    if(notify)notify.open=true;
+
   }
 }
 
@@ -15009,7 +15014,8 @@ function performCloseService(){
       renderPersonnel();
       renderIncidents();
       renderAudit();
-      setSaveState('Servicio cerrado · puedes notificar por WhatsApp','saved');
+      setSaveState('Guardado','saved');
+      openCrewCloseNotify();
     })
     .withFailureHandler(err=>{
       alert(errorMessage(err));
@@ -15037,7 +15043,7 @@ function requestReopenService(){
 
   backend.run
     .withSuccessHandler(()=>{
-      setSaveState('Servicio reabierto','saved');
+      setSaveState('Guardado','saved');
     })
     .withFailureHandler(err=>{
       state.service.closed=previous.closed;
@@ -15723,24 +15729,47 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
 </script>
 
 <style id="crew-close-notify-style">
-.crew-close-notify{position:relative;color:#111;min-width:210px}
-.crew-close-notify summary{list-style:none;cursor:pointer;background:#f58220;color:#111;padding:11px 14px;border-radius:10px;font-weight:800;display:flex;gap:12px;align-items:center;justify-content:space-between}
-.crew-close-notify summary::-webkit-details-marker{display:none}
-.crew-close-notify[open] summary span{transform:rotate(180deg)}
-.crew-close-notify-people{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px;margin-top:6px;background:#fff;border:1px solid #ddd;border-radius:12px;box-shadow:0 8px 25px rgba(0,0,0,.15)}
-.crew-close-notify-people button{background:#f4f4f4;color:#111;border-radius:8px;font-weight:750;min-height:42px}
-.crew-close-notify-people button:hover{background:#ffe5cf}
-@media(max-width:600px){.crew-close-notify{width:100%}.crew-close-notify-people{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.crew-guard-call{margin-left:auto;display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:38px;border-radius:11px;background:#f58220;color:#111;text-decoration:none;transition:transform .2s,background .2s}
+.crew-guard-call:hover{background:#ff9c47;transform:translateY(-1px)}
+#closedBanner{background:rgba(25,25,27,.94)!important;color:#fff!important;align-items:center;gap:12px}
+#closedBanner .service-actions{margin-left:auto}
+.crew-notify-overlay{position:fixed;inset:0;z-index:25000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(12,12,16,.34);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);animation:crewNotifyFade .22s ease}
+.crew-notify-overlay.hidden{display:none!important}
+.crew-notify-card{width:min(420px,100%);padding:23px;background:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.9);border-radius:24px;box-shadow:0 25px 75px rgba(0,0,0,.22);color:#111;animation:crewNotifyEnter .25s cubic-bezier(.2,.8,.2,1)}
+.crew-notify-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.crew-notify-top h2{font-size:19px;margin:0;font-weight:800}
+.crew-notify-top button{width:36px;min-width:36px;height:36px;min-height:36px;padding:0;background:rgba(0,0,0,.06);border-radius:50%}
+.crew-notify-card p{font-size:13px;color:#666;margin:8px 0 18px}
+.crew-notify-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.crew-notify-grid button{min-height:58px;border-radius:14px;background:#f58220;color:#111;font-size:15px;font-weight:800;transition:transform .15s,background .15s}
+.crew-notify-grid button:hover{background:#ff9b43;transform:translateY(-2px)}
+@keyframes crewNotifyFade{from{opacity:0}to{opacity:1}}
+@keyframes crewNotifyEnter{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@media(max-width:600px){.crew-notify-card{padding:20px;border-radius:21px}.crew-notify-grid button{min-height:54px}}
 </style>
+<div id="crewNotifyOverlay" class="crew-notify-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="crewNotifyTitle" onclick="if(event.target===this)closeCrewCloseNotify()">
+ <div class="crew-notify-card">
+  <div class="crew-notify-top"><h2 id="crewNotifyTitle">Notificar del cierre a:</h2><button type="button" onclick="closeCrewCloseNotify()" aria-label="Cerrar ventana"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <p>Servicio cerrado. Selecciona a quién quieres avisar por WhatsApp.</p>
+  <div class="crew-notify-grid">
+   <button type="button" onclick="notifyClosedServiceWhatsApp('alvaro')">Álvaro</button>
+   <button type="button" onclick="notifyClosedServiceWhatsApp('fran')">Fran</button>
+   <button type="button" onclick="notifyClosedServiceWhatsApp('carlos')">Carlos</button>
+   <button type="button" onclick="notifyClosedServiceWhatsApp('blai')">Blai</button>
+  </div>
+ </div>
+</div>
 <script>
+function openCrewCloseNotify(){if(state.service?.closed)document.getElementById('crewNotifyOverlay')?.classList.remove('hidden')}
+function closeCrewCloseNotify(){document.getElementById('crewNotifyOverlay')?.classList.add('hidden')}
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closeCrewCloseNotify()});
 function notifyClosedServiceWhatsApp(person){
   if(!state.service?.closed)return;
   const phones={alvaro:'34664690034',fran:'34673642431',carlos:'34626564811',blai:'34671455729'};
   const phone=phones[person];
   if(!phone)return;
   const message='Hola, he introducido ya los horarios en Crew Control y he cerrado el servicio, puedes consultarlo en la aplicación.';
-  const url='https://wa.me/'+phone+'?text='+encodeURIComponent(message);
-  window.open(url,'_blank','noopener,noreferrer');
+  window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(message),'_blank','noopener,noreferrer');
 }
 </script>
 </body>
