@@ -15339,44 +15339,6 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
 </script>
-<style id="crew-custom-select-v11251">
-.cc-select-wrap{position:relative!important;display:inline-block;vertical-align:middle;min-width:0;max-width:100%}
-.cc-select-wrap.cc-full{display:block;width:100%}
-.cc-select-wrap>select.cc-native{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;opacity:0!important;pointer-events:none!important;z-index:-1!important}
-.cc-select-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:38px;padding:8px 11px;border:1px solid #dedee1;border-radius:12px;background:#fff;color:#181818;font:inherit;text-align:left;cursor:pointer;transition:background .16s,border-color .16s,box-shadow .16s}
-.cc-select-trigger:hover{background:#fff4e9;border-color:#f5a36a;box-shadow:0 0 0 2px rgba(245,130,32,.08)}
-.cc-select-trigger:focus-visible,.cc-select-wrap.cc-open .cc-select-trigger{outline:none;border-color:#f58220;box-shadow:0 0 0 3px rgba(245,130,32,.14)}
-.cc-select-trigger:disabled{opacity:.55;cursor:not-allowed}
-.cc-select-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cc-select-chevron{width:15px;height:15px;flex:none;transition:transform .18s}
-.cc-select-wrap.cc-open .cc-select-chevron{transform:rotate(180deg)}
-.cc-select-menu{position:fixed;z-index:2147483000;display:none;overflow:auto;max-height:min(320px,48dvh);padding:5px;border:1px solid #e5e5e8;border-radius:13px;background:#fff;box-shadow:0 14px 38px rgba(0,0,0,.16);overscroll-behavior:contain}
-.cc-select-menu.cc-visible{display:block}
-.cc-select-option{display:block;width:100%;border:0;border-radius:8px;background:transparent;color:#191919;padding:9px 11px;text-align:left;font:inherit;font-size:13px;cursor:pointer;white-space:normal;overflow-wrap:anywhere}
-.cc-select-option:hover,.cc-select-option.cc-active{background:#fff0e2;color:#b94d00}
-.cc-select-option[aria-selected="true"]{background:#ffe7d1;color:#a84500;font-weight:700}
-.cc-select-option:disabled{opacity:.45;cursor:not-allowed}
-.cc-select-optgroup{padding:7px 10px 4px;font-size:11px;font-weight:800;color:#777}
-@media(max-width:900px){.cc-select-option{min-height:40px;font-size:14px}.cc-select-trigger{min-height:38px}}
-</style>
-<script id="crew-custom-select-script-v11251">
-(()=>{
- let active=null;const processed=new WeakMap();
- const chevron='<svg class="cc-select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
- function close(){if(!active)return;const {wrap,menu}=active;wrap.classList.remove('cc-open');menu.classList.remove('cc-visible');menu.remove();active=null}
- function position(wrap,menu){const r=wrap.getBoundingClientRect(),width=Math.max(r.width,160),left=Math.max(8,Math.min(r.left,innerWidth-width-8));menu.style.width=width+'px';menu.style.left=left+'px';menu.style.maxHeight=Math.min(320,Math.max(120,innerHeight-32))+'px';const below=innerHeight-r.bottom,above=r.top;menu.style.top=(below>=Math.min(220,menu.scrollHeight)||below>=above?r.bottom+5:Math.max(8,r.top-Math.min(menu.scrollHeight,320)-5))+'px'}
- function sync(select){const wrap=processed.get(select);if(!wrap)return;const trigger=wrap.querySelector('.cc-select-trigger'),label=wrap.querySelector('.cc-select-label');if(!trigger)return;trigger.disabled=select.disabled;label.textContent=select.selectedOptions[0]?.textContent?.trim()||select.options[select.selectedIndex]?.textContent?.trim()||'Seleccionar';trigger.setAttribute('aria-label',select.getAttribute('aria-label')||label.textContent);if(active?.wrap===wrap)close()}
- function open(select,wrap){if(active?.wrap===wrap){close();return}close();if(select.disabled)return;const menu=document.createElement('div');menu.className='cc-select-menu';menu.setAttribute('role','listbox');menu.setAttribute('aria-label',select.getAttribute('aria-label')||'Opciones');let index=0;
- for(const child of select.children){const group=child.tagName==='OPTGROUP'?child:null;if(group){const heading=document.createElement('div');heading.className='cc-select-optgroup';heading.textContent=group.label;menu.append(heading)}
- for(const opt of (group?group.children:[child])){if(opt.tagName!=='OPTION')continue;const btn=document.createElement('button');btn.type='button';btn.className='cc-select-option';btn.setAttribute('role','option');btn.setAttribute('aria-selected',String(opt.selected));btn.disabled=opt.disabled||!!group?.disabled;btn.textContent=opt.textContent;const n=index++;btn.addEventListener('click',()=>{if(btn.disabled)return;select.selectedIndex=n;select.dispatchEvent(new Event('input',{bubbles:true}));select.dispatchEvent(new Event('change',{bubbles:true}));sync(select);close();wrap.querySelector('.cc-select-trigger')?.focus()});menu.append(btn)}}
- document.body.append(menu);active={wrap,menu};wrap.classList.add('cc-open');menu.classList.add('cc-visible');position(wrap,menu);menu.querySelector('[aria-selected="true"]')?.scrollIntoView({block:'nearest'})}
- function upgrade(select){if(processed.has(select)||select.multiple||select.size>1||select.closest('.cc-select-wrap')||select.hasAttribute('data-native-select'))return;if(select.closest('[contenteditable="true"]'))return;const wrap=document.createElement('span');wrap.className='cc-select-wrap';const width=getComputedStyle(select).width;if(getComputedStyle(select).display==='block'||getComputedStyle(select).width==='100%')wrap.classList.add('cc-full');else if(width!=='auto'&&parseFloat(width)>0)wrap.style.width=width;select.parentNode.insertBefore(wrap,select);wrap.append(select);select.classList.add('cc-native');const trigger=document.createElement('button');trigger.type='button';trigger.className='cc-select-trigger';trigger.innerHTML='<span class="cc-select-label"></span>'+chevron;wrap.append(trigger);processed.set(select,wrap);trigger.addEventListener('click',()=>open(select,wrap));trigger.addEventListener('keydown',e=>{if(['ArrowDown','ArrowUp',' ','Enter'].includes(e.key)){e.preventDefault();open(select,wrap)}else if(e.key==='Escape')close()});select.addEventListener('change',()=>sync(select));sync(select)}
- function scan(){document.querySelectorAll('select:not(.cc-native)').forEach(upgrade);document.querySelectorAll('select.cc-native').forEach(sel=>{if(!sel.isConnected)return;const wrap=processed.get(sel);if(wrap&&wrap.isConnected)sync(sel)})}
- let pending=false;const schedule=()=>{if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;scan()})};
- document.addEventListener('pointerdown',e=>{if(active&&!active.wrap.contains(e.target)&&!active.menu.contains(e.target))close()},true);
- document.addEventListener('keydown',e=>{if(e.key==='Escape')close();if(!active)return;const opts=[...active.menu.querySelectorAll('.cc-select-option:not(:disabled)')];if(!opts.length)return;if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const current=opts.indexOf(document.activeElement);opts[(current+(e.key==='ArrowDown'?1:-1)+opts.length)%opts.length].focus()}if(e.key==='Enter'&&active.menu.contains(document.activeElement)){e.preventDefault();document.activeElement.click()}});
- window.addEventListener('resize',close);window.addEventListener('scroll',close,true);
- const start=()=>{scan();new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true})};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
-})();
-</script></body>
+
+</body>
 </html>
