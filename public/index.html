@@ -7363,6 +7363,19 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td:nth-child(7){background:#fff4ec!important}
  #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td:nth-child(n+8){background:#fff9f4!important}
 }
+</style><style id="crew-mobile-day-shift-style-v11256">
+.crew-mobile-day-shift-v11256{display:none}
+@media(max-width:900px){
+ .crew-mobile-day-shift-v11256{display:block;background:#fff;border:1px solid #e8e8e8;border-radius:16px;margin:0 0 12px;padding:10px;position:relative;z-index:1}
+ .crew-mobile-day-shift-v11256 .crew-mds-line{display:flex;align-items:center;gap:7px;overflow-x:auto;scrollbar-width:none;padding:2px 0;overscroll-behavior-x:contain}
+ .crew-mobile-day-shift-v11256 .crew-mds-line::-webkit-scrollbar{display:none}
+ .crew-mobile-day-shift-v11256 .crew-mds-line+.crew-mds-line{margin-top:7px;padding-top:8px;border-top:1px solid #f0f0f0}
+ .crew-mobile-day-shift-v11256 .crew-mds-label{font-size:10px;font-weight:800;color:#777;flex:none;min-width:34px;text-transform:uppercase}
+ .crew-mobile-day-shift-v11256 .crew-mds-pill{border:1px solid #e0e0e0;border-radius:11px;min-height:35px;padding:7px 11px;background:#f9f9fa;color:#171717;font:inherit;font-size:12px;font-weight:750;white-space:nowrap;flex:none;transition:background .16s ease,border-color .16s ease}
+ .crew-mobile-day-shift-v11256 .crew-mds-pill.active{background:#171717;color:#fff;border-color:#171717}
+ .crew-mobile-day-shift-v11256 .crew-mds-pill:not(.active):hover{background:#fff1e5;border-color:#f58220}
+ .crew-mobile-day-shift-v11256 .crew-mds-count{opacity:.7;font-size:10px;margin-left:3px}
+}
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
@@ -7607,6 +7620,7 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
 
         <div class="personnel-main-v121">
           <div id="hiddenWorkTypesBar" class="hidden-work-types-bar-v11227"></div>
+          <div id="crewMobileDayShiftV11256" class="crew-mobile-day-shift-v11256" aria-label="Filtros de día y turno"></div>
           <div id="personnelGroups" class="personnel-groups-fast"></div>
         </div>
       </div>
@@ -9828,6 +9842,7 @@ function openServiceData(service){
   const initialPdfStatus=document.getElementById('initialPdfStatus');
   if(initialPdfStatus){initialPdfStatus.innerHTML='';initialPdfStatus.className='status-box';}
   const previousDay=state.service?.code===service.code?state.activeDay:null;
+  if(state.service?.code!==service.code)crewMobileShiftV11256='ALL';
   state.service=service;
   state.service.workOrder=Array.isArray(state.service.workOrder)?state.service.workOrder.map(String):[];
   state.service.hiddenWorkTypes=Array.isArray(state.service.hiddenWorkTypes)?state.service.hiddenWorkTypes.map(String):[];
@@ -9911,6 +9926,7 @@ function finalizeCloseServiceView(){
   const initialStatus=document.getElementById('initialPdfStatus');
   if(initialStatus){initialStatus.innerHTML='';initialStatus.className='status-box';}
   state.activeDay='';
+  crewMobileShiftV11256='ALL';
   state.selected.clear();
   state.pendingWorkerUpdates={};
   document.getElementById('serviceCodeInput').value='';
@@ -11263,6 +11279,7 @@ function renderDays(){
 
 function setActiveDay(day){
   state.activeDay=day;
+  crewMobileShiftV11256='ALL';
   state.selected.clear();
   state.workTeamFilters={};
   state.workSorts={};
@@ -11273,6 +11290,37 @@ function setActiveDay(day){
   renderPersonnel();
 }
 
+let crewMobileShiftV11256='ALL';
+function crewMobileDayShiftChooseDayV11256(day){
+  crewMobileShiftV11256='ALL';
+  setActiveDay(day);
+}
+function crewMobileDayShiftChooseShiftV11256(shift){
+  crewMobileShiftV11256=shift;
+  state.selected.clear();
+  renderPersonnel(true);
+}
+function renderCrewMobileDayShiftV11256(){
+  const host=document.getElementById('crewMobileDayShiftV11256');
+  if(!host||!state.service)return;
+  const days=getDays();
+  const rows=state.service.workers.filter(w=>w.included&&(w.serviceDate||'SIN FECHA')===state.activeDay);
+  const shifts=[...new Set(rows.map(workerEntryTime))].sort((a,b)=>{
+    if(a==='SIN HORA')return 1;
+    if(b==='SIN HORA')return -1;
+    return clockToMinutes(a)-clockToMinutes(b);
+  });
+  if(crewMobileShiftV11256!=='ALL'&&!shifts.includes(crewMobileShiftV11256))crewMobileShiftV11256='ALL';
+  const dayControls=days.length>1?'<div class="crew-mds-line"><span class="crew-mds-label">Día</span>'+
+    days.map((day,index)=>'<button type="button" class="crew-mds-pill '+(day===state.activeDay?'active':'')+'" onclick="crewMobileDayShiftChooseDayV11256('+JSON.stringify(day).replace(/"/g,'&quot;')+')">'+escapeHtml(dayLabel(day))+' <span class="crew-mds-count">'+rowsForCrewDayV11256(day)+'</span></button>').join('')+'</div>':'';
+  const shiftControls=shifts.length>1?'<div class="crew-mds-line"><span class="crew-mds-label">Turno</span>'+
+    ['ALL',...shifts].map(shift=>'<button type="button" class="crew-mds-pill '+(crewMobileShiftV11256===shift?'active':'')+'" onclick="crewMobileDayShiftChooseShiftV11256('+JSON.stringify(shift).replace(/"/g,'&quot;')+')">'+escapeHtml(shift==='ALL'?'Todos':shift)+' <span class="crew-mds-count">'+(shift==='ALL'?rows.length:rows.filter(w=>workerEntryTime(w)===shift).length)+'</span></button>').join('')+'</div>':'';
+  host.innerHTML=dayControls+shiftControls;
+  host.hidden=!(dayControls||shiftControls);
+}
+function rowsForCrewDayV11256(day){
+  return state.service.workers.filter(w=>w.included&&(w.serviceDate||'SIN FECHA')===day).length;
+}
 function workersForActiveDay(){
   if(!state.service)return[];
   const q=normalize(document.getElementById('searchWorker').value);
@@ -11281,6 +11329,7 @@ function workersForActiveDay(){
   return state.service.workers.filter(w=>{
     if(!w.included)return false;
     if((w.serviceDate||'SIN FECHA')!==state.activeDay)return false;
+    if(window.matchMedia('(max-width: 900px)').matches && crewMobileShiftV11256!=='ALL' && workerEntryTime(w)!==crewMobileShiftV11256)return false;
 
     if(quickFilter==='RESERVA'&&!w.isReserve)return false;
     if(quickFilter==='SIN_EQUIPO'&&(w.teamId||workHasNoTeams(w.trabajo)))return false;
@@ -11713,6 +11762,7 @@ function renderPersonnel(light=false){
   }
 
   const host=document.getElementById('personnelGroups');
+  renderCrewMobileDayShiftV11256();
   const workers=workersForActiveDay();
 
   if(!workers.length){
