@@ -7586,9 +7586,6 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
         <button id="controlViewBtn" class="secondary control-toggle icon-btn" onclick="toggleControlView()" title="Vista control">
           <svg viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg><span>Control</span>
         </button>
-        <button class="secondary icon-btn" onclick="requestDuplicateService()" title="Duplicar estructura">
-          <svg viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"></rect><path d="M5 16H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1"></path></svg><span>Duplicar</span>
-        </button>
         <button id="closeServiceBtn" class="close-service-btn icon-btn" onclick="requestCloseService()" title="Cerrar servicio">
           <svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg><span>Cerrar</span>
         </button>
@@ -7601,7 +7598,15 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
     <div id="closedBanner" class="closed-banner">
       <div><strong>SERVICIO CERRADO</strong><div id="closedBannerText" class="hint" style="color:#ddd;margin-top:3px"></div></div>
       <div class="service-actions">
-        <a id="finalPdfLink" class="file-button primary" target="_blank" style="text-decoration:none">Abrir PDF final</a>
+        <details id="crewCloseNotify" class="crew-close-notify">
+          <summary>Notificar del cierre a: <span aria-hidden="true">⌄</span></summary>
+          <div class="crew-close-notify-people">
+            <button type="button" onclick="notifyClosedServiceWhatsApp('alvaro')">Álvaro</button>
+            <button type="button" onclick="notifyClosedServiceWhatsApp('fran')">Fran</button>
+            <button type="button" onclick="notifyClosedServiceWhatsApp('carlos')">Carlos</button>
+            <button type="button" onclick="notifyClosedServiceWhatsApp('blai')">Blai</button>
+          </div>
+        </details>
         <button class="secondary" onclick="requestReopenService()">Reabrir servicio</button>
       </div>
     </div>
@@ -14864,10 +14869,9 @@ function applyClosedState(){
   if(closed){
     const when=state.service.closedAt?new Date(state.service.closedAt).toLocaleString('es-ES'):'';
     document.getElementById('closedBannerText').textContent=
-      `Cerrado ${when}. Los cambios están bloqueados.${state.service.finalPdfUrl?'':' Generando PDF final…'}`;
-    const link=document.getElementById('finalPdfLink');
-    link.href=state.service.finalPdfUrl||'#';
-    link.style.display=state.service.finalPdfUrl?'inline-flex':'none';
+      `Cerrado ${when}. Los cambios están bloqueados.`;
+    const notify=document.getElementById('crewCloseNotify');
+    if(notify)notify.open=false;
   }
 }
 
@@ -14957,7 +14961,7 @@ function requestCloseService(){
 
   let msg=
     `¿Cerrar definitivamente el servicio ${state.service.code}?\n\n`+
-    `Se guardarán los cambios y el servicio se bloqueará inmediatamente. El PDF final se generará justo después.`;
+    `Se guardarán los cambios y el servicio se bloqueará. Después podrás notificar el cierre por WhatsApp.`;
 
   if(warnings.length){
     msg+=`\n\nREVISIÓN ANTES DEL CIERRE:\n• ${warnings.join('\n• ')}`;
@@ -14997,42 +15001,15 @@ function performCloseService(){
 
   backend.run
     .withSuccessHandler(result=>{
-      // El servicio ya queda cerrado aquí; no esperamos al PDF.
       state.service.closed=true;
       state.service.closedAt=result.closedAt||new Date().toISOString();
       state.service.finalPdfId='';
-      state.service.finalPdfUrl=result.pdfUrl||'';
-
+      state.service.finalPdfUrl='';
       applyClosedState();
       renderPersonnel();
       renderIncidents();
-
-      if(result.pdfUrl){
-        state.service.finalPdfUrl=result.pdfUrl;
-        applyClosedState();
-        setSaveState('Servicio cerrado','saved');
-        return;
-      }
-
-      setSaveState('Servicio cerrado · generando PDF…','saving');
-
-      backend.run
-        .withSuccessHandler(pdf=>{
-          if(pdf?.pdfUrl){
-            state.service.finalPdfId=pdf.pdfId||'';
-            state.service.finalPdfUrl=pdf.pdfUrl;
-            applyClosedState();
-          }
-
-          renderAudit();
-          setSaveState('Servicio cerrado · PDF listo','saved');
-        })
-        .withFailureHandler(err=>{
-          // El servicio sigue correctamente cerrado aunque falle el PDF.
-          setSaveState('Servicio cerrado · PDF pendiente','saved');
-          console.error('Error generando PDF final:',errorMessage(err));
-        })
-        .generateClosedServicePdf(code);
+      renderAudit();
+      setSaveState('Servicio cerrado · puedes notificar por WhatsApp','saved');
     })
     .withFailureHandler(err=>{
       alert(errorMessage(err));
@@ -15745,5 +15722,26 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
 })();
 </script>
 
+<style id="crew-close-notify-style">
+.crew-close-notify{position:relative;color:#111;min-width:210px}
+.crew-close-notify summary{list-style:none;cursor:pointer;background:#f58220;color:#111;padding:11px 14px;border-radius:10px;font-weight:800;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.crew-close-notify summary::-webkit-details-marker{display:none}
+.crew-close-notify[open] summary span{transform:rotate(180deg)}
+.crew-close-notify-people{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px;margin-top:6px;background:#fff;border:1px solid #ddd;border-radius:12px;box-shadow:0 8px 25px rgba(0,0,0,.15)}
+.crew-close-notify-people button{background:#f4f4f4;color:#111;border-radius:8px;font-weight:750;min-height:42px}
+.crew-close-notify-people button:hover{background:#ffe5cf}
+@media(max-width:600px){.crew-close-notify{width:100%}.crew-close-notify-people{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+<script>
+function notifyClosedServiceWhatsApp(person){
+  if(!state.service?.closed)return;
+  const phones={alvaro:'34664690034',fran:'34673642431',carlos:'34626564811',blai:'34671455729'};
+  const phone=phones[person];
+  if(!phone)return;
+  const message='Hola, he introducido ya los horarios en Crew Control y he cerrado el servicio, puedes consultarlo en la aplicación.';
+  const url='https://wa.me/'+phone+'?text='+encodeURIComponent(message);
+  window.open(url,'_blank','noopener,noreferrer');
+}
+</script>
 </body>
 </html>
