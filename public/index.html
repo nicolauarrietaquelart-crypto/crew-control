@@ -13342,7 +13342,7 @@ function closeStaffingModal(){
   modal.classList.add('hidden');
   if(crewTeamsEmbeddedStaffV11263){
     const container=document.getElementById('crewTeamsPlanningFormV11263');
-    const card=container?.querySelector('.modal-card');
+    const card=container?.querySelector('.crew-embedded-planning-content, .modal-card');
     if(card){
       card.classList.remove('crew-embedded-planning-content');
       card.classList.add('modal-card');
@@ -15977,9 +15977,14 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
     set(card.querySelector('.modal-grid'),{'min-height':'0','overflow-y':'auto'});
    }
    if(modal.id==='scenariosTeamsModal'){
-    set(card,{'max-height':mobile?'calc(100dvh - 64px)':'calc(100dvh - 120px)','overflow':'visible','box-shadow':'0 0 0 1px rgba(0,0,0,.12)'});
-   }
-   if(isWide){
+    // Only the outer card scrolls. Do not let the generic wide-modal
+    // layout turn the inner body into another scroll container.
+    set(card,{'max-height':mobile?'calc(100dvh - 32px)':'calc(100dvh - 88px)','overflow-x':'hidden','overflow-y':'auto','display':'block','box-shadow':'0 0 0 1px rgba(0,0,0,.12)'});
+    set(card.querySelector('.integrated-modal-body-v129'),{
+      'min-height':'0','height':'auto','max-height':'none','flex':'none',
+      'overflow':'visible','display':'block'
+    });
+   }else if(isWide){
     set(card.querySelector('.integrated-modal-body-v129'),{
      'min-height':'0','max-height':'none','flex':'1 1 auto',
      'overflow-y':'auto','overflow-x':'hidden'
