@@ -7340,36 +7340,63 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  .crew-mobile-day-shift-v11256 .crew-mds-pill:not(.active):hover{background:#fff1e5;border-color:#f58220}
  .crew-mobile-day-shift-v11256 .crew-mds-count{opacity:.7;font-size:10px;margin-left:3px}
 }
-</style><style id="crew-selection-solid-edge-v11257">
+</style><style id="crew-selection-aligned-v11258">
 @media(min-width:901px){
- /* First column is reserved for a hidden checkbox. Explicitly paint it. */
- #personnelGroups .work-group .table-wrap table col:first-child{width:36px!important}
- #personnelGroups .work-group .table-wrap table tr[data-worker-row] > td.mobile-check{
+ /* Keep the hidden checkbox column in the table flow, but very narrow. */
+ #personnelGroups .work-group .table-wrap table col:first-child{width:14px!important}
+ #personnelGroups .work-group .table-wrap table tr[data-worker-row]>td.mobile-check{
    display:table-cell!important;visibility:visible!important;opacity:1!important;
-   background:transparent!important;padding:0!important;width:36px!important;
+   width:14px!important;min-width:0!important;padding:0!important;
+   border:0!important;box-shadow:none!important;
  }
- #personnelGroups .work-group .table-wrap table tr[data-worker-row] > td.mobile-check input{display:none!important}
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected{
-   background:transparent!important;box-shadow:none!important;
+ #personnelGroups .work-group .table-wrap table tr[data-worker-row]>td.mobile-check input{
+   display:none!important;
  }
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td{
-   background:#fffaf6!important;border-top:1px solid #f8c9a5!important;border-bottom:1px solid #f8c9a5!important;box-shadow:none!important;
+ #personnelGroups .work-group .table-wrap table tr[data-worker-row]>td.mobile-status{
+   padding-left:3px!important;padding-right:6px!important;
  }
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-check{
-   background:#ffdabd!important;border-left:5px solid #f58220!important;
+ #personnelGroups .work-group .table-wrap table tr[data-worker-row]>td.mobile-status select{
+   margin-left:0!important;width:100%!important;min-width:0!important;
  }
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-status{
-   background:#ffdabd!important;position:relative!important;
+ /* Color the cells rather than the tr: Chrome renders table backgrounds
+    inconsistently when a hidden checkbox track precedes the status field. */
+ #personnelGroups .work-group .table-wrap table tr[data-worker-row].worker-row-selected{
+   background:none!important;box-shadow:none!important;
  }
- /* Bridge old hidden-checkbox column even if a legacy display rule wins. */
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-status::before{
-   content:"";position:absolute;top:0;bottom:0;left:-42px;width:42px;background:#ffdabd;pointer-events:none;z-index:2;
+ #personnelGroups .work-group .table-wrap table tr[data-worker-row].worker-row-selected>td{
+   background-image:none!important;
+   border-top:1px solid rgba(245,130,32,.24)!important;
+   border-bottom:1px solid rgba(245,130,32,.24)!important;
+   box-shadow:none!important;
  }
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-name{background:#ffe2cc!important}
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-role{background:#ffe9d8!important}
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-schedule{background:#fff0e4!important}
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-pause{background:#fff5ed!important}
- #personnelGroups .work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-diet{background:#fff8f2!important}
+ #personnelGroups .work-group .table-wrap table tr[data-worker-row].worker-row-selected>td.mobile-check{
+   background:#ffd0a6!important;
+   border-left:7px solid #f58220!important;
+ }
+ #personnelGroups .work-group .table-wrap table tr[data-worker-row].worker-row-selected>td.mobile-status{
+   background:linear-gradient(90deg,#ffd0a6,#ffddbf)!important;
+ }
+ #personnelGroups .work-group .table-wrap table tr[data-worker-row].worker-row-selected>td.mobile-name{
+   background:linear-gradient(90deg,#ffddbf,#ffe6d2)!important;
+ }
+ #personnelGroups .work-group .table-wrap table tr[data-worker-row].worker-row-selected>td.mobile-role{
+   background:linear-gradient(90deg,#ffe6d2,#ffebdb)!important;
+ }
+ #personnelGroups .work-group .table-wrap table tr[data-worker-row].worker-row-selected>td.mobile-schedule{
+   background:linear-gradient(90deg,#ffebdb,#fff0e4)!important;
+ }
+ #personnelGroups .work-group .table-wrap table tr[data-worker-row].worker-row-selected>td.mobile-pause{
+   background:linear-gradient(90deg,#fff0e4,#fff4ec)!important;
+ }
+ #personnelGroups .work-group .table-wrap table tr[data-worker-row].worker-row-selected>td.mobile-diet{
+   background:linear-gradient(90deg,#fff4ec,#fff7f1)!important;
+ }
+ #personnelGroups .work-group .table-wrap table tr[data-worker-row].worker-row-selected>td.mobile-phone{
+   background:linear-gradient(90deg,#fff7f1,#fffaf7)!important;
+ }
+ #personnelGroups .work-group .table-wrap table tr[data-worker-row].worker-row-selected>td:nth-child(n+9){
+   background:#fffaf7!important;
+ }
 }
 </style></head>
 <body>
