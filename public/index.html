@@ -10502,7 +10502,29 @@ async function parsePennyWisePdf(file){
       movil=extractPdfMobileColumn(orderedRowItems,pageLayout,width);
       telefono='';
 
-      if(!personal||['NOMBRE','PERSONAL'].includes(normalize(personal)))continue;
+      // Never import a row number or a phone number as the worker's name.
+      // Recover the name from PDF text fragments in the actual name area.
+      const nameIsValid=value=>Boolean(personLikePdfText(value)) &&
+        !looksLikePhoneNumber(value) &&
+        !/^(?:NOMBRE|PERSONAL)$/i.test(String(value).trim());
+      if(!nameIsValid(personal)){
+        const nameStart=rowNumberItem.x+Math.max(3,Number(rowNumberItem.w||0));
+        const nameEnd=Math.min(
+          pageLayout?.bounds?.especialidad?.x ?? width*.48,
+          firstTime?.x ?? width*.48
+        );
+        const nameParts=orderedRowItems.filter(i=>
+          i.x>=nameStart && i.x<nameEnd &&
+          !/^\d{1,3}$/.test(String(i.text).trim())
+        ).map(i=>i.text);
+        const recovered=nameParts.join(' ').replace(/\s+/g,' ').trim();
+        if(nameIsValid(recovered))personal=recovered;
+      }
+      // Invalid names must not become misleading worker records.
+      if(!nameIsValid(personal)){
+        console.warn('PDF: fila omitida por nombre inválido',pageNumber,rowNumberItem.text,personal);
+        continue;
+      }
 
       const pausa=normalizePdfPauseValue(pausaRaw);
       const nDieta=normalizeDietFromPdf(dietaRaw);
