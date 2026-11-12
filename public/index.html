@@ -7327,66 +7327,35 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
 #personnelGroups>.work-group{transition:background-color .18s ease,border-color .18s ease!important;animation:none!important}
 #personnelGroups>.work-group>.work-group-head{transition:background-color .18s ease!important;animation:none!important;transform:none!important}
 #personnelGroups>.work-group>.work-group-head .work-group-title{transition:none!important}
-</style><style id="crew-selected-row-clean-v11253">
-/* Single selection surface: gradient belongs to the row, never individual cells. */
+</style><style id="crew-selected-row-continuous-v11254">
 @media(min-width:901px){
- #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected{
-   background:linear-gradient(to right,rgba(245,130,32,.18) 0%,rgba(245,130,32,.105) 34%,rgba(245,130,32,.035) 70%,rgba(245,130,32,0) 100%)!important;
-   box-shadow:inset 5px 0 0 #f58220!important;
-   outline:0!important;
- }
- #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td,
- #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:first-child,
- #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td.mobile-check,
- #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td.mobile-status{
-   background:transparent!important;
-   background-color:transparent!important;
-   background-image:none!important;
-   box-shadow:none!important;
-   border-top:1px solid rgba(245,130,32,.20)!important;
-   border-bottom:1px solid rgba(245,130,32,.20)!important;
- }
- #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:first-child{
-   border-left:5px solid #f58220!important;
- }
- /* Table cells paint their own layers in Chrome. Continue the gradient
-    across the cells instead of relying on the tr background behind them. */
- #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(1){
-   background:rgba(245,130,32,.22)!important;
-   background-image:none!important;
- }
- #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(2){
-   background:linear-gradient(90deg,rgba(245,130,32,.22),rgba(245,130,32,.18))!important;
- }
- #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(3){
-   background:linear-gradient(90deg,rgba(245,130,32,.18),rgba(245,130,32,.12))!important;
- }
- #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(4){
-   background:linear-gradient(90deg,rgba(245,130,32,.12),rgba(245,130,32,.085))!important;
- }
- #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(5){
-   background:linear-gradient(90deg,rgba(245,130,32,.085),rgba(245,130,32,.055))!important;
- }
- #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(6){
-   background:linear-gradient(90deg,rgba(245,130,32,.055),rgba(245,130,32,.04))!important;
- }
- #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(7){
-   background:linear-gradient(90deg,rgba(245,130,32,.04),rgba(245,130,32,.025))!important;
- }
- #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(8){
-   background:linear-gradient(90deg,rgba(245,130,32,.025),rgba(245,130,32,.01))!important;
- }
- #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(n+9){
-   background:transparent!important;
- }
- #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td select{
-   border-color:rgba(245,130,32,.40)!important;
- }
+  /* A continuous-looking warm wash with no white selection column. */
+  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected{
+    background:rgba(245,130,32,.045)!important;
+    box-shadow:none!important;
+  }
+  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td{
+    background-color:rgba(245,130,32,.045)!important;
+    background-image:none!important;
+    border-top:1px solid rgba(245,130,32,.24)!important;
+    border-bottom:1px solid rgba(245,130,32,.24)!important;
+    box-shadow:none!important;
+  }
+  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:first-child,
+  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td.mobile-check{
+    background:#ffd9ba!important;
+    background-image:none!important;
+    border-left:5px solid #f58220!important;
+    box-shadow:none!important;
+  }
+  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(2){background:#ffddc3!important}
+  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(3){background:#ffe3ce!important}
+  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(4){background:#ffe8d8!important}
+  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(5){background:#ffedde!important}
+  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(6){background:#fff1e6!important}
+  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(7){background:#fff5ee!important}
+  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(n+8){background:#fff9f5!important}
 }
-/* Preserve original controls and their functional native dropdowns. */
-select{border-radius:12px!important;transition:border-color .16s ease,background-color .16s ease,box-shadow .16s ease!important}
-select:not(:disabled):hover{border-color:#f6a66d!important;background-color:#fff6ef!important}
-select:not(:disabled):focus{border-color:#f58220!important;outline:0!important;box-shadow:0 0 0 3px rgba(245,130,32,.14)!important}
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
