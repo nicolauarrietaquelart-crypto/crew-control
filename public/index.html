@@ -10523,6 +10523,7 @@ async function parsePennyWisePdf(file){
   const meta={reference:'',serviceDate:'',venue:''};
 
   let currentBlock=null,currentServiceDate='',blockSeq=0;
+  let previousMobileLayout=null,previousMobilePageWidth=0;
 
   for(let pageNumber=1;pageNumber<=pdf.numPages;pageNumber++){
     const page=await pdf.getPage(pageNumber);
@@ -10552,6 +10553,16 @@ async function parsePennyWisePdf(file){
       }
     }
     const pageLayout=detectPdfColumnLayout(lines,width);
+    // The MÓVIL heading can be on a different baseline from the main table
+    // headings. Detect it independently on every page.
+    const pageMobileLayout=detectPdfMobileHeaderLayout(lines,width);
+    if(pageMobileLayout){
+      previousMobileLayout=pageMobileLayout;
+      previousMobilePageWidth=width;
+    }
+    const mobileLayout=pageMobileLayout ||
+      (previousMobileLayout&&Math.abs(width-previousMobilePageWidth)<2?previousMobileLayout:null) ||
+      pageLayout;
 
     for(const lineItems of lines){
       const lineText=lineItems.slice().sort((a,b)=>a.x-b.x)
@@ -10731,7 +10742,7 @@ async function parsePennyWisePdf(file){
       }
       // The PDF contains distinct TELEFONO and MOVIL columns.
       // Read ONLY MOVIL; never substitute TELEFONO or a random numeric item.
-      movil=extractPdfMobileColumn(orderedRowItems,pageLayout,width);
+      movil=extractPdfMobileColumn(orderedRowItems,mobileLayout,width);
       telefono='';
 
       // Never import a row number or a phone number as the worker's name.
@@ -11089,31 +11100,63 @@ function repairShiftedPdfWorkerRow(items,current){
   };
 }
 
+function detectPdfMobileHeaderLayout(lines,width){
+  // Identify MÓVIL independently; do not require FIN/PAUSA/DIETA headings
+  // to share its text baseline.
+  const headers=[];
+  for(const row of lines){
+    for(const item of row){
+      const key=pdfHeaderKey(item.text);
+      if(key==='movil'||key==='telefono'){
+        headers.push({key,x:item.x,endX:item.x+Number(item.w||0),y:item.y});
+      }
+    }
+  }
+  const mobile=headers.filter(h=>h.key==='movil').sort((a,b)=>b.x-a.x)[0];
+  if(!mobile)return null;
+  const landline=headers.filter(h=>h.key==='telefono'&&h.x<mobile.x)
+    .sort((a,b)=>b.x-a.x)[0];
+  const rightHeaders=[];
+  for(const row of lines){
+    for(const item of row){
+      if(item.x<=mobile.x)continue;
+      const text=normalize(item.text);
+      if(/^(?:OBSERVACIONES?|FIRMA|COMENTARIOS?|NOTAS?|EMAIL|CORREO|DIRECCION)$/.test(text))
+        rightHeaders.push(item.x);
+    }
+  }
+  const nextX=Math.min(width+1,...rightHeaders);
+  const lower=landline?(landline.endX+mobile.x)/2:Math.max(0,mobile.x-width*.015);
+  const upper=Math.min(width+1,nextX,Math.max(mobile.endX+width*.035,mobile.x+width*.07));
+  return {bounds:{movil:{min:lower,max:upper,x:mobile.x},
+    ...(landline?{telefono:{x:landline.x}}:{})}};
+}
+
 function extractPdfMobileColumn(items,layout,width){
   const sorted=items.slice().sort((a,b)=>a.x-b.x);
   const mobile=layout?.bounds?.movil;
   const landline=layout?.bounds?.telefono;
-  // When header positions are available, use the real MOVIL column only.
-  // Use the header X as a boundary so fragments never leak from TELEFONO.
   if(mobile){
-    const lower=landline ? (landline.x+mobile.x)/2 : mobile.min;
-    const upper=mobile.max;
-    const chunks=sorted.filter(i=>i.x>=lower&&i.x<upper)
-      .map(i=>String(i.text||'').trim()).filter(Boolean);
-    const direct=chunks.find(looksLikePhoneNumber);
-    if(direct)return direct;
-    const joined=chunks.join('').replace(/\s+/g,'');
-    const found=joined.match(/(?:\+34|0034)?[6789]\d{8}/);
-    if(found&&looksLikePhoneNumber(found[0]))return found[0];
-    return '';
+    // Mobile cells may be shifted slightly to the left of the heading;
+    // exclude the landline column without discarding left-aligned mobiles.
+    const lower=landline ? Math.max(mobile.min,(landline.x+mobile.x)/2) :
+      Math.max(0,mobile.min-width*.008);
+    const chunks=sorted.filter(i=>
+      i.x+Number(i.w||0)>lower&&i.x<mobile.max
+    ).map(i=>String(i.text||'').trim()).filter(Boolean);
+    const candidate=chunks.find(looksLikePhoneNumber);
+    if(candidate)return candidate;
+    const digits=chunks.join('').replace(/[()\s.-]/g,'');
+    const match=digits.match(/(?:\+34|0034)?[6789]\d{8}/);
+    return match&&looksLikePhoneNumber(match[0])?match[0]:'';
   }
-  // Historical layout: MOVIL is to the right of TELEFONO.
-  // Do not fall back to the landline column if the mobile cell is blank.
+  // Old PDFs lacking a readable heading: use a conservative right-side
+  // range, never taking a telephone from the TELEFONO column.
   const chunks=sorted.filter(i=>i.x>=width*.815&&i.x<width*.99)
     .map(i=>String(i.text||'').trim()).filter(Boolean);
-  const direct=chunks.find(looksLikePhoneNumber);
-  if(direct)return direct;
-  const joined=chunks.join('').replace(/\s+/g,'');
+  const candidate=chunks.find(looksLikePhoneNumber);
+  if(candidate)return candidate;
+  const joined=chunks.join('').replace(/[()\s.-]/g,'');
   const found=joined.match(/(?:\+34|0034)?[6789]\d{8}/);
   return found&&looksLikePhoneNumber(found[0])?found[0]:'';
 }
