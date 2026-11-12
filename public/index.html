@@ -11414,7 +11414,11 @@ function renderCrewMobileDayShiftV11256(){
   host.innerHTML=dayControls+workControls+shiftControls;
   host.hidden=!(dayControls||workControls||shiftControls);
   const active=host.querySelector('.crew-mds-work-line .crew-mds-pill.active');
-  if(active)active.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});
+  const track=host.querySelector('.crew-mds-track');
+  if(active&&track){
+    const left=active.offsetLeft-track.offsetLeft;
+    track.scrollLeft=Math.max(0,left-(track.clientWidth-active.offsetWidth)/2);
+  }
 }
 function rowsForCrewDayV11256(day){
   return state.service.workers.filter(w=>w.included&&(w.serviceDate||'SIN FECHA')===day).length;
