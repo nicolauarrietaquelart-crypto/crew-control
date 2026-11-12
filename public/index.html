@@ -7219,12 +7219,12 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
-    <span id="sidebarEdgeToggleGlyph">›</span>
+    <span id="sidebarEdgeToggleGlyph"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span>
   </button>
 <header>
   <div class="wrap">
     <div class="brand">
-      <img class="crew-pennywise-logo-v11240" src="https://www.grupopennywise.com/wp-content/uploads/2019/06/logo_pennywise_retina.png" alt="Grupo Penny Wise" loading="eager">
+      <img class="crew-pennywise-logo-v11240" src="https://servicios.penny-wise.es/proyectos/area-empleado/BCN/ver-logo-neg" alt="Grupo Penny Wise" loading="eager">
       <div>
         <h1>CREW CONTROL</h1>
         <div class="subtitle">Operaciones de personal</div>
@@ -7360,7 +7360,7 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
           <div class="section-title personnel-sidebar-title-v121">
             <h2>Control operativo</h2>
             <button type="button" id="sidebarCollapseBtn" class="sidebar-collapse-toggle-v11224" onclick="toggleOperationalSidebar()" title="Ocultar panel" aria-label="Ocultar panel">
-              <span id="sidebarCollapseGlyph">‹›</span>
+              <span id="sidebarCollapseGlyph"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6"/><path d="m19 6-6 6 6 6"/></svg></span>
             </button>
           </div>
 
@@ -9084,7 +9084,7 @@ async function crewD1Dispatch(method,args){
       return {...oldWorker,...w,id:oldWorker.id,sortOrder:index+1,status:oldWorker.status,teamId:oldWorker.teamId,scenarioId:oldWorker.scenarioId,arrivalAt:oldWorker.arrivalAt,notes:oldWorker.notes,actualStart:oldWorker.actualStart,actualEnd:oldWorker.actualEnd,actualPause:oldWorker.actualPause,actualDiet:oldWorker.actualDiet,ratingUniformidad:oldWorker.ratingUniformidad,ratingActitud:oldWorker.ratingActitud,ratingPuntualidad:oldWorker.ratingPuntualidad,included:oldWorker.included};
     });
     const removed=previous.length-matched;
-    const next={...old,...(parsed.meta||{}),pdfName:parsed.meta?.pdfName||old.pdfName,workers,blocks:parsed.blocks||[],code};
+    const next={...old,...(parsed.meta||{}),serviceName:String(parsed.meta?.reference||'').trim()||old.serviceName||'',pdfName:parsed.meta?.pdfName||old.pdfName,workers,blocks:parsed.blocks||[],code};
     await crewPersist(next);
     return {service:next,summary:{matched,added,removed,scheduleChanged,pauseChanged,dietChanged,coordinatorChanged,movedToReserve,changedNames}};
   }
@@ -9681,6 +9681,9 @@ function openServiceData(service){
   clearStartScreenState();
   document.body.classList.add('control-sidebar-open');
   updateControlSidebarTop();
+  clearPdfSidebarStatus();
+  const initialPdfStatus=document.getElementById('initialPdfStatus');
+  if(initialPdfStatus){initialPdfStatus.innerHTML='';initialPdfStatus.className='status-box';}
   const previousDay=state.service?.code===service.code?state.activeDay:null;
   state.service=service;
   state.service.workOrder=Array.isArray(state.service.workOrder)?state.service.workOrder.map(String):[];
@@ -9761,6 +9764,9 @@ function finalizeCloseServiceView(){
   document.body.classList.remove('control-sidebar-open');
   stopFirebaseRealtime();
   state.service=null;
+  clearPdfSidebarStatus();
+  const initialStatus=document.getElementById('initialPdfStatus');
+  if(initialStatus){initialStatus.innerHTML='';initialStatus.className='status-box';}
   state.activeDay='';
   state.selected.clear();
   state.pendingWorkerUpdates={};
