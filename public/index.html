@@ -7521,7 +7521,20 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  #staffingTeamPlanningArea .copy-plan-row{grid-template-columns:minmax(0,1fr)}
  #staffingTeamPlanningArea .copy-plan-row button{width:100%!important}
 }
-</style></head>
+</style><style id="crew-mobile-guard-call-style">
+@media(max-width:900px){
+ #crewMobileBottomV11238{grid-template-columns:repeat(4,minmax(0,1fr)) 43px 43px!important;gap:3px!important}
+ #crewMobileGuardCall{display:flex;align-items:center;justify-content:center;min-width:0;min-height:48px;border-radius:13px;background:#f58220;color:#111;text-decoration:none;touch-action:manipulation}
+ #crewMobileGuardCall svg{width:21px;height:21px;flex-shrink:0}
+ #crewMobileSettingsV11238{min-width:0;min-height:48px!important}
+ #crewMobileBottomV11238 .crew-metric{min-width:0}
+ #crewMobileBottomV11238 strong{font-size:clamp(11px,3.1vw,17px)!important}
+ #crewMobileBottomV11238 small{font-size:clamp(7px,1.8vw,9px)!important}
+}
+@media(max-width:360px){#crewMobileBottomV11238{grid-template-columns:repeat(4,minmax(0,1fr)) 38px 38px!important}}
+@media(min-width:901px){#crewMobileGuardCall{display:none!important}}
+</style>
+</head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
     <span id="sidebarEdgeToggleGlyph"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span>
@@ -7552,6 +7565,7 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  <div class="crew-metric"><strong id="crewBottomContact">0</strong><small>Contactados</small></div>
  <div class="crew-metric"><strong id="crewBottomAbsent">0</strong><small>Ausentes</small></div>
  <div class="crew-metric"><strong id="crewBottomUnassigned">0</strong><small>Sin equipo</small></div>
+ <a id="crewMobileGuardCall" href="tel:+34670514308" aria-label="Llamar a guardia de Penny: 670 514 308" title="Llamar a guardia · 670 514 308"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 3.09 5.18 2 2 0 0 1 5.08 3h3a2 2 0 0 1 2 1.72l.47 3a2 2 0 0 1-.57 1.73l-1.3 1.3a16 16 0 0 0 4.57 4.57l1.3-1.3a2 2 0 0 1 1.73-.57l3 .47A2 2 0 0 1 22 16.92Z"/></svg></a>
  <button id="crewMobileSettingsV11238" type="button" onclick="openBulkChangesModal()" aria-label="Abrir edición masiva" aria-controls="mobileOperationalDrawerV11234"><svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.99l-1.77 1.77a1.8 1.8 0 0 0-1.99-.36l-1.08.45-.35 2.15h-2.5l-.35-2.15-1.08-.45a1.8 1.8 0 0 0-1.99.36l-1.77-1.77A1.8 1.8 0 0 0 7.24 15l-.45-1.08-2.15-.35v-2.5l2.15-.35L7.24 9a1.8 1.8 0 0 0-.36-1.99l1.77-1.77a1.8 1.8 0 0 0 1.99.36l1.08-.45.35-2.15h2.5l.35 2.15 1.08.45a1.8 1.8 0 0 0 1.99-.36l1.77 1.77A1.8 1.8 0 0 0 19.4 9l.45 1.08 2.15.35v2.5l-2.15.35Z"/></svg></button>
 </nav>
 <main class="wrap">
