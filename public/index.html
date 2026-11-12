@@ -7327,28 +7327,36 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
 #personnelGroups>.work-group{transition:background-color .18s ease,border-color .18s ease!important;animation:none!important}
 #personnelGroups>.work-group>.work-group-head{transition:background-color .18s ease!important;animation:none!important;transform:none!important}
 #personnelGroups>.work-group>.work-group-head .work-group-title{transition:none!important}
-</style><style id="crew-select-and-selection-v11250">
-/* Compact left selection track, and status starts directly beside it. */
+</style><style id="crew-selected-row-clean-v11253">
+/* Single selection surface: gradient belongs to the row, never individual cells. */
 @media(min-width:901px){
- #personnelGroups .work-group .table-wrap th:first-child,#personnelGroups .work-group .table-wrap td:first-child{padding-left:2px!important;padding-right:2px!important}
- #personnelGroups .work-group .table-wrap th:nth-child(2),#personnelGroups .work-group .table-wrap td:nth-child(2){padding-left:3px!important}
- #personnelGroups .work-group .table-wrap tr[data-worker-row].worker-row-selected>td{background-color:rgba(255,135,35,.055)!important;background-image:none!important;border-top:1px solid rgba(245,130,32,.24)!important;border-bottom:1px solid rgba(245,130,32,.24)!important}
- #personnelGroups .work-group .table-wrap tr[data-worker-row].worker-row-selected>td:nth-child(1){background-color:rgba(255,135,35,.19)!important;box-shadow:inset 4px 0 #f58220!important}
- #personnelGroups .work-group .table-wrap tr[data-worker-row].worker-row-selected>td:nth-child(2){background-color:rgba(255,135,35,.15)!important}
- #personnelGroups .work-group .table-wrap tr[data-worker-row].worker-row-selected>td:nth-child(3){background-color:rgba(255,135,35,.115)!important}
- #personnelGroups .work-group .table-wrap tr[data-worker-row].worker-row-selected>td:nth-child(4){background-color:rgba(255,135,35,.085)!important}
+ #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected{
+   background:linear-gradient(to right,rgba(245,130,32,.18) 0%,rgba(245,130,32,.105) 34%,rgba(245,130,32,.035) 70%,rgba(245,130,32,0) 100%)!important;
+   box-shadow:inset 5px 0 0 #f58220!important;
+   outline:0!important;
+ }
+ #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td,
+ #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:first-child,
+ #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td.mobile-check,
+ #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td.mobile-status{
+   background:transparent!important;
+   background-color:transparent!important;
+   background-image:none!important;
+   box-shadow:none!important;
+   border-top:1px solid rgba(245,130,32,.20)!important;
+   border-bottom:1px solid rgba(245,130,32,.20)!important;
+ }
+ #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:first-child{
+   border-left:5px solid #f58220!important;
+ }
+ #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td select{
+   border-color:rgba(245,130,32,.40)!important;
+ }
 }
-/* Uniform rounded controls. Native option popups retain OS/browser appearance. */
+/* Preserve original controls and their functional native dropdowns. */
 select{border-radius:12px!important;transition:border-color .16s ease,background-color .16s ease,box-shadow .16s ease!important}
-select:not(:disabled):hover{border-color:#f6a66d!important;background-color:#fff6ef!important;box-shadow:0 0 0 2px rgba(245,130,32,.07)!important}
+select:not(:disabled):hover{border-color:#f6a66d!important;background-color:#fff6ef!important}
 select:not(:disabled):focus{border-color:#f58220!important;outline:0!important;box-shadow:0 0 0 3px rgba(245,130,32,.14)!important}
-</style><style id="crew-selection-left-edge-v11252">
-@media(min-width:901px){
- /* Highlight the whole row, including the checkbox track and left padding. */
- #personnelGroups .work-group .table-wrap tr[data-worker-row].worker-row-selected{background:linear-gradient(90deg,rgba(255,130,28,.22) 0%,rgba(255,154,55,.13) 32%,rgba(255,255,255,.015) 100%)!important;box-shadow:inset 5px 0 #f58220!important}
- #personnelGroups .work-group .table-wrap tr[data-worker-row].worker-row-selected>td{background:transparent!important;background-color:transparent!important;background-image:none!important;box-shadow:none!important}
- #personnelGroups .work-group .table-wrap tr[data-worker-row].worker-row-selected>td:first-child{background:transparent!important;box-shadow:none!important}
-}
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
