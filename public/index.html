@@ -7534,7 +7534,16 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
 @media(max-width:360px){#crewMobileBottomV11238{grid-template-columns:repeat(4,minmax(0,1fr)) 38px 38px!important}}
 @media(min-width:901px){#crewMobileGuardCall{display:none!important}}
 </style>
-</head>
+<style id="crew-pdf-mobile-actions-style">
+.crew-pdf-download{display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+#crewMobilePdfActions{display:none}
+@media(max-width:900px){
+ #crewMobilePdfActions:not(.hidden){display:flex!important;gap:9px;align-items:center;flex-wrap:wrap;padding:10px 12px;margin:8px 0;border:1px solid #e8e8e8;border-radius:13px;background:#fff}
+ #crewMobilePdfActions .crew-mobile-pdf-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:1;min-width:110px;min-height:42px;border-radius:10px;background:#f5f5f5;color:#171717;font-size:12px;font-weight:750;text-decoration:none;cursor:pointer;border:0}
+ #crewMobilePdfActions .crew-mobile-pdf-button svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+ #crewMobileSettingsV11238 svg{display:block!important;width:23px!important;height:23px!important;stroke:currentColor!important;fill:none!important;stroke-width:2!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+}
+</style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
     <span id="sidebarEdgeToggleGlyph"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span>
@@ -7566,7 +7575,7 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  <div class="crew-metric"><strong id="crewBottomAbsent">0</strong><small>Ausentes</small></div>
  <div class="crew-metric"><strong id="crewBottomUnassigned">0</strong><small>Sin equipo</small></div>
  <a id="crewMobileGuardCall" href="tel:+34670514308" aria-label="Llamar a guardia de Penny: 670 514 308" title="Llamar a guardia · 670 514 308"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 3.09 5.18 2 2 0 0 1 5.08 3h3a2 2 0 0 1 2 1.72l.47 3a2 2 0 0 1-.57 1.73l-1.3 1.3a16 16 0 0 0 4.57 4.57l1.3-1.3a2 2 0 0 1 1.73-.57l3 .47A2 2 0 0 1 22 16.92Z"/></svg></a>
- <button id="crewMobileSettingsV11238" type="button" onclick="openBulkChangesModal()" aria-label="Abrir edición masiva" aria-controls="mobileOperationalDrawerV11234"><svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.99l-1.77 1.77a1.8 1.8 0 0 0-1.99-.36l-1.08.45-.35 2.15h-2.5l-.35-2.15-1.08-.45a1.8 1.8 0 0 0-1.99.36l-1.77-1.77A1.8 1.8 0 0 0 7.24 15l-.45-1.08-2.15-.35v-2.5l2.15-.35L7.24 9a1.8 1.8 0 0 0-.36-1.99l1.77-1.77a1.8 1.8 0 0 0 1.99.36l1.08-.45.35-2.15h2.5l.35 2.15 1.08.45a1.8 1.8 0 0 0 1.99-.36l1.77 1.77A1.8 1.8 0 0 0 19.4 9l.45 1.08 2.15.35v2.5l-2.15.35Z"/></svg></button>
+ <button id="crewMobileSettingsV11238" type="button" onclick="openBulkChangesModal()" aria-label="Abrir edición masiva" title="Ajustes"><svg viewBox="0 0 24 24" width="23" height="23" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15.1l1.1.9-2 3.5-1.4-.5a8 8 0 0 1-2.1 1.2l-.3 1.5h-4l-.3-1.5a8 8 0 0 1-2.1-1.2l-1.4.5-2-3.5 1.1-.9a8 8 0 0 1 0-2.4l-1.1-.9 2-3.5 1.4.5a8 8 0 0 1 2.1-1.2l.3-1.5h4l.3 1.5a8 8 0 0 1 2.1 1.2l1.4-.5 2 3.5-1.1.9a8 8 0 0 1 0 2.4Z" transform="translate(-.7 -1.7) scale(1.06)"/></svg></button>
 </nav>
 <main class="wrap">
   <section id="startScreen" class="card login-card">
@@ -7628,6 +7637,10 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
           <input id="venue" type="text" oninput="scheduleMetaSave()"></div>
       </div>
 
+      <div id="crewMobilePdfActions" class="hidden">
+  <label class="crew-mobile-pdf-button" for="pdfInput"><svg viewBox="0 0 24 24"><path d="M12 16V4m-5 5 5-5 5 5M4 17v4h16v-4"/></svg>Resubir PDF</label>
+  <button type="button" class="crew-mobile-pdf-button" onclick="downloadServicePdf()"><svg viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></svg>Descargar PDF</button>
+</div>
       <div id="initialPdfUploadPanel" class="initial-pdf-upload-v11228">
         <div id="initialPdfDropZone" class="upload initial-pdf-dropzone-v11228">
           <strong>Cargar PDF de personal</strong>
@@ -7757,7 +7770,8 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
               <strong>PDF personal</strong>
               <span id="pdfFileName">Sin PDF</span>
             </div>
-            <label class="sidebar-pdf-action-v11227" for="pdfInput" title="Cargar o actualizar PDF">↻ PDF</label>
+            <label class="sidebar-pdf-action-v11227" for="pdfInput" title="Resubir PDF">↻ PDF</label>
+            <button type="button" class="sidebar-pdf-action-v11227 crew-pdf-download" onclick="downloadServicePdf()" title="Descargar PDF original" aria-label="Descargar PDF original"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></svg></button>
           </div>
           <div id="pdfStatus" class="status-box sidebar-pdf-status-v11227"></div>
         </div>
@@ -10041,6 +10055,8 @@ function updatePdfPlacementUI(){
 
   if(initial)initial.classList.toggle('hidden',hasPdf);
   if(sidebar)sidebar.classList.toggle('hidden',!hasPdf);
+  const mobile=document.getElementById('crewMobilePdfActions');
+  if(mobile)mobile.classList.toggle('hidden',!state.service);
 }
 
 function clearPdfSidebarStatus(){
@@ -10698,6 +10714,21 @@ function updateTeamSelects(){
   bulk.innerHTML=html;
 }
 
+async function downloadServicePdf(){
+  const code=state.service?.code;
+  if(!code)return;
+  try{
+    const response=await fetch('/api/services/'+encodeURIComponent(code)+'/pdf',{headers:{'x-service-code':code}});
+    if(!response.ok)throw new Error((await response.json()).error||'No se pudo descargar el PDF');
+    const blob=await response.blob();
+    const link=document.createElement('a');
+    const url=URL.createObjectURL(blob);
+    link.href=url;
+    link.download=state.service.pdfName||'personal.pdf';
+    document.body.appendChild(link);link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),30000);
+  }catch(error){alert(error.message)}
+}
 /* PDF */
 async function importPdf(file){
   if(!state.service)return;
@@ -10718,9 +10749,14 @@ async function importPdf(file){
     showPdfStatus(`Detectados ${parsed.workers.length} registros en ${new Set(parsed.workers.map(w=>w.serviceDate)).size} día(s). Guardando…`,'info');
 
     backend.run
-      .withSuccessHandler(result=>{
+      .withSuccessHandler(async result=>{
         const service=result.service;
         const s=result.summary||{};
+        try{
+          const upload=await fetch('/api/services/'+encodeURIComponent(service.code)+'/pdf',{method:'PUT',headers:{'x-service-code':service.code,'x-pdf-filename':encodeURIComponent(file.name)},body:file});
+          if(!upload.ok)throw new Error((await upload.json()).error||'Error al guardar PDF');
+          updatePdfPlacementUI();
+        }catch(error){console.warn('No se pudo guardar el PDF original:',error);showPdfStatus('Personal importado, pero no se ha podido almacenar el PDF para descargar: '+error.message,'error');}
         if(!Array.isArray(service?.workers)||service.workers.length!==parsed.workers.length){
           showPdfStatus('La importación no ha devuelto todos los trabajadores. No se mostrará como completada; vuelve a abrir el servicio para comprobar los datos.','error');
           return;
