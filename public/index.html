@@ -7459,6 +7459,24 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  #personnelGroups .work-group.work-drop-target-v11227,
  #personnelGroups .work-group.touch-work-target-v11235{transition:none!important}
 }
+</style><style id="crew-teams-unified-v11263">
+.crew-teams-tabs-v11263{display:flex;gap:7px;margin:12px 0;border-bottom:1px solid #e6e6e6;padding-bottom:9px}
+.crew-teams-tabs-v11263 button{flex:1;min-height:40px;border:1px solid #e5e5e5;border-radius:12px;background:#fff;color:#181818;font:inherit;font-weight:750;cursor:pointer}
+.crew-teams-tabs-v11263 button.active{background:#171717;color:#fff;border-color:#171717}
+.crew-teams-staff-active-v11263 #scenarioList,
+.crew-teams-staff-active-v11263>.hint,
+.crew-teams-staff-active-v11263>.section-title button{display:none!important}
+.crew-teams-planning-v11263[hidden],.crew-teams-planning-v11263 [hidden]{display:none!important}
+.crew-teams-planning-v11263 .crew-team-day-v11263{padding:12px;margin:8px 0;border-radius:15px;background:#f8f8f8;border:1px solid #ededed}
+.crew-team-day-v11263>strong{display:block;font-size:13px;margin-bottom:8px}
+.crew-team-work-list-v11263{display:grid;gap:6px}
+.crew-team-work-list-v11263 button{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;min-height:44px;border:1px solid #e7e7e7;background:#fff;border-radius:11px;padding:9px 12px;font:inherit;font-weight:700;cursor:pointer}
+.crew-team-work-list-v11263 button:hover{border-color:#f58220;background:#fff3e8}
+.crew-team-work-list-v11263 button>span:last-child{color:#777;font-size:11px;white-space:nowrap}
+.crew-team-work-list-v11263 small{color:#777;font-weight:500;font-size:11px}
+#crewTeamsPlanningFormV11263>.modal-card{display:block!important;position:static!important;transform:none!important;width:100%!important;max-width:none!important;max-height:none!important;overflow:visible!important;box-shadow:none!important;border:1px solid #e9e9e9!important;border-radius:16px!important;padding:14px!important;margin:8px 0!important}
+#crewTeamsPlanningFormV11263 .modal-head{border-radius:12px!important}
+@media(max-width:900px){.crew-team-work-list-v11263 button{flex-wrap:wrap}.crew-team-work-list-v11263 button>span:last-child{white-space:normal}.crew-teams-tabs-v11263 button{font-size:12px;padding:8px 5px}}
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
@@ -7577,6 +7595,14 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
       </div>
       <div class="hint" style="margin:0 0 8px">
         Por defecto solo existe <strong>ESCENARIO PRINCIPAL</strong>. Cada escenario tiene sus propios equipos y colores.
+      </div>
+      <div class="crew-teams-tabs-v11263" role="tablist" aria-label="Gestión de equipos">
+        <button type="button" id="crewTeamsTabSetupV11263" class="active" role="tab" aria-selected="true" onclick="crewTeamsSwitchTabV11263('setup')">Equipos y chalecos</button>
+        <button type="button" id="crewTeamsTabStaffV11263" role="tab" aria-selected="false" onclick="crewTeamsSwitchTabV11263('staff')">Personal necesario</button>
+      </div>
+      <div id="crewTeamsPlanningV11263" class="crew-teams-planning-v11263" hidden>
+        <div id="crewTeamsPlanningListV11263"></div>
+        <div id="crewTeamsPlanningFormV11263" hidden></div>
       </div>
       <div id="scenarioList"></div>
     </section>
@@ -9666,6 +9692,7 @@ function openIntegratedSectionModal(modalId,sectionId,bodyId){
 }
 
 function closeIntegratedSectionModal(modalId,sectionId){
+  if(sectionId==='scenariosTeamsSection'&&crewTeamsEmbeddedStaffV11263)closeStaffingModal();
   const modal=document.getElementById(modalId);
   const section=document.getElementById(sectionId);
   const parking=document.getElementById('integratedSectionParking');
@@ -9688,7 +9715,57 @@ function openIncidentsBoardModal(){
 
 function openScenariosTeamsModal(){
   openIntegratedSectionModal('scenariosTeamsModal','scenariosTeamsSection','scenariosTeamsModalBody');
+  crewTeamsSwitchTabV11263('setup');
 }
+function crewTeamsSwitchTabV11263(tab){
+  const section=document.getElementById('scenariosTeamsSection');
+  if(!section)return;
+  if(crewTeamsEmbeddedStaffV11263)closeStaffingModal();
+  const staff=tab==='staff';
+  section.classList.toggle('crew-teams-staff-active-v11263',staff);
+  document.getElementById('crewTeamsPlanningV11263').hidden=!staff;
+  document.getElementById('crewTeamsTabSetupV11263').classList.toggle('active',!staff);
+  document.getElementById('crewTeamsTabStaffV11263').classList.toggle('active',staff);
+  document.getElementById('crewTeamsTabSetupV11263').setAttribute('aria-selected',String(!staff));
+  document.getElementById('crewTeamsTabStaffV11263').setAttribute('aria-selected',String(staff));
+  if(staff)crewTeamsRenderPlanningListV11263();
+}
+let crewTeamsEmbeddedStaffV11263=false;
+function crewTeamsRenderPlanningListV11263(){
+  const host=document.getElementById('crewTeamsPlanningListV11263');
+  if(!host||!state.service)return;
+  const days=getDays();
+  host.innerHTML='<p class="hint">Configura las personas necesarias de cada equipo por día y tipo de servicio. Se conservan las asignaciones y objetivos existentes.</p>'+
+    days.map(day=>{
+      const rows=state.service.workers.filter(w=>w.included&&(w.serviceDate||'SIN FECHA')===day);
+      const works=orderedWorkTypes([...new Set(rows.map(w=>w.trabajo||'SIN TIPO'))]);
+      return '<div class="crew-team-day-v11263"><strong>'+escapeHtml(dayLabel(day))+' · '+escapeHtml(day)+'</strong>'+
+        '<div class="crew-team-work-list-v11263">'+works.map(work=>{
+          const count=rows.filter(w=>normalize(w.trabajo||'SIN TIPO')===normalize(work)).length;
+          const targets=(state.service.requirements||[]).filter(r=>r.serviceDate===day&&normalize(r.trabajo)===normalize(work));
+          const noTeams=targets.some(r=>r.teamId===NO_TEAMS_REQUIREMENT_TEAM_ID);
+          const planned=targets.reduce((sum,r)=>sum+(r.teamId===NO_TEAMS_REQUIREMENT_TEAM_ID?0:Number(r.requiredCount||0)),0);
+          const label=noTeams?'Sin equipos':planned?planned+' necesarios':'Sin objetivos';
+          return '<button type="button" onclick="crewTeamsOpenPlanningV11263('+JSON.stringify(day).replace(/"/g,'&quot;')+','+JSON.stringify(work).replace(/"/g,'&quot;')+')">'+
+            '<span>'+escapeHtml(work)+' <small>'+count+' trabajadores</small></span><span>'+escapeHtml(label)+' <b>›</b></span></button>';
+        }).join('')+'</div></div>';
+    }).join('');
+  if(!days.length)host.innerHTML='<p class="hint">Importa el personal del servicio para definir objetivos por día y tipo.</p>';
+}
+function crewTeamsOpenPlanningV11263(day,work){
+  if(!state.service||state.service.closed)return;
+  if(state.activeDay!==day)setActiveDay(day);
+  const source=document.getElementById('staffingModal');
+  const card=source?.querySelector(':scope > .modal-card');
+  const host=document.getElementById('crewTeamsPlanningFormV11263');
+  if(!card||!host)return;
+  crewTeamsEmbeddedStaffV11263=true;
+  host.appendChild(card);
+  host.hidden=false;
+  document.getElementById('crewTeamsPlanningListV11263').hidden=true;
+  openStaffingModal(work);
+}
+
 
 
 
@@ -11471,7 +11548,7 @@ function renderCrewMobileDayShiftV11256(){
   const incidentIcon='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 9v5M12 18h.01"/></svg>';
   const canPlan=!state.service.closed;
   const actions='<div class="crew-mds-actions">'+
-    '<button type="button" class="crew-mds-action crew-mds-action-plan" onclick="crewMobileOpenTeamsV11262()">'+planIcon+'<span>Equipos y chalecos</span></button>'+
+    '<button type="button" class="crew-mds-action crew-mds-action-plan" onclick="crewMobileOpenTeamsV11262()">'+planIcon+'<span>Equipos</span></button>'+
     '<button type="button" class="crew-mds-action" onclick="openIncidentsBoardModal()">'+incidentIcon+'<span>Incidencias</span>'+(incidentCount?'<b>'+incidentCount+'</b>':'')+'</button></div>';
   host.innerHTML=dayControls+workControls+shiftControls+actions;
   host.hidden=!(dayControls||workControls||shiftControls);
@@ -12424,7 +12501,7 @@ function staffingSummaryForWork(trabajo,rows){
     return {
       html:`<div class="staffing-summary">
         <span class="staffing-chip neutral">SIN EQUIPOS · ${rows.length} personas</span>
-        <button class="secondary plan-btn" onclick="openStaffingModal('${escapeAttr(trabajo)}')">Configurar</button>
+
       </div>`,
       readiness:null,
       stats:[]
@@ -12501,11 +12578,7 @@ function staffingSummaryForWork(trabajo,rows){
   if(!requirements.length&&!stats.length){
     html=`<div class="staffing-summary">
       <div class="staffing-empty">
-        <button
-          class="secondary plan-btn"
-          onclick="openStaffingModal('${escapeAttr(trabajo)}')">
-          Planificar equipos
-        </button>
+
       </div>
     </div>`;
   }else{
@@ -12532,11 +12605,7 @@ function staffingSummaryForWork(trabajo,rows){
 
     html=`<div class="staffing-summary">
       ${chips||'<span class="hint">Sin asignaciones.</span>'}
-      <button
-        class="secondary plan-btn"
-        onclick="openStaffingModal('${escapeAttr(trabajo)}')">
-        Planificar
-      </button>
+
     </div>`;
   }
 
@@ -12704,7 +12773,8 @@ function openStaffingModal(trabajo){
   populateStaffingCopySources();
   renderStaffingRows();
   toggleStaffingNoTeamsUI();
-  document.getElementById('staffingModal').classList.remove('hidden');
+  if(!crewTeamsEmbeddedStaffV11263)
+    document.getElementById('staffingModal').classList.remove('hidden');
 }
 
 
@@ -12945,7 +13015,18 @@ function clearStaffingPlan(){
 }
 
 function closeStaffingModal(){
-  document.getElementById('staffingModal').classList.add('hidden');
+  const modal=document.getElementById('staffingModal');
+  modal.classList.add('hidden');
+  if(crewTeamsEmbeddedStaffV11263){
+    const container=document.getElementById('crewTeamsPlanningFormV11263');
+    const card=container?.querySelector('.modal-card');
+    if(card)modal.appendChild(card);
+    if(container)container.hidden=true;
+    const list=document.getElementById('crewTeamsPlanningListV11263');
+    if(list)list.hidden=false;
+    crewTeamsEmbeddedStaffV11263=false;
+    crewTeamsRenderPlanningListV11263();
+  }
   state.staffingWork='';
   state.staffingDraft={};
 }
