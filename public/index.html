@@ -7841,12 +7841,19 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
 }
 </style><style id="crew-login-photo-background-v119">
 /* Actual access-page background, not a hidden pseudo-element behind the card. */
-body:has(#startScreen:not(.hidden))::before{
- content:""!important;position:fixed!important;inset:-24px!important;
- z-index:0!important;pointer-events:none!important;
- background-image:url("https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg")!important;
- background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important;
- filter:blur(12px)!important;transform:scale(1.04)!important;
+/* Two independent layers allow true crossfade (background-image is not animatable). */
+.crew-access-photo-slide{
+ position:fixed!important;inset:-24px!important;z-index:0!important;
+ pointer-events:none!important;opacity:0;
+ background-position:center;background-size:cover;background-repeat:no-repeat;
+ filter:blur(12px);transform:scale(1.04);
+ transition:opacity 1.2s ease-in-out;
+ visibility:hidden;
+}
+body:has(#startScreen:not(.hidden)) .crew-access-photo-slide{visibility:visible}
+body:has(#startScreen:not(.hidden)) .crew-access-photo-slide.is-active{opacity:1}
+@media(prefers-reduced-motion:reduce){
+ .crew-access-photo-slide{transition:none}
 }
 body:has(#startScreen:not(.hidden))::after{
  content:""!important;position:fixed!important;inset:0!important;
@@ -7874,6 +7881,9 @@ body:has(#startScreen:not(.hidden)) #startScreen.login-card .or{color:#666!impor
 }
 </style></head>
 <body>
+<div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
+<div class="crew-access-photo-slide" id="crewAccessPhotoB" aria-hidden="true"></div>
+
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
     <span id="sidebarEdgeToggleGlyph"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span>
   </button>
@@ -16199,6 +16209,31 @@ function notifyClosedServiceWhatsApp(person){
   const message='Hola, he introducido ya los horarios en Crew Control y he cerrado el servicio, puedes consultarlo en la aplicación.';
   window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(message),'_blank','noopener,noreferrer');
 }
+</script>
+<script id="crew-access-photo-carousel">
+(() => {
+ const photos = [
+  'https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg',
+  'https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00279-copy.jpg',
+  'https://www.grupopennywise.com/wp-content/uploads/2026/10/image-29.png',
+  'https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00055-copy.jpg'
+ ];
+ const layers = [document.getElementById('crewAccessPhotoA'),document.getElementById('crewAccessPhotoB')];
+ if(layers.some(layer => !layer))return;
+ photos.slice(1).forEach(src => {const img = new Image(); img.src = src;});
+ let current = 0,visible = 0;
+ window.setInterval(() => {
+  const start = document.getElementById('startScreen');
+  if(!start || start.classList.contains('hidden') || document.hidden)return;
+  const next = (current + 1) % photos.length;
+  const incoming = 1 - visible;
+  layers[incoming].style.backgroundImage = 'url("' + photos[next] + '")';
+  layers[incoming].classList.add('is-active');
+  layers[visible].classList.remove('is-active');
+  current = next;
+  visible = incoming;
+ },3500);
+})();
 </script>
 </body>
 </html>
