@@ -7740,6 +7740,20 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
 @media(max-width:900px){
  #scenariosTeamsModal:not(.hidden)>.integrated-modal-card-v129{max-height:calc(100dvh - 24px)!important}
 }
+</style><style id="crew-staffing-compact-no-teams">
+#staffingModal .no-teams-option,
+#scenariosTeamsModal .no-teams-option{
+ display:inline-flex!important;width:max-content!important;max-width:100%!important;
+ min-height:0!important;padding:7px 11px!important;margin:4px 0 10px!important;
+ align-items:center!important;gap:7px!important;border-radius:10px!important;
+ font-size:13px!important;line-height:1.2!important;
+}
+#staffingModal .no-teams-option input,
+#scenariosTeamsModal .no-teams-option input{
+ width:16px!important;height:16px!important;min-width:16px!important;margin:0!important;
+}
+#staffingModal .no-teams-option strong,
+#scenariosTeamsModal .no-teams-option strong{font-size:13px!important;line-height:1.2!important}
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
@@ -8460,16 +8474,10 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
           <button class="modal-close" onclick="closeStaffingModal()"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
 
-        <div class="hint" style="margin:0 0 10px">
-          Define cuántas personas necesitas de cada equipo para este tipo de servicio.
-          Se comparará automáticamente con asignados y presentes.
-        </div>
-
         <label class="no-teams-option">
           <input id="staffingNoTeams" type="checkbox" onchange="toggleStaffingNoTeamsUI()">
           <span>
             <strong>Sin equipos</strong>
-            <small>Para servicios como CATERING, SITE u otros donde no se reparta personal por equipos.</small>
           </span>
         </label>
 
