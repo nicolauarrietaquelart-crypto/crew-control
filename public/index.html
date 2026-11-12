@@ -7754,6 +7754,27 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
 }
 #staffingModal .no-teams-option strong,
 #scenariosTeamsModal .no-teams-option strong{font-size:13px!important;line-height:1.2!important}
+</style><style id="crew-staffing-input-and-scroll-v113">
+#scenariosTeamsModal .crew-embedded-planning-content,
+#scenariosTeamsModal #crewTeamsPlanningFormV11263,
+#scenariosTeamsModal #crewTeamsPlanningV11263,
+#scenariosTeamsModal #scenariosTeamsModalBody{
+ overflow:visible!important;overflow-y:visible!important;
+ max-height:none!important;height:auto!important;
+}
+#scenariosTeamsModal:not(.hidden) > .modal-card{
+ overflow-y:auto!important;overflow-x:hidden!important;
+ max-height:calc(100dvh - 48px)!important;
+}
+#staffingRows .requirement-row > input[type="number"]{
+ border:1px solid #dedede!important;border-radius:11px!important;
+ background:#fff!important;min-height:38px!important;
+ padding:8px 10px!important;outline:none!important;
+ box-sizing:border-box!important;
+}
+#staffingRows .requirement-row > input[type="number"]:focus{
+ border-color:#f58220!important;box-shadow:0 0 0 3px rgba(245,130,32,.13)!important;
+}
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
@@ -10038,6 +10059,28 @@ function crewTeamsRenderPlanningListV11263(){
     }).join('');
   if(!days.length)host.innerHTML='<p class="hint">Importa el personal del servicio para definir objetivos por día y tipo.</p>';
 }
+function crewTeamsForceSingleScrollV113(){
+  const modal=document.getElementById('scenariosTeamsModal');
+  const outer=modal?.querySelector(':scope > .modal-card');
+  const embedded=document.querySelector('#crewTeamsPlanningFormV11263 .crew-embedded-planning-content');
+  if(!outer||!embedded)return;
+  outer.style.setProperty('overflow-y','auto','important');
+  outer.style.setProperty('overflow-x','hidden','important');
+  outer.style.setProperty('display','block','important');
+  outer.style.setProperty('max-height','calc(100dvh - 48px)','important');
+  // Every ancestor of the embedded planning must expand naturally.
+  // Only the top-level modal card can scroll.
+  let node=embedded;
+  while(node&&node!==outer){
+    node.style.setProperty('overflow','visible','important');
+    node.style.setProperty('overflow-y','visible','important');
+    node.style.setProperty('height','auto','important');
+    node.style.setProperty('max-height','none','important');
+    node.style.setProperty('min-height','0','important');
+    node.style.setProperty('flex','none','important');
+    node=node.parentElement;
+  }
+}
 function crewTeamsOpenPlanningV11263(day,work){
   if(!state.service||state.service.closed)return;
   if(state.activeDay!==day)setActiveDay(day);
@@ -10053,6 +10096,7 @@ function crewTeamsOpenPlanningV11263(day,work){
   host.hidden=false;
   document.getElementById('crewTeamsPlanningListV11263').hidden=true;
   openStaffingModal(work);
+  crewTeamsForceSingleScrollV113();
 }
 
 
