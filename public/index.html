@@ -12230,9 +12230,22 @@ function allRequirementsForWork(trabajo){
 }
 
 function workHasNoTeams(trabajo){
-  return allRequirementsForWork(trabajo).some(r=>
-    r.teamId===NO_TEAMS_REQUIREMENT_TEAM_ID
+  const requirements=allRequirementsForWork(trabajo);
+  // An explicit saved configuration always takes precedence over defaults.
+  if(requirements.length){
+    return requirements.some(r=>r.teamId===NO_TEAMS_REQUIREMENT_TEAM_ID);
+  }
+  const defaultWithoutTeams=/^(SITE|CATERING|RUNNER(?:\\b|[ ._-]))/i.test(
+    String(trabajo||'').trim()
   );
+  if(!defaultWithoutTeams)return false;
+  // If workers have already been assigned, respect that existing setup.
+  const hasAssignedWorkers=Boolean(state.service?.workers?.some(w=>
+    (w.serviceDate||'SIN FECHA')===state.activeDay &&
+    normalize(w.trabajo||'')===normalize(trabajo) &&
+    Boolean(w.teamId)
+  ));
+  return !hasAssignedWorkers;
 }
 
 function requirementsForWork(trabajo){
@@ -12323,9 +12336,6 @@ function staffingSummaryForWork(trabajo,rows){
   if(!requirements.length&&!stats.length){
     html=`<div class="staffing-summary">
       <div class="staffing-empty">
-        <span class="hint" style="margin:0">
-          Sin equipos asignados ni objetivos definidos. ${rows.length} personas en total.
-        </span>
         <button
           class="secondary plan-btn"
           onclick="openStaffingModal('${escapeAttr(trabajo)}')">
