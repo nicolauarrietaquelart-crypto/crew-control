@@ -10752,11 +10752,12 @@ async function importPdf(file){
       .withSuccessHandler(async result=>{
         const service=result.service;
         const s=result.summary||{};
+        let pdfStorageError='';
         try{
           const upload=await fetch('/api/services/'+encodeURIComponent(service.code)+'/pdf',{method:'PUT',headers:{'x-service-code':service.code,'x-pdf-filename':encodeURIComponent(file.name)},body:file});
           if(!upload.ok)throw new Error((await upload.json()).error||'Error al guardar PDF');
           updatePdfPlacementUI();
-        }catch(error){console.warn('No se pudo guardar el PDF original:',error);showPdfStatus('Personal importado, pero no se ha podido almacenar el PDF para descargar: '+error.message,'error');}
+        }catch(error){console.warn('No se pudo guardar el PDF original:',error);pdfStorageError=error.message;}
         if(!Array.isArray(service?.workers)||service.workers.length!==parsed.workers.length){
           showPdfStatus('La importación no ha devuelto todos los trabajadores. No se mostrará como completada; vuelve a abrir el servicio para comprobar los datos.','error');
           return;
@@ -10782,7 +10783,8 @@ async function importPdf(file){
             <span class="import-chip">${s.coordinatorChanged||0} cambios CS</span>
             <span class="import-chip">${s.movedToReserve||0} reservas</span>
           </div>${changedNames}`;
-        showPdfStatusHtml(details,'ok');
+        if(pdfStorageError)showPdfStatus('Personal importado, pero el PDF original no se ha guardado: '+pdfStorageError,'error');
+        else showPdfStatusHtml(details,'ok');
       })
       .withFailureHandler(err=>showPdfStatus(errorMessage(err),'error'))
       .replaceWorkersFromPdf(state.service.code,parsed);
