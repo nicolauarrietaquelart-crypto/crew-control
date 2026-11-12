@@ -1,1 +1,40 @@
-const CACHE='crew-control-shell-v1';const ASSETS=['/icon.svg','/manifest.webmanifest'];self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));self.skipWaiting()});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('crew-control-shell-')&&k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim()});self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET'||new URL(r.url).origin!==self.location.origin)return;const u=new URL(r.url);if(u.pathname.startsWith('/api/')||r.mode==='navigate')return; if(ASSETS.includes(u.pathname)){e.respondWith(caches.match(r).then(c=>c||fetch(r)))} });
+const CACHE = 'crew-control-shell-v2';
+const SHELL = ['/', '/icon.svg', '/manifest.webmanifest'];
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(CACHE).then(async cache => {
+    await Promise.allSettled(SHELL.map(path => cache.add(new Request(path, {cache:'reload'}))));
+  }));
+  self.skipWaiting();
+});
+self.addEventListener('activate', event => {
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter(key => key.startsWith('crew-control-shell-') && key !== CACHE).map(key => caches.delete(key)));
+    await self.clients.claim();
+  })());
+});
+self.addEventListener('fetch', event => {
+  const req = event.request;
+  if(req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if(url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
+  if(req.mode === 'navigate') {
+    event.respondWith(fetch(req).then(response => {
+      if(response.ok) {
+        const copy = response.clone();
+        event.waitUntil(caches.open(CACHE).then(cache => cache.put('/', copy)));
+      }
+      return response;
+    }).catch(async () => (await caches.match('/')) || Response.error()));
+    return;
+  }
+  if(SHELL.includes(url.pathname)) {
+    event.respondWith(fetch(req).then(response => {
+      if(response.ok) {
+        const copy = response.clone();
+        event.waitUntil(caches.open(CACHE).then(cache => cache.put(req, copy)));
+      }
+      return response;
+    }).catch(() => caches.match(req)));
+  }
+});
