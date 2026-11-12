@@ -7775,6 +7775,12 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
 #staffingRows .requirement-row > input[type="number"]:focus{
  border-color:#f58220!important;box-shadow:0 0 0 3px rgba(245,130,32,.13)!important;
 }
+</style><style id="crew-staffing-spacing-v114">
+#crewTeamsPlanningFormV11263 .no-teams-option{margin:12px 0 20px!important}
+#crewTeamsPlanningFormV11263 .copy-plan-row{margin:0 0 22px!important}
+#crewTeamsPlanningFormV11263 #staffingRows>.planned-box{margin-top:12px!important}
+#crewTeamsPlanningFormV11263 #staffingRows>.planned-box>strong{display:block!important;margin:0 0 14px!important}
+#crewTeamsPlanningFormV11263 #staffingTeamPlanningArea{padding-top:4px!important}
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
@@ -9625,12 +9631,14 @@ function crewEnsureDefaultStructure(service){
   return {...service,scenarios:scenarios.length?scenarios:[first],teams:crewDefaultTeams(first.id)};
 }
 function crewAssignDefaultSpecialtyTeam(worker,teams,scenarios){
-  if(!worker||worker.teamId)return worker;
+  if(!worker)return worker;
   const category=normalize(worker.especialidad||'');
   let target='';
-  if(/\\bCREW\\s*HEAD\\b/.test(category))target='CREW HEAD';
-  else if(/\\bFORKLIFT(?:ER)?\\b/.test(category))target='FORKLIFTER';
+  if(/\bCREW\s*HEAD\b/.test(category))target='CREW HEAD';
+  else if(/\bFORKLIFT(?:ER)?\b/.test(category))target='FORKLIFTER';
   if(!target)return worker;
+  const current=(teams||[]).find(t=>String(t.id)===String(worker.teamId||''));
+  if(current&&normalize(current.name)===target)return worker;
   const ordered=[...(teams||[])].filter(t=>normalize(t.name)===target).sort((a,b)=>{
     const sa=(scenarios||[]).find(s=>s.id===a.scenarioId)?.sortOrder??999;
     const sb=(scenarios||[]).find(s=>s.id===b.scenarioId)?.sortOrder??999;
