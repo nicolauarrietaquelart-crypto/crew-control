@@ -7631,6 +7631,40 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  #mobileOperationalDrawerV11234 .crew-guard-call{display:none!important}
 }
 </style>
+<style id="crew-operational-modal-final-fix">
+@media(max-width:900px){
+  /* The fixed footer already contains these statistics. */
+  #operationalDashboard,.mobile-operational-drawer-v11234 #operationalDashboard,
+  #stats.sidebar-duplicate-stats-v128,#selectedCounter{display:none!important}
+  #crewMobileSettingsV11238{width:43px!important;height:48px!important;min-width:43px!important;min-height:48px!important;padding:0!important;border-radius:12px!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important}
+  #crewMobileSettingsV11238 svg{display:block!important;width:22px!important;height:22px!important;min-width:22px!important;min-height:22px!important;flex:none!important;overflow:visible!important;transform:none!important}
+}
+#scenariosTeamsModal:not(.hidden)>.modal-card{
+  display:flex!important;flex-direction:column!important;
+  height:auto!important;max-height:min(760px,calc(100dvh - 64px))!important;
+  overflow:hidden!important;
+}
+#scenariosTeamsModal .integrated-modal-body-v129,
+#scenariosTeamsModal #scenariosTeamsModalBody{
+  flex:1 1 auto!important;min-height:0!important;
+  height:auto!important;max-height:none!important;
+  overflow-y:auto!important;overflow-x:hidden!important;
+  overscroll-behavior:contain!important;
+  scrollbar-width:thin!important;
+}
+#scenariosTeamsModal #scenariosTeamsSection,
+#scenariosTeamsModal #crewTeamsPlanningV11263,
+#scenariosTeamsModal #crewTeamsPlanningFormV11263,
+#scenariosTeamsModal #crewTeamsPlanningFormV11263>.modal-card,
+#scenariosTeamsModal #staffingTeamPlanningArea,
+#scenariosTeamsModal #staffingRows,
+#scenariosTeamsModal .planned-box{
+  overflow:visible!important;height:auto!important;max-height:none!important;
+}
+@media(max-width:900px){
+ #scenariosTeamsModal:not(.hidden)>.modal-card{max-height:calc(100dvh - 32px)!important}
+}
+</style>
 </head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
@@ -7663,7 +7697,7 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  <div class="crew-metric"><strong id="crewBottomAbsent">0</strong><small>Ausentes</small></div>
  <div class="crew-metric"><strong id="crewBottomUnassigned">0</strong><small>Sin equipo</small></div>
  <a id="crewMobileGuardCall" href="tel:+34670514308" aria-label="Llamar a guardia de Penny: 670 514 308" title="Llamar a guardia · 670 514 308"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 3.09 5.18 2 2 0 0 1 5.08 3h3a2 2 0 0 1 2 1.72l.47 3a2 2 0 0 1-.57 1.73l-1.3 1.3a16 16 0 0 0 4.57 4.57l1.3-1.3a2 2 0 0 1 1.73-.57l3 .47A2 2 0 0 1 22 16.92Z"/></svg></a>
- <button id="crewMobileSettingsV11238" type="button" onclick="openBulkChangesModal()" aria-label="Abrir edición masiva" title="Ajustes"><svg viewBox="0 0 24 24" width="23" height="23" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15.1l1.1.9-2 3.5-1.4-.5a8 8 0 0 1-2.1 1.2l-.3 1.5h-4l-.3-1.5a8 8 0 0 1-2.1-1.2l-1.4.5-2-3.5 1.1-.9a8 8 0 0 1 0-2.4l-1.1-.9 2-3.5 1.4.5a8 8 0 0 1 2.1-1.2l.3-1.5h4l.3 1.5a8 8 0 0 1 2.1 1.2l1.4-.5 2 3.5-1.1.9a8 8 0 0 1 0 2.4Z" transform="translate(-.7 -1.7) scale(1.06)"/></svg></button>
+ <button id="crewMobileSettingsV11238" type="button" onclick="openBulkChangesModal()" aria-label="Abrir edición masiva" title="Ajustes"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06-1.91 1.91-.06-.06A1.65 1.65 0 0 0 16 18.4a1.65 1.65 0 0 0-1 .99V20h-6v-.61a1.65 1.65 0 0 0-1-.99 1.65 1.65 0 0 0-1.82.33l-.06.06-1.91-1.91.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.99-1H3v-4h.61a1.65 1.65 0 0 0 .99-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06 1.91-1.91.06.06A1.65 1.65 0 0 0 8 5.6a1.65 1.65 0 0 0 1-.99V4h6v.61a1.65 1.65 0 0 0 1 .99 1.65 1.65 0 0 0 1.82-.33l.06-.06 1.91 1.91-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 .99 1H21v4h-.61a1.65 1.65 0 0 0-.99 1Z"/></svg></button>
 </nav>
 <main class="wrap">
   <section id="startScreen" class="card login-card">
@@ -7749,9 +7783,7 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
         <h2>Escenarios y equipos</h2>
         <button class="primary" onclick="addScenario()">+ Añadir escenario</button>
       </div>
-      <div class="hint" style="margin:0 0 8px">
-        Por defecto solo existe <strong>ESCENARIO PRINCIPAL</strong>. Cada escenario tiene sus propios equipos y colores.
-      </div>
+
       <div class="crew-teams-tabs-v11263" role="tablist" aria-label="Gestión de equipos">
         <button type="button" id="crewTeamsTabSetupV11263" class="active" role="tab" aria-selected="true" onclick="crewTeamsSwitchTabV11263('setup')">Equipos y chalecos</button>
         <button type="button" id="crewTeamsTabStaffV11263" role="tab" aria-selected="false" onclick="crewTeamsSwitchTabV11263('staff')">Personal necesario</button>
