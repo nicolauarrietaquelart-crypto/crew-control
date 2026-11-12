@@ -7245,6 +7245,25 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  .work-group-head .work-hide-btn-v11227{flex-basis:32px!important;width:32px!important;height:32px!important}
  .work-group-head .work-group-meta{max-width:36%;font-size:10px}
 }
+</style><style id="crew-reorder-mobile-compact-v11242">
+@media(min-width:901px){
+ .work-group-head .work-drag-handle-v11227{touch-action:none;cursor:grab!important}
+ .work-group.work-drop-target-v11227>.work-group-head{outline:2px solid #f58220!important;outline-offset:-2px}
+}
+@media(max-width:900px){
+ .mobile-operational-drawer-v11234.mobile-ops-expanded-v11234{max-height:calc(100dvh - 115px)!important;overflow-y:auto!important}
+ .mobile-operational-drawer-v11234 .personnel-sidebar-v121{padding:8px!important;border-radius:14px!important}
+ .mobile-operational-drawer-v11234 .personnel-sidebar-title-v121{padding:6px 9px!important;margin-bottom:4px!important}
+ .mobile-operational-drawer-v11234 .personnel-sidebar-title-v121 h2{font-size:15px!important}
+ .mobile-operational-drawer-v11234 .operational-dashboard{display:none!important}
+ .mobile-operational-drawer-v11234 .sidebar-operational-v122{padding:4px!important}
+ .mobile-operational-drawer-v11234 .operational-work-nav-v11232{margin-bottom:3px!important}
+ .mobile-operational-drawer-v11234 .personnel-sidebar-toolbar-v121{gap:5px!important}
+ .mobile-operational-drawer-v11234 .personnel-sidebar-toolbar-v121 input,
+ .mobile-operational-drawer-v11234 .personnel-sidebar-toolbar-v121 select{min-height:34px!important}
+ .mobile-operational-drawer-v11234 .sidebar-duplicate-stats-v128{display:none!important}
+ .work-group-head .work-drag-handle-v11227{touch-action:none!important}
+}
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
@@ -11349,6 +11368,7 @@ function moveWorkType(work,delta){
 
 function workDragStart(event,work){
   event.stopPropagation();
+  if(!event.dataTransfer)return;
   event.dataTransfer.effectAllowed='move';
   event.dataTransfer.setData('text/plain',work);
   document.body.classList.add('work-dragging-v11227');
@@ -11640,7 +11660,7 @@ function renderPersonnel(light=false){
       <summary class="work-group-head">
         <div class="work-group-title">
           <span class="work-drag-handle-v11227"
-            draggable="${window.matchMedia('(max-width: 900px)').matches?'false':'true'}"
+            draggable="true"
             onclick="event.preventDefault();event.stopPropagation()"
             ondragstart="workDragStart(event,'${escapeJsString(trabajo)}')"
             ondragend="workDragEnd()"
