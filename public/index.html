@@ -7349,6 +7349,36 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:first-child{
    border-left:5px solid #f58220!important;
  }
+ /* Table cells paint their own layers in Chrome. Continue the gradient
+    across the cells instead of relying on the tr background behind them. */
+ #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(1){
+   background:rgba(245,130,32,.22)!important;
+   background-image:none!important;
+ }
+ #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(2){
+   background:linear-gradient(90deg,rgba(245,130,32,.22),rgba(245,130,32,.18))!important;
+ }
+ #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(3){
+   background:linear-gradient(90deg,rgba(245,130,32,.18),rgba(245,130,32,.12))!important;
+ }
+ #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(4){
+   background:linear-gradient(90deg,rgba(245,130,32,.12),rgba(245,130,32,.085))!important;
+ }
+ #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(5){
+   background:linear-gradient(90deg,rgba(245,130,32,.085),rgba(245,130,32,.055))!important;
+ }
+ #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(6){
+   background:linear-gradient(90deg,rgba(245,130,32,.055),rgba(245,130,32,.04))!important;
+ }
+ #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(7){
+   background:linear-gradient(90deg,rgba(245,130,32,.04),rgba(245,130,32,.025))!important;
+ }
+ #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(8){
+   background:linear-gradient(90deg,rgba(245,130,32,.025),rgba(245,130,32,.01))!important;
+ }
+ #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td:nth-child(n+9){
+   background:transparent!important;
+ }
  #personnelGroups .work-group .table-wrap tbody tr[data-worker-row].worker-row-selected > td select{
    border-color:rgba(245,130,32,.40)!important;
  }
