@@ -7713,6 +7713,33 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  max-height:calc(100dvh - 24px)!important;
  }
 }
+</style><style id="crew-embedded-planning-real-fix">
+#scenariosTeamsModal .crew-embedded-planning-content{
+ position:static!important;display:block!important;width:100%!important;
+ min-width:0!important;height:auto!important;min-height:0!important;
+ max-height:none!important;overflow:visible!important;transform:none!important;
+ margin:0!important;padding:12px 0!important;background:transparent!important;
+ border:0!important;border-radius:0!important;box-shadow:none!important;
+}
+#scenariosTeamsModal .crew-embedded-planning-content .modal-head{
+ position:static!important;max-height:none!important;overflow:visible!important;
+}
+#scenariosTeamsModal .crew-embedded-planning-content #staffingTeamPlanningArea,
+#scenariosTeamsModal .crew-embedded-planning-content #staffingRows,
+#scenariosTeamsModal .crew-embedded-planning-content .planned-box{
+ height:auto!important;max-height:none!important;overflow:visible!important;
+}
+#scenariosTeamsModal:not(.hidden)>.integrated-modal-card-v129{
+ overflow-y:auto!important;overflow-x:hidden!important;
+ max-height:calc(100dvh - 64px)!important;display:block!important;
+}
+#scenariosTeamsModal #scenariosTeamsModalBody{
+ overflow:visible!important;height:auto!important;max-height:none!important;
+ display:block!important;min-height:0!important;
+}
+@media(max-width:900px){
+ #scenariosTeamsModal:not(.hidden)>.integrated-modal-card-v129{max-height:calc(100dvh - 24px)!important}
+}
 </style></head>
 <body>
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
@@ -10011,6 +10038,9 @@ function crewTeamsOpenPlanningV11263(day,work){
   const host=document.getElementById('crewTeamsPlanningFormV11263');
   if(!card||!host)return;
   crewTeamsEmbeddedStaffV11263=true;
+  // This is content of the parent modal, not a nested modal.
+  card.classList.remove('modal-card');
+  card.classList.add('crew-embedded-planning-content');
   host.appendChild(card);
   host.hidden=false;
   document.getElementById('crewTeamsPlanningListV11263').hidden=true;
@@ -13310,7 +13340,11 @@ function closeStaffingModal(){
   if(crewTeamsEmbeddedStaffV11263){
     const container=document.getElementById('crewTeamsPlanningFormV11263');
     const card=container?.querySelector('.modal-card');
-    if(card)modal.appendChild(card);
+    if(card){
+      card.classList.remove('crew-embedded-planning-content');
+      card.classList.add('modal-card');
+      modal.appendChild(card);
+    }
     if(container)container.hidden=true;
     const list=document.getElementById('crewTeamsPlanningListV11263');
     if(list)list.hidden=false;
