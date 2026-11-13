@@ -10103,6 +10103,24 @@ body #personnelGroups > .crew-linked-work-heading .staffing-summary button.staff
 }
 @media(min-width:701px){.mobile-shift-sort{display:none!important}}
 </style>
+<style id="crew-mobile-sort-black-vector-v3">
+@media(max-width:700px){
+ #personnelGroups .mobile-shift-sort-toggle{
+  color:#111!important;-webkit-text-fill-color:#111!important;
+  background:#fff!important;border-color:#dedede!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  padding:0!important;line-height:1!important;
+ }
+ #personnelGroups .mobile-shift-sort-toggle svg{
+  display:block!important;width:22px!important;height:22px!important;
+  color:#111!important;stroke:#111!important;fill:none!important;
+  flex:none!important;
+ }
+ #personnelGroups .mobile-shift-sort-menu button{
+  color:#111!important;-webkit-text-fill-color:#111!important;
+ }
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -14841,6 +14859,7 @@ function renderPersonnel(light=false){
       selection:rows.filter(w=>state.selected.has(w.id)).map(w=>w.id),
       teamFilter:state.workTeamFilters[trabajo]||'ALL',
       sort:state.workSorts[trabajo]||null,
+      mobileShiftSorts:Object.entries(mobileShiftSorts).filter(([k])=>k.startsWith(trabajo+'|')),
       shifts:Object.entries(state.collapsedShifts||{}).filter(([k])=>k.startsWith(trabajo+'|')),
       teams:state.service.teams,
       scenarios:state.service.scenarios,
@@ -15105,6 +15124,7 @@ const mobileShiftSorts={};
 function applyMobileShiftSort(work,time,button){
  const panel=button.parentElement;
  mobileShiftSorts[shiftStateKey(work,time)]={key:panel.querySelector('.mobile-sort-key').value,dir:panel.querySelector('.mobile-sort-dir').value};
+ panel.hidden=true;
  renderPersonnel(true);
 }
 function mobileSortedShiftRows(work,time,rows){
@@ -15158,7 +15178,7 @@ function rowsGroupedByEntryHtml(trabajo,rows){
             </button>
 
             <div class="mobile-shift-sort" onclick="event.stopPropagation()">
-              <button type="button" class="mobile-shift-sort-toggle" aria-label="Ordenar turno" onclick="event.stopPropagation();const p=this.nextElementSibling;p.hidden=!p.hidden"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 20V4m-4 4 4-4 4 4M17 4v16m-4-4 4 4 4-4"/></svg></button>
+              <button type="button" class="mobile-shift-sort-toggle" aria-label="Ordenar turno" aria-expanded="false" onclick="event.stopPropagation();const p=this.nextElementSibling;p.hidden=!p.hidden;this.setAttribute('aria-expanded',String(!p.hidden))"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v18m-4-4 4 4 4-4M17 21V3m-4 4 4-4 4 4"/></svg></button>
               <div class="mobile-shift-sort-menu" hidden>
                 <label>Ordenar por<select class="mobile-sort-key"><option value="default">Orden original</option><option value="personal">Nombre</option><option value="especialidad">Especialidad</option><option value="estado">Estado</option><option value="horario">Horario</option><option value="pausa">Pausa</option><option value="dieta">Dietas</option><option value="equipo">Equipo</option><option value="chaleco">Chaleco</option><option value="valoracion">Valoración</option></select></label>
                 <label>Dirección<select class="mobile-sort-dir"><option value="asc">Ascendente</option><option value="desc">Descendente</option></select></label>
