@@ -9307,6 +9307,38 @@ html body:not(.control-mode) #personnelGroups details.work-group .table-wrap td.
 }
 }
 </style>
+
+<style id="crew-no-selection-layout-shift-20261113">
+@media(min-width:901px){
+/* Selection must only change color, never table geometry. */
+html body #personnelGroups details.work-group .table-wrap table{
+ table-layout:fixed!important;border-collapse:collapse!important;border-spacing:0!important;
+}
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row],
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected{
+ position:static!important;transform:none!important;scale:1!important;
+ transition:background-color .15s ease!important;
+}
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected::before,
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected::after{
+ content:none!important;display:none!important;
+}
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row]>td,
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected>td{
+ box-sizing:border-box!important;transform:none!important;scale:1!important;
+ border-left-width:0!important;border-right-width:0!important;
+}
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected{
+ background:linear-gradient(90deg,rgba(245,130,32,.25),rgba(245,130,32,.10) 55%,rgba(245,130,32,0))!important;
+}
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected>td{
+ background:transparent!important;background-image:none!important;
+}
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected>td:first-child{
+ box-shadow:inset 4px 0 #f58220!important;
+}
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
