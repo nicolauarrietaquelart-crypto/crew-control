@@ -13,7 +13,7 @@
   "theme_color": "#171719",
   "icons": [
     {
-      "src": "/ICON.png",
+      "src": "/ICON.PNG",
       "sizes": "any",
       "type": "image/png",
       "purpose": "any"
