@@ -7847,7 +7847,7 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  pointer-events:none!important;opacity:0;
  background-position:center;background-size:cover;background-repeat:no-repeat;
  filter:blur(12px);transform:scale(1.04);
- transition:opacity 1.8s ease-in-out;
+ transition:opacity 2.6s cubic-bezier(.45,0,.55,1);
  visibility:hidden;
 }
 body:has(#startScreen:not(.hidden)) .crew-access-photo-slide{visibility:visible}
@@ -8359,6 +8359,10 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
   border-left-width:0!important;border-right-width:0!important;
  }
 }
+
+/* Consistent scalable vector symbols in operational controls. */
+.sidebar-link-btn-v129 .icon svg{width:19px!important;height:19px!important;display:block!important;flex-shrink:0}
+.crew-mds-actions .crew-mds-action svg{width:21px!important;height:21px!important;display:block!important;flex-shrink:0}
 </style></head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -8574,10 +8578,10 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
         </button>
         <div class="sidebar-link-actions-v129">
           <button type="button" class="sidebar-link-btn-v129" onclick="openIncidentsBoardModal()" title="Ver incidencias">
-            <span class="icon">⚠</span><span class="label">Incidencias</span><span id="sidebarIncidentsCount" class="sidebar-utility-badge-v1210">0</span>
+            <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 9v5M12 18h.01"/></svg></span><span class="label">Incidencias</span><span id="sidebarIncidentsCount" class="sidebar-utility-badge-v1210">0</span>
           </button>
           <button type="button" class="sidebar-link-btn-v129" onclick="openScenariosTeamsModal()" title="Escenarios y equipos">
-            <span class="icon">▦</span><span class="label">Equipos</span><span id="sidebarTeamsCount" class="sidebar-utility-badge-v1210">0</span>
+            <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16M15 10v10"/></svg></span><span class="label">Equipos</span><span id="sidebarTeamsCount" class="sidebar-utility-badge-v1210">0</span>
           </button>
         </div>
 
@@ -12504,7 +12508,7 @@ function renderCrewMobileDayShiftV11256(){
     ['ALL',...shifts].map(shift=>makeButton(shift,shift==='ALL'?'Todos':shift,shift==='ALL'?rows.length:rows.filter(w=>workerEntryTime(w)===shift).length,crewMobileShiftV11256===shift,'crewMobileDayShiftChooseShiftV11256')).join('')+'</div>':'';
   const incidentCount=(state.service.incidents||[]).filter(i=>i.serviceDate===state.activeDay &&
     (crewMobileWorkV11259==='ALL'||!i.trabajo||i.trabajo==='GENERAL'||normalize(i.trabajo)===normalize(crewMobileWorkV11259))).length;
-  const planIcon='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18M3 12h18M3 17h18M8 4v16M16 4v16"/></svg>';
+  const planIcon='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16M15 10v10"/></svg>';
   const incidentIcon='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 9v5M12 18h.01"/></svg>';
   const canPlan=!state.service.closed;
   const actions='<div class="crew-mds-actions">'+
@@ -16979,13 +16983,13 @@ async function notifyClosedServiceWhatsApp(person){
    // before its background URL is ever reused on the following cycle.
    nextLayer.classList.add('is-active');
    layers[visible].classList.remove('is-active');
-   await new Promise(resolve => window.setTimeout(resolve, 1800));
+   await new Promise(resolve => window.setTimeout(resolve, 2700));
    current = next;
    visible = incoming;
   } finally {
    changing = false;
   }
- }, 3500);
+ }, 4000);
 })();
 </script>
 <script id="crew-mobile-touch-polish">
