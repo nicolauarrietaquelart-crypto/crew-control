@@ -15718,6 +15718,7 @@ function randomlyAssignHandsToTeams(){
 let crewStaffingAutoTimer=null;
 let crewStaffingSaveBusy=false;
 let crewStaffingQueued=false;
+let crewStaffingCloseAfterSave=false;
 function crewScheduleStaffingAutosave(){
   if(!state.staffingWork||!state.service||state.service.closed)return;
   clearTimeout(crewStaffingAutoTimer);
@@ -15725,7 +15726,7 @@ function crewScheduleStaffingAutosave(){
 }
 function saveStaffingPlan(keepOpen=false){
   if(!state.service||state.service.closed||!state.staffingWork)return;
-  if(crewStaffingSaveBusy){crewStaffingQueued=true;return}
+  if(crewStaffingSaveBusy){crewStaffingQueued=true;if(!keepOpen)crewStaffingCloseAfterSave=true;return}
   crewStaffingSaveBusy=true;
   const trabajo=state.staffingWork,serviceDate=state.activeDay;
   const works=crewStaffingGroupFor(serviceDate,trabajo);
@@ -15752,7 +15753,10 @@ function saveStaffingPlan(keepOpen=false){
       crewStaffingSaveBusy=false;
       setSaveState('Guardado','saved');
       renderPersonnel(true);
-      if(crewStaffingQueued){crewStaffingQueued=false;if(state.staffingWork)saveStaffingPlan(true)}
+      if(crewStaffingQueued){
+        crewStaffingQueued=false;
+        if(state.staffingWork){const closeAfter=crewStaffingCloseAfterSave;crewStaffingCloseAfterSave=false;saveStaffingPlan(!closeAfter)}
+      }else if(crewStaffingCloseAfterSave){crewStaffingCloseAfterSave=false;closeStaffingModal(false)}
       return;
     }
     const work=works[index++];
@@ -15768,6 +15772,7 @@ function saveStaffingPlan(keepOpen=false){
       // haberse guardado, por lo que es necesario revisar la sincronización.
       crewStaffingSaveBusy=false;
       crewStaffingQueued=false;
+      crewStaffingCloseAfterSave=false;
       state.service.requirements=previousRequirements;
       renderPersonnel(true);
       renderOperationalAlerts();
@@ -15791,6 +15796,7 @@ function clearStaffingPlan(){
 function closeStaffingModal(save=true){
   if(save&&state.staffingWork){
     clearTimeout(crewStaffingAutoTimer);crewStaffingAutoTimer=null;
+    if(crewStaffingSaveBusy){crewStaffingCloseAfterSave=true;crewStaffingQueued=true;return}
     saveStaffingPlan(false);
     return;
   }
