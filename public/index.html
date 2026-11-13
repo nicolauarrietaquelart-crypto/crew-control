@@ -15667,7 +15667,7 @@ function crewExcelSafeSheetName(name,used){
  used.add(title.toLowerCase());
  return title;
 }
-async function downloadClosedServiceExcel(auto=false){
+async function downloadClosedServiceExcel(auto=false,returnFile=false){
  const service=state.service;
  if(!service||!service.closed){
   if(!auto)alert('Primero debes cerrar el servicio.');
@@ -15765,12 +15765,15 @@ async function downloadClosedServiceExcel(auto=false){
   });
   const data=await workbook.xlsx.writeBuffer();
   const blob=new Blob([data],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-  const url=URL.createObjectURL(blob);
   const fileName='Crew_Control_'+code+'_cierre.xlsx';
+  const file=new File([blob],fileName,{type:blob.type});
+  if(returnFile)return file;
+  const url=URL.createObjectURL(blob);
   const anchor=document.createElement('a');
   anchor.href=url;anchor.download=fileName;anchor.style.display='none';
   document.body.appendChild(anchor);anchor.click();anchor.remove();
   window.setTimeout(()=>URL.revokeObjectURL(url),60000);
+  return file;
  }catch(err){
   console.error('[Excel cierre]',err);
   if(!auto)alert('No se ha podido generar el Excel: '+(err.message||err));
@@ -16510,7 +16513,8 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
 <div id="crewNotifyOverlay" class="crew-notify-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="crewNotifyTitle" onclick="if(event.target===this)closeCrewCloseNotify()">
  <div class="crew-notify-card">
   <div class="crew-notify-top"><h2 id="crewNotifyTitle">Notificar del cierre a:</h2><button type="button" onclick="closeCrewCloseNotify()" aria-label="Cerrar ventana"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-  <p>Servicio cerrado. Selecciona a quién quieres avisar por WhatsApp.</p>
+  <p>Servicio cerrado. Selecciona a quién avisar. En móvil puedes compartir también el Excel con los horarios, dietas y pausas; elige WhatsApp y el destinatario en el menú de compartir.</p>
+  <p id="crewNotifyExcelStatus" class="hint" role="status" aria-live="polite"></p>
   <div class="crew-notify-grid">
    <button type="button" onclick="notifyClosedServiceWhatsApp('alvaro')">Álvaro</button>
    <button type="button" onclick="notifyClosedServiceWhatsApp('fran')">Fran</button>
@@ -16523,13 +16527,47 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
 function openCrewCloseNotify(){if(state.service?.closed)document.getElementById('crewNotifyOverlay')?.classList.remove('hidden')}
 function closeCrewCloseNotify(){document.getElementById('crewNotifyOverlay')?.classList.add('hidden')}
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeCrewCloseNotify()});
-function notifyClosedServiceWhatsApp(person){
-  if(!state.service?.closed)return;
-  const phones={alvaro:'34664690034',fran:'34673642431',carlos:'34626564811',blai:'34671455729'};
-  const phone=phones[person];
-  if(!phone)return;
-  const message='Hola, he introducido ya los horarios en Crew Control y he cerrado el servicio, puedes consultarlo en la aplicación.';
+async function notifyClosedServiceWhatsApp(person){
+ if(!state.service?.closed)return;
+ const phones={alvaro:'34664690034',fran:'34673642431',carlos:'34626564811',blai:'34671455729'};
+ const phone=phones[person];
+ if(!phone)return;
+ const code=String(state.service.code||'');
+ const message='Hola, he introducido ya los horarios en Crew Control y he cerrado el servicio '+code+'. Te adjunto el Excel de cierre con los horarios, las pausas y las dietas.';
+ const status=document.getElementById('crewNotifyExcelStatus');
+ if(status)status.textContent='Preparando el Excel para compartir…';
+ try{
+  const file=await downloadClosedServiceExcel(false,true);
+  if(!file)return;
+  if(String(state.service?.code||'')!==code)return;
+  // Web Share API can attach files from iOS/Android. The user still chooses
+  // WhatsApp and the recipient; browsers do not allow automatic file sending.
+  if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+   if(status)status.textContent='Selecciona WhatsApp y a la persona elegida para adjuntar el Excel.';
+   try{
+    await navigator.share({files:[file],title:'Cierre Crew Control · '+code,text:message});
+    if(status)status.textContent='Compartición finalizada. Comprueba el envío en WhatsApp.';
+   }catch(err){
+    if(err?.name==='AbortError'){
+     if(status)status.textContent='Envío cancelado. Puedes volver a intentarlo.';
+     return;
+    }
+    throw err;
+   }
+   return;
+  }
+  // Desktop / unsupported browsers: download the real file, open the
+  // selected conversation with a prepared message, and attach it manually.
+  if(status)status.textContent='Tu navegador no permite adjuntar automáticamente el Excel. Se descargará y se abrirá WhatsApp: adjunta el archivo a ese chat.';
+  const url=URL.createObjectURL(file);
+  const link=document.createElement('a');link.href=url;link.download=file.name;
+  document.body.appendChild(link);link.click();link.remove();
+  window.setTimeout(()=>URL.revokeObjectURL(url),60000);
   window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(message),'_blank','noopener,noreferrer');
+ }catch(err){
+  console.error('[WhatsApp Excel]',err);
+  if(status)status.textContent='No se ha podido compartir el Excel. Usa «Descargar Excel» y adjúntalo a WhatsApp manualmente.';
+ }
 }
 </script>
 <script id="crew-access-photo-carousel">
