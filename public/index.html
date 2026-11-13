@@ -14645,7 +14645,7 @@ function effectivePause(w){
 function pauseChipHtml(w){
   const effective=effectivePause(w);
   const manual=w.actualPause!==undefined&&w.actualPause!==null&&w.actualPause!=='';
-  const label=effective===null?'REVISAR PAUSA':effective==='00:00'?'SIN PAUSA':formatPauseLabel(effective);
+  const label=effective===null?'REVISAR PAUSA':String(Number(effective.slice(0,2)));
   return `<span class="ops-chip ${manual?'manual':''}" ${effective===null?'title="Pausa fuera del rango permitido (0-3 horas). Revisar ficha del trabajador."':''}>${escapeHtml(label)}</span>`;
 }
 function formatPauseLabel(value){
@@ -14664,7 +14664,7 @@ function effectiveDiet(w){
 function dietChipHtml(w){
   const count=effectiveDiet(w);
   const manual=w.actualDiet!==undefined&&w.actualDiet!==null&&w.actualDiet!=='';
-  const text=count===0?'SIN DIETA':(count===1?'1 DIETA':`${count} DIETAS`);
+  const text=String(Number.isFinite(count)?count:0);
   return `<span class="ops-chip ${manual?'manual':''}">${escapeHtml(text)}</span>`;
 }
 
