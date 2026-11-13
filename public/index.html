@@ -15450,7 +15450,7 @@ function randomlyAssignHandsToTeams(){
   if(!state.service||state.service.closed||!state.staffingWork)return;
   const work=state.staffingWork;
   if(document.getElementById('staffingNoTeams')?.checked){alert('Este tipo de servicio está configurado sin equipos.');return;}
-  const protectedRole=value=>/\\b(CREW[\\s_-]*HEAD|FORK[\\s_-]*LIFT(?:ER)?|FORKLIFTER|CARRETILLERO)\\b/.test(normalize(value));
+  const protectedRole=value=>/\b(CREW[\s_-]*HEAD|FORK[\s_-]*LIFT(?:ER)?|CARRETILLERO)\b/.test(normalize(value));
   const hands=(state.service.workers||[]).filter(w=>w.included&&w.status!=='NO PRESENTADO'&&w.serviceDate===state.activeDay&&normalize(w.trabajo)===normalize(work)&&!protectedRole(w.especialidad)&&!protectedRole(w.categoria)&&!protectedRole(w.role)&&!w.isReserve);
   // No modificar roles protegidos durante el reparto.
   const protectedUpdates=[];
