@@ -12088,7 +12088,7 @@ async function firebaseSaveWorkerChanges(code,updates){
     const patch={updatedAt:new Date().toISOString()};
 
     [
-      'status','notes','included','isReserve','especialidad',
+      'status','arrivalAt','notes','included','isReserve','especialidad',
       'actualStart','actualEnd','actualPause','actualDiet',
       'ratingUniformidad','ratingActitud','ratingPuntualidad'
     ].forEach(key=>{
@@ -17122,9 +17122,17 @@ function applyStatusLocally(w,status,update){
   w.status=status;
   update.status=status;
 
-  // Solo registramos la primera llegada. No tocamos Entrada real.
-  if(status==='PRESENTE'&&previousStatus!=='PRESENTE'&&!w.arrivalAt){
-    w.arrivalAt=nowClockValue();
+  // El fichaje de llegada solo pertenece al estado PRESENTE.
+  // Al desmarcar la presencia se borra también del cambio persistido (D1).
+  // Si se vuelve a marcar PRESENTE, se registrará una nueva hora de llegada.
+  if(status==='PRESENTE'){
+    if(previousStatus!=='PRESENTE'||!w.arrivalAt){
+      w.arrivalAt=nowClockValue();
+    }
+    update.arrivalAt=w.arrivalAt;
+  }else{
+    w.arrivalAt='';
+    update.arrivalAt='';
   }
 }
 
