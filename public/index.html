@@ -9362,6 +9362,28 @@ html body #personnelGroups details.work-group .table-wrap table tbody tr[data-wo
 }
 }
 </style>
+
+<style id="crew-horizontal-scroll-fixed-width-20261113">
+/* Keep the full-size desktop table instead of squeezing its columns on narrower windows. */
+@media(min-width:901px){
+html body #personnelGroups details.work-group .table-wrap{
+ width:100%!important;max-width:100%!important;
+ overflow-x:auto!important;overflow-y:visible!important;
+ overscroll-behavior-x:contain!important;
+ scrollbar-width:thin!important;
+}
+html body #personnelGroups details.work-group .table-wrap table{
+ width:100%!important;min-width:1450px!important;
+ table-layout:fixed!important;
+}
+html body #personnelGroups details.work-group .table-wrap table thead th{
+ white-space:nowrap!important;
+}
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row] td{
+ overflow-wrap:normal!important;
+}
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
