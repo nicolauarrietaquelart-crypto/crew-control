@@ -8097,6 +8097,7 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
     <div id="closedBanner" class="closed-banner">
       <div><strong>SERVICIO CERRADO</strong><div id="closedBannerText" class="hint" style="color:#ddd;margin-top:3px"></div></div>
       <div class="service-actions">
+        <button class="secondary" type="button" onclick="downloadClosedServiceExcel()" title="Descargar Excel completo por tipo de servicio">Descargar Excel</button>
         <button class="secondary" type="button" onclick="openCrewCloseNotify()" title="Notificar cierre por WhatsApp">Notificar cierre</button>
         <button class="secondary" type="button" onclick="requestReopenService()">Reabrir servicio</button>
       </div>
@@ -15629,6 +15630,8 @@ function performCloseService(){
       renderIncidents();
       renderAudit();
       setSaveState('Guardado','saved');
+      // Export only after the backend confirms a successful close.
+      downloadClosedServiceExcel(true).catch(err=>console.warn('[Excel cierre]',err));
       openCrewCloseNotify();
     })
     .withFailureHandler(err=>{
@@ -15636,6 +15639,144 @@ function performCloseService(){
       setSaveState('Error al cerrar','error');
     })
     .closeService(code);
+}
+
+
+// Excel de cierre: una hoja por tipo de servicio, con valores efectivos y previstos.
+// ExcelJS is loaded only on export so normal mobile navigation stays lightweight.
+let crewExcelJsPromise=null;
+function loadCrewExcelJs(){
+ if(window.ExcelJS)return Promise.resolve(window.ExcelJS);
+ if(crewExcelJsPromise)return crewExcelJsPromise;
+ crewExcelJsPromise=new Promise((resolve,reject)=>{
+  const script=document.createElement('script');
+  script.src='https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
+  script.onload=()=>window.ExcelJS?resolve(window.ExcelJS):reject(new Error('No se pudo iniciar el generador de Excel.'));
+  script.onerror=()=>reject(new Error('No se ha podido cargar el generador de Excel. Comprueba tu conexión.'));
+  document.head.appendChild(script);
+ }).catch(err=>{crewExcelJsPromise=null;throw err});
+ return crewExcelJsPromise;
+}
+function crewExcelSafeSheetName(name,used){
+ let base=String(name||'SIN TIPO').replace(/[\\/*?:\[\]]/g,' ').trim().slice(0,31)||'SIN TIPO';
+ let title=base,index=2;
+ while(used.has(title.toLowerCase())){
+  const suffix=' ('+index+++')';
+  title=base.slice(0,31-suffix.length)+suffix;
+ }
+ used.add(title.toLowerCase());
+ return title;
+}
+async function downloadClosedServiceExcel(auto=false){
+ const service=state.service;
+ if(!service||!service.closed){
+  if(!auto)alert('Primero debes cerrar el servicio.');
+  return;
+ }
+ const code=String(service.code||'');
+ const workers=(service.workers||[]).filter(w=>w.included!==false);
+ try{
+  const ExcelJS=await loadCrewExcelJs();
+  // Protect the generated export against switching service while it is being prepared.
+  const workbook=new ExcelJS.Workbook();
+  workbook.creator='Crew Control';
+  workbook.created=new Date();
+  const grouped=new Map();
+  workers.forEach(w=>{
+   const type=String(w.trabajo||'SIN TIPO').trim()||'SIN TIPO';
+   if(!grouped.has(type))grouped.set(type,[]);
+   grouped.get(type).push(w);
+  });
+  const types=typeof orderedWorkTypes==='function'?orderedWorkTypes([...grouped.keys()]):[...grouped.keys()];
+  const used=new Set();
+  const columns=[
+   ['Fecha','serviceDate',14],['Nombre y apellidos','personal',31],
+   ['Categoría','especialidad',22],['Móvil','movil',20],
+   ['Tipo de servicio','trabajo',22],['Estado','status',18],
+   ['Escenario','scenario',20],['Equipo','team',22],['Chaleco','vest',17],
+   ['Entrada prevista','inicio',19],['Salida prevista','fin',19],
+   ['Pausa prevista','pausa',17],['Dietas previstas','nDieta',18],
+   ['Entrada real','actualStart',17],['Salida real','actualEnd',17],
+   ['Pausa real','effectivePause',16],['Dietas reales','effectiveDiet',16],
+   ['Horas previstas','plannedHours',18],['Horas reales','actualHours',16],
+   ['Diferencia horas','difference',18],
+   ['Reserva','isReserve',12],['Coordinador','isCoordinator',16],
+   ['Observaciones','notes',34]
+  ];
+  if(!types.length)types.push('SIN PERSONAL');
+  types.forEach(type=>{
+   const sheet=workbook.addWorksheet(crewExcelSafeSheetName(type,used),{
+    views:[{state:'frozen',ySplit:4}],
+    properties:{defaultRowHeight:19}
+   });
+   sheet.mergeCells(1,1,1,columns.length);
+   sheet.getCell(1,1).value='CREW CONTROL · '+String(service.serviceName||'SERVICIO '+code);
+   sheet.getCell(1,1).font={name:'Arial',size:15,bold:true,color:{argb:'FFFFFFFF'}};
+   sheet.getCell(1,1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF171719'}};
+   sheet.getRow(1).height=32;
+   sheet.mergeCells(2,1,2,columns.length);
+   sheet.getCell(2,1).value='Código: '+code+'   |   Tipo: '+type+'   |   Lugar: '+String(service.venue||'')+'   |   Cierre: '+String(service.closedAt||'');
+   sheet.getCell(2,1).font={name:'Arial',size:10,color:{argb:'FF555555'}};
+   sheet.getRow(3).height=8;
+   sheet.columns=columns.map(([header,key,width])=>({key,width}));
+   const headers=sheet.getRow(4);
+   headers.values=columns.map(c=>c[0]);
+   headers.height=27;
+   headers.eachCell(cell=>{
+    cell.font={bold:true,color:{argb:'FFFFFFFF'}};
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF58220'}};
+    cell.alignment={vertical:'middle',wrapText:true};
+   });
+   const rows=(grouped.get(type)||[]).slice().sort((a,b)=>
+    String(a.serviceDate||'').localeCompare(String(b.serviceDate||''))||
+    String(a.inicio||'').localeCompare(String(b.inicio||''))||
+    String(a.personal||'').localeCompare(String(b.personal||''),'es')
+   );
+   rows.forEach((w,index)=>{
+    const planned=calculateClientMinutes(w.inicio,w.fin,w.pausa);
+    const actual=calculateClientMinutes(w.actualStart||w.inicio,w.actualEnd||w.fin,w.actualPause||w.pausa);
+    const team=(service.teams||[]).find(t=>String(t.id)===String(w.teamId));
+    const scenario=(service.scenarios||[]).find(sc=>String(sc.id)===String(w.scenarioId||team?.scenarioId));
+    const row=sheet.addRow({
+     serviceDate:String(w.serviceDate||service.serviceDate||''),
+     personal:String(w.personal||''),especialidad:String(w.especialidad||''),
+     movil:String(w.movil||''),trabajo:String(w.trabajo||'SIN TIPO'),
+     status:String(w.status||''),scenario:String(scenario?.name||''),
+     team:String(team?.name||''),vest:String(w.vestColor||w.chaleco||team?.vestColor||''),
+     inicio:String(w.inicio||''),fin:String(w.fin||''),
+     pausa:String(w.pausa||'00:00'),nDieta:Number(w.nDieta||0),
+     actualStart:String(w.actualStart||w.inicio||''),actualEnd:String(w.actualEnd||w.fin||''),
+     effectivePause:String(w.actualPause||w.pausa||'00:00'),
+     effectiveDiet:typeof effectiveDiet==='function'?effectiveDiet(w):Number(w.actualDiet||w.nDieta||0),
+     plannedHours:planned/60,actualHours:actual/60,difference:(actual-planned)/60,
+     isReserve:w.isReserve?'Sí':'No',isCoordinator:w.isCoordinator?'Sí':'No',
+     notes:String(w.notes||'')
+    });
+    row.height=24;
+    row.eachCell({includeEmpty:true},cell=>{
+     cell.alignment={vertical:'middle'};
+     if(index%2===1)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF3F5F7'}};
+    });
+    for(const key of ['plannedHours','actualHours','difference'])row.getCell(key).numFmt='0.00';
+    row.getCell('movil').numFmt='@';
+   });
+   sheet.autoFilter={from:{row:4,column:1},to:{row:4,column:columns.length}};
+   sheet.pageSetup={orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0};
+  });
+  const data=await workbook.xlsx.writeBuffer();
+  const blob=new Blob([data],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob);
+  const fileName='Crew_Control_'+code+'_cierre.xlsx';
+  const anchor=document.createElement('a');
+  anchor.href=url;anchor.download=fileName;anchor.style.display='none';
+  document.body.appendChild(anchor);anchor.click();anchor.remove();
+  window.setTimeout(()=>URL.revokeObjectURL(url),60000);
+ }catch(err){
+  console.error('[Excel cierre]',err);
+  if(!auto)alert('No se ha podido generar el Excel: '+(err.message||err));
+  else alert('Servicio cerrado correctamente, pero no se pudo descargar el Excel automáticamente. Pulsa «Descargar Excel» para intentarlo de nuevo.');
+  throw err;
+ }
 }
 
 function requestReopenService(){
