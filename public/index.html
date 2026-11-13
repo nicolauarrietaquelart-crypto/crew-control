@@ -10700,6 +10700,34 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
  html body .personnel-sidebar-toolbar-v121>.crew-search-reveal{transition:none!important}
 }
 </style>
+<style id="crew-desktop-specialty-table-cell-center-v3">
+/* Undo a leaked mobile flex rule on desktop table cells. */
+@media(min-width:901px){
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-role{
+  display:table-cell!important;
+  vertical-align:middle!important;
+  text-align:left!important;
+  padding:6px 4px 6px 8px!important;
+  align-items:unset!important;
+  justify-content:unset!important;
+  margin:0!important;
+  height:auto!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.worker-name.mobile-name{
+  display:table-cell!important;
+  vertical-align:middle!important;
+  padding-top:6px!important;
+  padding-bottom:6px!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-role > .role{
+  display:inline-block!important;
+  vertical-align:middle!important;
+  width:auto!important;
+  margin:0!important;
+  text-align:left!important;
+ }
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
