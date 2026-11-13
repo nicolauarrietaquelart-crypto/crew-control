@@ -9167,6 +9167,27 @@ html body #personnelGroups details.work-group .table-wrap table>tbody>tr[data-wo
 }
 }
 </style>
+
+<style id="crew-table-right-edge-fill-20261113">
+@media(min-width:901px){
+/* Make the row and its final rating cell reach the table's right boundary. */
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap{
+ width:100%!important;max-width:100%!important;box-sizing:border-box!important;
+ padding-right:0!important;margin-right:0!important;
+}
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table{
+ width:100%!important;min-width:100%!important;max-width:100%!important;
+ table-layout:fixed!important;margin-right:0!important;
+}
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table>thead>tr>th:last-child,
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table>tbody>tr[data-worker-row]>td:last-child{
+ text-align:right!important;padding-right:10px!important;box-sizing:border-box!important;
+}
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap td.mobile-rating > *{
+ margin-left:auto!important;margin-right:0!important;
+}
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
