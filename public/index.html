@@ -9079,6 +9079,25 @@ html body.control-mode #personnelGroups details.work-group .table-wrap td.mobile
 html body.control-mode #personnelGroups details.work-group .table-wrap td.mobile-vest .vest{max-width:100%!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
 }
 </style>
+
+<style id="crew-vest-collapse-and-team-width-fix-20261113">
+@media(min-width:901px){
+/* The older control-mode stylesheet collapses column 10; explicitly restore it. */
+html body.control-mode #personnelGroups details.work-group .table-wrap table>colgroup>col:nth-child(10){display:table-column!important;visibility:visible!important;width:13%!important}
+html body.control-mode #personnelGroups details.work-group .table-wrap table>thead>tr>th:nth-child(10),
+html body.control-mode #personnelGroups details.work-group .table-wrap table>tbody>tr:not(.shift-divider-row)>td:nth-child(10){display:table-cell!important;visibility:visible!important}
+/* Compact, balanced control layout (100% across the visible columns). */
+html body.control-mode #personnelGroups details.work-group .table-wrap table>colgroup>col:nth-child(1){width:3%!important}
+html body.control-mode #personnelGroups details.work-group .table-wrap table>colgroup>col:nth-child(2){width:10%!important}
+html body.control-mode #personnelGroups details.work-group .table-wrap table>colgroup>col:nth-child(3){width:25%!important}
+html body.control-mode #personnelGroups details.work-group .table-wrap table>colgroup>col:nth-child(5){width:17%!important}
+html body.control-mode #personnelGroups details.work-group .table-wrap table>colgroup>col:nth-child(8){width:16%!important}
+html body.control-mode #personnelGroups details.work-group .table-wrap table>colgroup>col:nth-child(9){width:16%!important}
+html body.control-mode #personnelGroups details.work-group .table-wrap td.mobile-team select[data-team-worker]{width:100%!important;max-width:125px!important;min-width:0!important;height:30px!important}
+/* Standard view: shrink only the team selector, preserving adjacent vest/rating. */
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap td.mobile-team select[data-team-worker]{width:100%!important;max-width:125px!important;min-width:0!important;box-sizing:border-box!important;text-overflow:ellipsis!important}
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
