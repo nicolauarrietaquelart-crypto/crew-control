@@ -9851,6 +9851,32 @@ body #personnelGroups > .crew-linked-work-heading button.staffing-chip .team-chi
  body #personnelGroups > .crew-linked-work-heading .crew-shared-heading-stats{flex-basis:100%!important}
 }
 </style>
+<style id="crew-control-900px-viewport-v1">
+/* Control view: a 900px-wide table viewport, with uncompressed content
+   scrolling horizontally rather than stretching the entire page. */
+@media(min-width:901px){
+ body.control-mode #personnelGroups .work-group .table-wrap{
+  display:block!important;width:100%!important;max-width:900px!important;
+  min-width:0!important;overflow-x:auto!important;overflow-y:hidden!important;
+  box-sizing:border-box!important;overscroll-behavior-x:contain;
+ }
+ body.control-mode #personnelGroups .work-group .table-wrap table{
+  width:1120px!important;min-width:1120px!important;max-width:none!important;
+  table-layout:fixed!important;box-sizing:border-box!important;
+ }
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(1){width:24px!important}
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(2){width:86px!important}
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(3){width:305px!important}
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(4){width:130px!important}
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(5){width:140px!important}
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(6),
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(7),
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(10){width:0!important}
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(8){width:125px!important}
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(9){width:180px!important}
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(11){width:130px!important}
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
