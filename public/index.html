@@ -7924,6 +7924,19 @@ select.status[data-status-worker].status-NO-PRESENTADO{
  background-color:#fee2e2!important;border-color:#dc2626!important;
 }
 </style>
+<style id="crew-status-square-v120">
+/* Compact square status selector in normal and Control tables. */
+@media(min-width:701px){
+ #personnelGroups .work-group .table-wrap table tr[data-worker-row] > td.mobile-status select.status[data-status-worker]{
+  display:block!important;
+  width:44px!important;min-width:44px!important;max-width:44px!important;
+  height:44px!important;min-height:44px!important;max-height:44px!important;
+  margin:0 auto!important;padding:0!important;
+  border-radius:11px!important;flex:none!important;
+  background-position:center!important;background-size:21px 21px!important;
+ }
+}
+</style>
 <style id="crew-login-photo-background-v119">
 /* Actual access-page background, not a hidden pseudo-element behind the card. */
 /* Two independent layers allow true crossfade (background-image is not animatable). */
