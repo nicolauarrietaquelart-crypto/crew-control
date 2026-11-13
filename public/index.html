@@ -9707,6 +9707,7 @@ html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-s
 }
 </style>
 <style id="crew-linked-work-plan-style">.crew-linked-add{display:flex;gap:8px;margin:12px 0}.crew-linked-add select{flex:1;min-width:0}.crew-linked-chips{display:flex;flex-wrap:wrap;gap:6px}.crew-linked-chips span{border:1px solid #ddd;border-radius:20px;padding:5px 9px;font-size:12px}.crew-linked-chips button{border:0;background:transparent;cursor:pointer}</style>
+<style id="crew-pause-summary-card-click-v114">#crewPausePeopleModal .crew-pause-person{cursor:pointer}#crewPausePeopleModal .crew-pause-person:has(input:checked){border-color:#ff7a14!important;background:#fff7f0!important}#crewPausePeopleModal .crew-pause-person input{accent-color:#ff7a14!important}.crew-pause-existing-time{display:inline-block;margin-left:8px}.crew-pause-team-summary{display:block;font-size:11px!important;color:#777!important;line-height:1.4}</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -15241,7 +15242,7 @@ function crewPauseRenderPeople(){
  const otherShift=crewPauseRecords().find(x=>x.id!==shift.id&&x.serviceDate===shift.serviceDate&&normalize(x.trabajo)===normalize(shift.trabajo)&&(x.workerIds||[]).includes(w.id));
  const pauseTime=otherShift?otherShift.start+'-'+otherShift.end:'';
  const pauseLabel=pauseTime?'<small class="crew-pause-other-time" title="Ya tiene un turno de pausa asignado">'+escapeHtml(pauseTime)+'</small>':'';
- return '<div class="crew-pause-person" data-pause-person="'+escapeAttr(w.personal+' '+teamName)+'"><label><input type="checkbox" '+(checked?'checked ':'')+(state.service.closed?'disabled ':'')+'onchange="crewPauseToggleWorker(\''+escapeJsString(shift.id)+'\',\''+escapeJsString(w.id)+'\',this.checked)"><span class="crew-pause-person-info"><strong>'+escapeHtml(w.personal)+'</strong><small class="crew-pause-team" style="text-decoration-color:'+vestColor+'">'+escapeHtml(teamName)+'</small>'+pauseLabel+'</span></label><div class="crew-pause-contacts">'+links+'</div></div>';
+ return '<div class="crew-pause-person" role="button" tabindex="0" onclick="if(!event.target.closest(\'a,input,button,label\'))this.querySelector(\'input[type=checkbox]\').click()" data-pause-person="'+escapeAttr(w.personal+' '+teamName)+'"><label><input type="checkbox" '+(checked?'checked ':'')+(state.service.closed?'disabled ':'')+'onchange="crewPauseToggleWorker(\''+escapeJsString(shift.id)+'\',\''+escapeJsString(w.id)+'\',this.checked)"><span class="crew-pause-person-info"><strong>'+escapeHtml(w.personal)+'</strong><small class="crew-pause-team" style="text-decoration-color:'+vestColor+'">'+escapeHtml(teamName)+'</small><span class="crew-pause-existing-time">'+pauseLabel+'</span></span></label><div class="crew-pause-contacts">'+links+'</div></div>';
  }).join('');
  crewPauseFilterPeople(search);
 }
@@ -15251,7 +15252,7 @@ function renderCrewPauseShifts(){
  const workers=(state.service.workers||[]).filter(w=>w.included&&w.serviceDate===state.activeDay&&normalize(w.trabajo)===normalize(crewPauseWork));
  host.innerHTML=shifts.length?shifts.map(shift=>{
  const count=(shift.workerIds||[]).filter(id=>workers.some(w=>w.id===id)).length;
- return '<div class="crew-pause-collapsed"><button type="button" class="crew-pause-open" onclick="crewPauseOpenPeople(\''+escapeJsString(shift.id)+'\')"><span><strong>'+escapeHtml(shift.start)+' – '+escapeHtml(shift.end)+'</strong><small>'+count+' personas</small></span><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 5 7 7-7 7"/></svg></button><button type="button" class="secondary" '+(state.service.closed?'disabled ':'')+'onclick="crewPauseRemoveShift(\''+escapeJsString(shift.id)+'\')">Eliminar</button></div>';
+ return '<div class="crew-pause-collapsed"><button type="button" class="crew-pause-open" onclick="crewPauseOpenPeople(\''+escapeJsString(shift.id)+'\')"><span><strong>'+escapeHtml(shift.start)+' – '+escapeHtml(shift.end)+'</strong><small>'+count+' personas</small><small class="crew-pause-team-summary">'+summary+'</small></span><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 5 7 7-7 7"/></svg></button><button type="button" class="secondary" '+(state.service.closed?'disabled ':'')+'onclick="crewPauseRemoveShift(\''+escapeJsString(shift.id)+'\')">Eliminar</button></div>';
  }).join(''):'<div class="hint">Todavía no hay turnos de pausa para este tipo de servicio y día.</div>';
  crewPauseCheckAlerts();
 }
