@@ -15467,6 +15467,19 @@ function randomlyAssignHandsToTeams(){
   const hands=(state.service.workers||[]).filter(w=>w.included&&w.status!=='NO PRESENTADO'&&w.serviceDate===state.activeDay&&inWork(w)&&!protectedRole(w.especialidad)&&!protectedRole(w.categoria)&&!protectedRole(w.role)&&!w.isReserve);
   // No modificar roles protegidos durante el reparto.
   const protectedUpdates=[];
+  // No asignar equipos exclusivos a personal sin la especialidad correspondiente.
+  const invalidSpecialUpdates=[];
+  (state.service.workers||[]).filter(w=>w.included&&w.serviceDate===state.activeDay&&inWork(w)).forEach(w=>{
+    const team=(state.service.teams||[]).find(t=>t.id===w.teamId);
+    if(!team)return;
+    const teamRole=normalize(team.name);
+    const isCrew=/\bCREW[\s_-]*HEAD\b/.test(teamRole);
+    const isFork=/\bFORK[\s_-]*LIFT(?:ER)?\b/.test(teamRole);
+    const specialty=normalize(w.especialidad);
+    if((isCrew&&!/\bCREW[\s_-]*HEAD\b/.test(specialty))||(isFork&&!/\bFORK[\s_-]*LIFT(?:ER)?\b/.test(specialty))){
+      w.teamId='';w.scenarioId='';invalidSpecialUpdates.push({workerId:w.id,teamId:''});refreshWorkerRow(w.id);
+    }
+  });
   // Reservas: equipo propio, fuera de las plazas ordinarias del reparto.
   let reserveTeam=(state.service.teams||[]).find(t=>normalize(t.name)==='RESERVAS');
   const reserveWorkers=(state.service.workers||[]).filter(w=>w.included&&w.isReserve&&w.serviceDate===state.activeDay&&inWork(w));
@@ -15507,7 +15520,7 @@ function randomlyAssignHandsToTeams(){
     updates.push({workerId:w.id,teamId});
     refreshWorkerRow(w.id);
   });
-  if(updates.length||protectedUpdates.length||reserveUpdates.length)saveWorkerUpdates([...protectedUpdates,...reserveUpdates,...updates]);
+  if(updates.length||protectedUpdates.length||reserveUpdates.length||invalidSpecialUpdates.length)saveWorkerUpdates([...invalidSpecialUpdates,...reserveUpdates,...updates]);
   renderStaffingRows();
   updateGroupSummary(work);
   renderOperationalAlerts();
