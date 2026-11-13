@@ -9690,6 +9690,13 @@ html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-s
 .crew-mobile-day-shift-v11256 .crew-mds-actions>.crew-mds-action b{font-size:11px!important}
 }
 </style>
+<style id="crew-pause-orange-close-and-time">
+#crewPauseShiftsModal .modal-close,#crewPausePeopleModal .modal-close{background:#ff7a14!important;color:#fff!important;border-color:#ff7a14!important}
+#crewPauseShiftsModal .modal-actions button,#crewPausePeopleModal .modal-actions button{background:#ff7a14!important;color:#fff!important;border:1px solid #ff7a14!important}
+#crewPauseShiftsModal .modal-close:hover,#crewPausePeopleModal .modal-close:hover,#crewPauseShiftsModal .modal-actions button:hover,#crewPausePeopleModal .modal-actions button:hover{background:#e76600!important;border-color:#e76600!important}
+#crewPausePeopleModal .crew-pause-person-info .crew-pause-team{display:inline!important}
+#crewPausePeopleModal .crew-pause-other-time{display:inline-block!important;font-size:11px!important;font-weight:750!important;color:#ed6b08!important;margin-left:8px!important}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -15221,7 +15228,10 @@ function crewPauseRenderPeople(){
  const team=(state.service.teams||[]).find(t=>t.id===w.teamId);
  const teamName=team?.name||'SIN EQUIPO';
  const vestColor=team?.colorHex&&/^#[0-9a-fA-F]{3,8}$/.test(team.colorHex)?team.colorHex:'#bcbcbc';
- return '<div class="crew-pause-person" data-pause-person="'+escapeAttr(w.personal+' '+teamName)+'"><label><input type="checkbox" '+(checked?'checked ':'')+(state.service.closed?'disabled ':'')+'onchange="crewPauseToggleWorker(\''+escapeJsString(shift.id)+'\',\''+escapeJsString(w.id)+'\',this.checked)"><span class="crew-pause-person-info"><strong>'+escapeHtml(w.personal)+'</strong><small class="crew-pause-team" style="text-decoration-color:'+vestColor+'">'+escapeHtml(teamName)+'</small></span></label><div class="crew-pause-contacts">'+links+'</div></div>';
+ const otherShift=crewPauseRecords().find(x=>x.id!==shift.id&&x.serviceDate===shift.serviceDate&&normalize(x.trabajo)===normalize(shift.trabajo)&&(x.workerIds||[]).includes(w.id));
+ const pauseTime=otherShift?otherShift.start+'-'+otherShift.end:'';
+ const pauseLabel=pauseTime?'<small class="crew-pause-other-time" title="Ya tiene un turno de pausa asignado">'+escapeHtml(pauseTime)+'</small>':'';
+ return '<div class="crew-pause-person" data-pause-person="'+escapeAttr(w.personal+' '+teamName)+'"><label><input type="checkbox" '+(checked?'checked ':'')+(state.service.closed?'disabled ':'')+'onchange="crewPauseToggleWorker(\''+escapeJsString(shift.id)+'\',\''+escapeJsString(w.id)+'\',this.checked)"><span class="crew-pause-person-info"><strong>'+escapeHtml(w.personal)+'</strong><small class="crew-pause-team" style="text-decoration-color:'+vestColor+'">'+escapeHtml(teamName)+'</small>'+pauseLabel+'</span></label><div class="crew-pause-contacts">'+links+'</div></div>';
  }).join('');
  crewPauseFilterPeople(search);
 }
