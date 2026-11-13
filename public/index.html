@@ -9778,6 +9778,35 @@ html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-s
  #personnelGroups > .crew-linked-work-heading .crew-shared-heading-stats{flex-basis:100%!important}
 }
 </style>
+<style id="crew-control-columns-balanced-v2">
+@media(min-width:901px){
+ body.control-mode #personnelGroups .work-group .table-wrap{width:100%!important;max-width:100%!important;overflow-x:auto!important}
+ body.control-mode #personnelGroups .work-group .table-wrap table{
+   width:100%!important;min-width:1240px!important;max-width:none!important;table-layout:fixed!important
+ }
+ /* Restore the normal layout's compact proportions. Allow extra room for
+    Personal and Especialidad while keeping Valoración at the far right. */
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(1){width:2%!important}
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(2){width:8%!important}
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(3){width:27%!important}
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(4){width:12%!important;visibility:visible!important}
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(5){width:14%!important}
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(6),
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(7),
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(10){width:0!important}
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(8){width:12%!important}
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(9){width:17%!important}
+ body.control-mode #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(11){width:8%!important;visibility:visible!important}
+ body.control-mode #personnelGroups .work-group .table-wrap table > thead > tr > th:nth-child(4),
+ body.control-mode #personnelGroups .work-group .table-wrap table > thead > tr > th:nth-child(11){display:table-cell!important}
+ body.control-mode #personnelGroups .work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(4),
+ body.control-mode #personnelGroups .work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(11){display:table-cell!important}
+ body.control-mode #personnelGroups .work-group .table-wrap table > thead > tr > th:last-child,
+ body.control-mode #personnelGroups .work-group .table-wrap table > tbody > tr[data-worker-row] > td:last-child{
+  padding-right:8px!important;text-align:right!important
+ }
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
