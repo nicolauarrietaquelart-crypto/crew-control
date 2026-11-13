@@ -15215,12 +15215,14 @@ function staffingSummaryForWork(trabajo,rows){
 
 function currentTeamPanelRows(){
   if(!state.service||!state.teamMembersTeamId)return[];
-  return state.service.workers.filter(w=>
+  const linked=crewStaffingGroupFor(state.activeDay,state.teamMembersWork);
+  const rows=state.service.workers.filter(w=>
     w.included &&
     (w.serviceDate||'SIN FECHA')===state.activeDay &&
-    normalize(w.trabajo||'SIN TIPO')===normalize(state.teamMembersWork) &&
+    linked.some(work=>normalize(work)===normalize(w.trabajo||'SIN TIPO')) &&
     w.teamId===state.teamMembersTeamId
   );
+  return linked.length>1?crewStaffingUniqueRows(rows):rows;
 }
 
 function openTeamMembersModal(trabajo,teamId){
@@ -15241,7 +15243,7 @@ function renderTeamMembersModal(){
 
   document.getElementById('teamMembersTitle').textContent=team.name;
   document.getElementById('teamMembersSub').textContent=
-    `${state.teamMembersWork} · ${dayLabel(state.activeDay)} ${state.activeDay}`;
+    `${crewStaffingGroupFor(state.activeDay,state.teamMembersWork).length>1?'PLANIFICACIÓN COMPARTIDA':state.teamMembersWork} · ${dayLabel(state.activeDay)} ${state.activeDay}`;
 
   document.getElementById('teamMembersStats').innerHTML=`
     <div><strong>${rows.length}</strong><span>personas</span></div>
