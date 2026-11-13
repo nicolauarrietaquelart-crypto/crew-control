@@ -8483,7 +8483,38 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
 #scenariosTeamsModal .crew-team-work-list-v11263 button:active{
  background:#f5f5f5!important;
 }
-</style></head>
+</style><style id="crew-control-fullwidth-fix">
+/* Compact control view: use the available width instead of retaining
+   the 1320px grid reserved for the full eleven-column table. */
+@media(min-width:901px){
+ body.control-mode #personnelGroups .work-group .table-wrap{
+  width:100%!important;max-width:100%!important;
+  overflow-x:hidden!important;scrollbar-gutter:auto!important;
+ }
+ body.control-mode #personnelGroups .work-group .table-wrap table{
+  width:100%!important;min-width:0!important;max-width:100%!important;
+  table-layout:fixed!important;
+ }
+ body.control-mode #personnelGroups .work-group .table-wrap colgroup col:nth-child(4),
+ body.control-mode #personnelGroups .work-group .table-wrap colgroup col:nth-child(6),
+ body.control-mode #personnelGroups .work-group .table-wrap colgroup col:nth-child(7),
+ body.control-mode #personnelGroups .work-group .table-wrap colgroup col:nth-child(10),
+ body.control-mode #personnelGroups .work-group .table-wrap colgroup col:nth-child(11){
+  display:none!important;width:0!important;
+ }
+ body.control-mode #personnelGroups .work-group .table-wrap thead th:nth-child(1){width:7%!important}
+ body.control-mode #personnelGroups .work-group .table-wrap thead th:nth-child(2){width:17%!important}
+ body.control-mode #personnelGroups .work-group .table-wrap thead th:nth-child(3){width:25%!important}
+ body.control-mode #personnelGroups .work-group .table-wrap thead th:nth-child(5){width:16%!important}
+ body.control-mode #personnelGroups .work-group .table-wrap thead th:nth-child(8){width:17%!important}
+ body.control-mode #personnelGroups .work-group .table-wrap thead th:nth-child(9){width:18%!important}
+}
+/* Control view is a desktop-only feature. */
+@media(max-width:900px){
+ #controlViewBtn{display:none!important}
+}
+</style>
+</head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
 <div class="crew-access-photo-slide" id="crewAccessPhotoB" aria-hidden="true"></div>
@@ -15964,6 +15995,7 @@ function shiftsOverlap(a,b){
 }
 
 function toggleControlView(){
+  if(window.matchMedia('(max-width:900px)').matches)return;
   state.controlMode=!state.controlMode;
   document.body.classList.toggle('control-mode',state.controlMode);
   document.getElementById('controlViewBtn').classList.toggle('on',state.controlMode);
