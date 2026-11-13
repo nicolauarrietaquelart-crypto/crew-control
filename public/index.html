@@ -8576,6 +8576,26 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
   display:table-column!important;visibility:visible!important;
  }
 }
+/* Anchor Estado in Control view: hiding later columns must not
+   change the left-hand checkbox/status tracks. */
+@media(min-width:901px){
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(1){
+  width:14px!important;min-width:14px!important;max-width:14px!important;
+  padding-left:0!important;padding-right:0!important;
+ }
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(2){
+  width:170px!important;min-width:170px!important;max-width:170px!important;
+ }
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(1){
+  width:14px!important;min-width:14px!important;max-width:14px!important;
+ }
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(2){
+  width:170px!important;min-width:170px!important;max-width:170px!important;
+ }
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(2) select.status{
+  width:100%!important;min-width:0!important;max-width:100%!important;
+ }
+}
 /* Control view is a desktop-only feature. */
 @media(max-width:900px){
  #controlViewBtn{display:none!important}
