@@ -9498,6 +9498,40 @@ html body #personnelGroups details.work-group .table-wrap>table>tbody>tr[data-wo
  border-radius:0!important;
 }
 </style>
+<style id="crew-horizontal-table-scroll-fix-20261113">
+/* Ancho estable: nunca comprimir columnas al reducir la ventana. */
+html body #personnelGroups details.work-group .table-wrap{
+ display:block!important;width:100%!important;max-width:100%!important;
+ min-width:0!important;overflow-x:auto!important;overflow-y:hidden!important;
+ scrollbar-width:auto!important;scrollbar-color:#8d969a #e5e9e9!important;
+ overscroll-behavior-x:contain!important;-webkit-overflow-scrolling:touch!important;
+}
+html body #personnelGroups details.work-group .table-wrap > table{
+ width:1450px!important;min-width:1450px!important;max-width:none!important;
+ table-layout:fixed!important;transform:none!important;
+}
+html body #personnelGroups details.work-group .table-wrap > table > colgroup > col:nth-child(1){width:42px!important}
+html body #personnelGroups details.work-group .table-wrap > table > colgroup > col:nth-child(2){width:125px!important}
+html body #personnelGroups details.work-group .table-wrap > table > colgroup > col:nth-child(3){width:205px!important}
+html body #personnelGroups details.work-group .table-wrap > table > colgroup > col:nth-child(4){width:175px!important}
+html body #personnelGroups details.work-group .table-wrap > table > colgroup > col:nth-child(5){width:135px!important}
+html body #personnelGroups details.work-group .table-wrap > table > colgroup > col:nth-child(6){width:65px!important}
+html body #personnelGroups details.work-group .table-wrap > table > colgroup > col:nth-child(7){width:65px!important}
+html body #personnelGroups details.work-group .table-wrap > table > colgroup > col:nth-child(8){width:145px!important}
+html body #personnelGroups details.work-group .table-wrap > table > colgroup > col:nth-child(9){width:220px!important}
+html body #personnelGroups details.work-group .table-wrap > table > colgroup > col:nth-child(10){width:145px!important}
+html body #personnelGroups details.work-group .table-wrap > table > colgroup > col:nth-child(11){width:128px!important}
+html body #personnelGroups details.work-group .table-wrap > table th,
+html body #personnelGroups details.work-group .table-wrap > table td{
+ box-sizing:border-box!important;min-width:0!important;
+}
+html body #personnelGroups details.work-group .table-wrap > table thead th{
+ white-space:nowrap!important;overflow:hidden!important;text-overflow:clip!important;
+}
+html body #personnelGroups details.work-group .table-wrap td.mobile-name .worker-open{
+ border-radius:0!important;
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
