@@ -10800,6 +10800,34 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
 }
 </style>
 
+<style id="crew-mobile-bulk-settings-functional-v1">
+#crewMobileBulkSelection{display:none}
+@media(max-width:900px){
+ #bulkChangesModal:not(.hidden){
+  position:fixed!important;inset:0!important;z-index:25000!important;
+ }
+ #bulkChangesModal .crew-mobile-bulk-selection{
+  display:flex!important;flex-direction:column!important;align-items:stretch!important;
+  gap:8px!important;padding:12px!important;margin:12px 0!important;
+  border:1px solid #e5e5e5!important;border-radius:13px!important;
+  background:#f8f8f8!important;box-sizing:border-box!important;
+ }
+ #bulkChangesModal #crewMobileBulkSelectionInfo{
+  font-size:12px!important;font-weight:700!important;color:#222!important;
+ }
+ #bulkChangesModal #crewMobileBulkSelectScope{
+  width:100%!important;min-height:44px!important;margin:0!important;
+  font-size:12px!important;border-radius:10px!important;
+ }
+ #bulkChangesModal .bulk-apply-v125:disabled{
+  opacity:.45!important;cursor:not-allowed!important;
+ }
+ #crewMobileSettingsV11238{
+  position:relative!important;z-index:1!important;pointer-events:auto!important;
+  touch-action:manipulation!important;
+ }
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -10835,7 +10863,7 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
  <div class="crew-metric"><strong id="crewBottomAbsent">0</strong><small>Ausentes</small></div>
  <div class="crew-metric"><strong id="crewBottomUnassigned">0</strong><small>Sin equipo</small></div>
  <a id="crewMobileGuardCall" href="tel:+34670514308" aria-label="Llamar a guardia de Penny: 670 514 308" title="Llamar a guardia · 670 514 308"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 3.09 5.18 2 2 0 0 1 5.08 3h3a2 2 0 0 1 2 1.72l.47 3a2 2 0 0 1-.57 1.73l-1.3 1.3a16 16 0 0 0 4.57 4.57l1.3-1.3a2 2 0 0 1 1.73-.57l3 .47A2 2 0 0 1 22 16.92Z"/></svg></a>
- <button id="crewMobileSettingsV11238" type="button" onclick="openBulkChangesModal()" aria-label="Abrir edición masiva" title="Ajustes"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06-1.91 1.91-.06-.06A1.65 1.65 0 0 0 16 18.4a1.65 1.65 0 0 0-1 .99V20h-6v-.61a1.65 1.65 0 0 0-1-.99 1.65 1.65 0 0 0-1.82.33l-.06.06-1.91-1.91.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.99-1H3v-4h.61a1.65 1.65 0 0 0 .99-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06 1.91-1.91.06.06A1.65 1.65 0 0 0 8 5.6a1.65 1.65 0 0 0 1-.99V4h6v.61a1.65 1.65 0 0 0 1 .99 1.65 1.65 0 0 0 1.82-.33l.06-.06 1.91 1.91-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 .99 1H21v4h-.61a1.65 1.65 0 0 0-.99 1Z"/></svg></button>
+ <button id="crewMobileSettingsV11238" type="button" onclick="openMobileBulkChangesModal()" aria-label="Abrir edición masiva" title="Cambios masivos"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06-1.91 1.91-.06-.06A1.65 1.65 0 0 0 16 18.4a1.65 1.65 0 0 0-1 .99V20h-6v-.61a1.65 1.65 0 0 0-1-.99 1.65 1.65 0 0 0-1.82.33l-.06.06-1.91-1.91.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.99-1H3v-4h.61a1.65 1.65 0 0 0 .99-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06 1.91-1.91.06.06A1.65 1.65 0 0 0 8 5.6a1.65 1.65 0 0 0 1-.99V4h6v.61a1.65 1.65 0 0 0 1 .99 1.65 1.65 0 0 0 1.82-.33l.06-.06 1.91 1.91-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 .99 1H21v4h-.61a1.65 1.65 0 0 0-.99 1Z"/></svg></button>
 </nav>
 <main class="wrap">
   <section id="startScreen" class="card login-card">
@@ -11281,6 +11309,10 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
           <button class="modal-close bulk-close-v125" onclick="closeBulkChangesModal()"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
 
+        <div id="crewMobileBulkSelection" class="crew-mobile-bulk-selection">
+          <span id="crewMobileBulkSelectionInfo">Ningún trabajador seleccionado</span>
+          <button type="button" class="secondary" id="crewMobileBulkSelectScope" onclick="crewMobileBulkToggleSelection()">Seleccionar personal filtrado</button>
+        </div>
         <div class="modal-grid bulk-changes-grid-v125">
           <div>
             <label class="field">Equipo</label>
@@ -17642,8 +17674,36 @@ function suggestBulkModalTimes(workers){
   };
 }
 
-function openBulkChangesModal(){
-  if(!state.selected.size){
+function openMobileBulkChangesModal(){
+  if(!state.service)return;
+  // The mobile settings button must open independently of prior row selection.
+  // Selection is explicit inside the dialog; never silently edit all workers.
+  openBulkChangesModal(true);
+}
+function crewMobileBulkUpdateSelection(){
+  const info=document.getElementById('crewMobileBulkSelectionInfo');
+  const button=document.getElementById('crewMobileBulkSelectScope');
+  const apply=document.querySelector('#bulkChangesModal .bulk-apply-v125');
+  if(!info||!button)return;
+  const visible=operationalWorkersForSummary();
+  const selected=visible.filter(w=>state.selected.has(w.id)).length;
+  info.textContent=state.selected.size
+    ? state.selected.size+' trabajador'+(state.selected.size===1?'':'es')+' seleccionado'+(state.selected.size===1?'':'s')
+    : 'Ningún trabajador seleccionado';
+  button.textContent=visible.length&&selected===visible.length
+    ? 'Deseleccionar personal filtrado'
+    : 'Seleccionar personal filtrado ('+visible.length+')';
+  button.disabled=!visible.length;
+  if(apply)apply.disabled=!state.selected.size;
+}
+function crewMobileBulkToggleSelection(){
+  toggleSelectOperationalScope();
+  crewMobileBulkUpdateSelection();
+  const sub=document.getElementById('bulkChangesSub');
+  if(sub)sub.textContent=state.selected.size+' trabajadores seleccionados';
+}
+function openBulkChangesModal(allowEmpty=false){
+  if(!state.selected.size && !allowEmpty){
     alert('Selecciona al menos una persona.');
     return;
   }
@@ -17667,6 +17727,7 @@ function openBulkChangesModal(){
   if(endInput)endInput.value=suggestion.end||'';
 
   document.getElementById('bulkChangesModal').classList.remove('hidden');
+  crewMobileBulkUpdateSelection();
 }
 
 function closeBulkChangesModal(){
