@@ -8044,6 +8044,21 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
  .work-group-head .coord-summary{display:none!important}
  .work-group-head .crew-group-select-v11261{display:none!important}
 }
+
+/* Keep the desktop group selection tick immediately to the right of Hide. */
+@media(min-width:901px){
+ .work-group-head .work-group-title{
+  display:flex!important;align-items:center!important;gap:9px!important;min-width:0;
+ }
+ .work-group-head .work-group-title > .work-hide-btn-v11227,
+ .work-group-head .work-group-title > .crew-group-select-v11261{
+  flex:0 0 30px!important;margin:0!important;
+ }
+ .work-group-head .work-group-title > .work-drag-handle-v11227{flex:0 0 auto!important}
+ .work-group-head .work-group-title > .crew-group-select-v11261{
+  order:0;
+ }
+}
 </style></head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -12782,11 +12797,7 @@ function renderPersonnel(light=false){
             title="Ocultar este tipo de servicio" aria-label="Ocultar ${escapeAttr(trabajo)}">
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.7 5.1A10.9 10.9 0 0 1 12 5c5 0 9.3 4.1 10 7-.2.9-1.2 2.5-2.7 3.9"/><path d="M6.2 6.2C4.1 7.6 2.5 9.7 2 12c.7 2.9 5 7 10 7 1.9 0 3.7-.6 5.2-1.5"/><path d="M10 10a3 3 0 0 0 4 4"/></svg>
           </button>
-          ${escapeHtml(trabajo)}
-          ${readinessHtml}
-          <span class="group-bulk-actions">
-            
-            <button type="button"
+          <button type="button"
               class="group-bulk-btn crew-group-select-v11261"
               data-group-select-all="${escapeAttr(trabajo)}"
               aria-label="Seleccionar todo el personal de ${escapeAttr(trabajo)}"
@@ -12794,7 +12805,12 @@ function renderPersonnel(light=false){
               title="Seleccionar o deseleccionar todo el personal de este tipo"
               onclick="event.preventDefault();event.stopPropagation();toggleSelectWorkGroup('${escapeJsString(trabajo)}')">
               <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.3 4.3L19 7"/></svg>
-            </button>
+            </button> 
+          ${escapeHtml(trabajo)}
+          ${readinessHtml}
+          <span class="group-bulk-actions">
+            
+
             <button type="button"
               class="group-bulk-btn"
               onclick="event.preventDefault();event.stopPropagation();openAddWorkerModal('${escapeJsString(trabajo)}')">
