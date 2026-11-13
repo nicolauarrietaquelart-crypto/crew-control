@@ -7965,6 +7965,38 @@ select.status[data-status-worker].status-NO-PRESENTADO{
  }
 }
 </style>
+<style id="crew-responsive-personnel-grid-v122">
+/* The desktop table expands with the available main area, including
+   when the operational sidebar is collapsed. Colgroup is the single
+   source of widths so headers and body remain in the same tracks. */
+@media(min-width:901px){
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap{
+  width:100%!important;max-width:100%!important;overflow-x:auto!important;
+ }
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table{
+  width:100%!important;min-width:1050px!important;max-width:none!important;
+  table-layout:fixed!important;
+ }
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(1){width:2%!important}
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(2){width:7%!important}
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(3){width:19%!important}
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(4){width:12%!important}
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(5){width:11%!important}
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(6){width:7%!important}
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(7){width:7%!important}
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(8){width:10%!important}
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(9){width:15%!important}
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(10){width:6%!important}
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(11){width:4%!important}
+ /* Remove hardcoded pixel widths on individual Estado cells; let
+    their shared colgroup track control the alignment. */
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table > thead > tr > th:nth-child(2),
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(2){
+  width:auto!important;min-width:0!important;max-width:none!important;
+  text-align:center!important;
+ }
+}
+</style>
 <style id="crew-login-photo-background-v119">
 /* Actual access-page background, not a hidden pseudo-element behind the card. */
 /* Two independent layers allow true crossfade (background-image is not animatable). */
