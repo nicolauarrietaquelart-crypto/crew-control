@@ -8297,6 +8297,31 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
  }
  #personnelGroups td.mobile-phone .crew-phone-mobile-v11264 span{pointer-events:none!important}
 }
+
+/* Desktop: align each personnel heading with its own data column. */
+@media(min-width:901px){
+ #personnelGroups .work-group .table-wrap thead th:nth-child(9),
+ #personnelGroups .work-group .table-wrap thead th:nth-child(10),
+ #personnelGroups .work-group .table-wrap thead th:nth-child(11),
+ #personnelGroups .work-group .table-wrap tbody td:nth-child(9),
+ #personnelGroups .work-group .table-wrap tbody td:nth-child(10),
+ #personnelGroups .work-group .table-wrap tbody td:nth-child(11){
+  text-align:center!important;
+ }
+ #personnelGroups .work-group .table-wrap tbody td.mobile-team select{
+  margin-left:auto!important;margin-right:auto!important;
+ }
+ #personnelGroups .work-group .table-wrap tbody td.mobile-vest > *,
+ #personnelGroups .work-group .table-wrap tbody td.mobile-rating > *{
+  margin-left:auto!important;margin-right:auto!important;
+ }
+ #personnelGroups .work-group .table-wrap td.mobile-phone .crew-phone-desktop-v11264{
+  color:#111!important;font-weight:800!important;text-decoration:none!important;
+ }
+ #personnelGroups .work-group .table-wrap td.mobile-phone .crew-phone-desktop-v11264:hover{
+  color:#f58220!important;text-decoration:none!important;
+ }
+}
 </style></head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
