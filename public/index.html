@@ -10170,7 +10170,7 @@ body #personnelGroups > .crew-linked-work-heading .staffing-summary button.staff
 <style id="crew-mobile-card-grid-final-v11">
 @media(max-width:700px){
  html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row]{
-  display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;
+  display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;overflow:hidden!important;
   column-gap:3px!important;row-gap:9px!important;align-items:center!important;
   width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;
  }
@@ -10233,6 +10233,12 @@ body #personnelGroups > .crew-linked-work-heading .staffing-summary button.staff
  }
  html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-vest *{white-space:nowrap!important;max-width:100%!important;font-size:11px!important;}
 }
+
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-status button{max-width:100%!important;min-width:0!important;box-sizing:border-box!important}
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-team select{overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-phone .crew-phone-mobile-v11264{overflow:hidden!important;text-overflow:ellipsis!important}
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-vest{overflow:hidden!important}
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-vest *{display:inline-block!important;overflow:hidden!important;text-overflow:ellipsis!important;vertical-align:middle!important}
 </style>
 </head>
 <body>
