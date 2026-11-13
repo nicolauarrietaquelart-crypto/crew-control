@@ -15492,36 +15492,23 @@ function scheduleRangeHtml(w){
 
 
 function hoursSummaryHtml(w){
-  const planned=Number(w.plannedMinutes||0);
-
-  // IMPORTANT: 0 real minutes is a valid value.
-  // Do not use `w.actualMinutes || planned`, because 0 is falsy.
-  const hasActualMinutes=
-    w.actualMinutes!==undefined &&
-    w.actualMinutes!==null &&
-    w.actualMinutes!=='';
-
-  const actual=hasActualMinutes
-    ? Number(w.actualMinutes)
-    : planned;
-
-  const hasDiff=
-    w.overtimeMinutes!==undefined &&
-    w.overtimeMinutes!==null &&
-    w.overtimeMinutes!=='';
-
-  const diff=hasDiff
-    ? Number(w.overtimeMinutes)
-    : (actual-planned);
-
-  if(!planned&&!actual)return'';
-
-  let cls='';
-  if(diff>0)cls=' extra';
-  if(diff<0)cls=' less';
-
-  const text=`${formatMinutesClient(actual)}${diff?` · ${diff>0?'+':''}${formatMinutesClient(diff)}`:''}`;
-  return `<span class="hours-chip${cls}">${text}</span>`;
+  // El tiempo mostrado junto al horario es la duración BRUTA del turno.
+  // plannedMinutes/actualMinutes pueden descontar la pausa y no deben confundirse
+  // con la diferencia entre las horas de inicio y fin que se ven en pantalla.
+  const start=normalizeTime(w.actualStart)||normalizeTime(w.inicio);
+  const end=normalizeTime(w.actualEnd)||normalizeTime(w.fin);
+  if(isValidClock(start)&&isValidClock(end)){
+    const from=clockToMinutes(start);
+    let to=clockToMinutes(end);
+    if(to<from)to+=24*60;
+    const gross=to-from;
+    const pause=effectivePause(w);
+    const pauseMinutes=pause===null?0:Number(pause.slice(0,2))*60;
+    const detail=pauseMinutes>0?' · '+formatMinutesClient(Math.max(0,gross-pauseMinutes))+' efectivas':'';
+    return '<span class="hours-chip" title="Duración total del turno'+(pauseMinutes?' (pausa descontada solo en horas efectivas)':'')+'">'+formatMinutesClient(gross)+detail+'</span>';
+  }
+  const minutes=w.actualMinutes!==undefined&&w.actualMinutes!==null&&w.actualMinutes!==''?Number(w.actualMinutes):Number(w.plannedMinutes||0);
+  return minutes?'<span class="hours-chip">'+formatMinutesClient(minutes)+'</span>':'';
 }
 
 function formatMinutesClient(minutes){
