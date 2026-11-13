@@ -9710,6 +9710,13 @@ html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-s
 <style id="crew-pause-summary-card-click-v114">#crewPausePeopleModal .crew-pause-person{cursor:pointer}#crewPausePeopleModal .crew-pause-person:has(input:checked){border-color:#ff7a14!important;background:#fff7f0!important}#crewPausePeopleModal .crew-pause-person input{accent-color:#ff7a14!important}.crew-pause-existing-time{display:inline-block;margin-left:8px}.crew-pause-team-summary{display:block;font-size:11px!important;color:#777!important;line-height:1.4}</style>
 <link rel="stylesheet" href="/pause-return.css">
 <style>.crew-assign-personnel{position:relative;display:inline-flex}.crew-assign-personnel-menu{position:absolute;bottom:calc(100% + 8px);left:0;z-index:100;background:#fff;border:1px solid #ddd;border-radius:12px;padding:12px;box-shadow:0 12px 30px #0002;min-width:245px;display:grid;gap:8px}.crew-assign-personnel-menu[hidden]{display:none!important}.crew-assign-personnel-menu select{width:100%;min-width:0}@media(max-width:700px){.crew-assign-personnel-menu{left:auto;right:0;max-width:calc(100vw - 32px)}}</style>
+<style id="crew-linked-work-list-style">
+.crew-linked-work-heading{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff3e8;border:1px solid #e8c5a5;border-bottom:0;border-radius:13px 13px 0 0;padding:12px 17px;margin-top:12px}
+.crew-linked-work-heading span{font-size:10px;font-weight:800;color:#a15a17;letter-spacing:.07em}
+.crew-linked-work-heading strong{font-size:13px;font-weight:800;overflow-wrap:anywhere}
+#personnelGroups > details.work-group.crew-linked-work-member{margin-top:0!important;margin-bottom:0!important;border-radius:0!important;border-bottom:0!important}
+#personnelGroups > details.work-group.crew-linked-work-member.crew-linked-work-last{border-bottom:1px solid #ddd!important;border-radius:0 0 13px 13px!important;margin-bottom:13px!important}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -14587,6 +14594,36 @@ function renderPersonnel(light=false){
     }
   });
 
+  // Tipos vinculados se muestran consecutivos en una misma lista visual.
+  // Cada tipo conserva sus propios turnos, trabajadores y controles.
+  const rendered=new Set(),groupedNodes=[];
+  const nodeByName=new Map(nextNodes.map(n=>[normalize(n.getAttribute('data-work-group')||''),n]));
+  orderedNames.forEach(work=>{
+    const key=normalize(work),node=nodeByName.get(key);
+    if(!node||rendered.has(key))return;
+    const linked=crewStaffingGroupFor(state.activeDay,work)
+      .map(name=>nodeByName.get(normalize(name)))
+      .filter(Boolean);
+    if(linked.length>1){
+      const heading=document.createElement('div');
+      heading.className='crew-linked-work-heading';
+      heading.innerHTML='<span>PLANIFICACIÓN COMPARTIDA</span><strong>'+linked.map(n=>escapeHtml(n.getAttribute('data-work-group'))).join(' + ')+'</strong>';
+      groupedNodes.push(heading);
+      linked.forEach((entry,i)=>{
+        const name=normalize(entry.getAttribute('data-work-group')||'');
+        if(rendered.has(name))return;
+        entry.classList.add('crew-linked-work-member');
+        entry.classList.toggle('crew-linked-work-last',i===linked.length-1);
+        groupedNodes.push(entry);rendered.add(name);
+      });
+    }else{
+      node.classList.remove('crew-linked-work-member','crew-linked-work-last');
+      groupedNodes.push(node);rendered.add(key);
+    }
+  });
+  nextNodes.length=0;
+  nextNodes.push(...groupedNodes);
+
   // Reconcile in one pass: remove stale groups first, then move only
   // nodes that are actually out of order. Avoid repeated insertions during load.
   const wanted=new Set(nextNodes);
@@ -15676,83 +15713,51 @@ function randomlyAssignHandsToTeams(){
 
 function saveStaffingPlan(){
   if(!state.service||state.service.closed)return;
-
-  const trabajo=state.staffingWork;
-  const serviceDate=state.activeDay;
-
+  const trabajo=state.staffingWork,serviceDate=state.activeDay;
+  const works=crewStaffingGroupFor(serviceDate,trabajo);
   const noTeams=Boolean(document.getElementById('staffingNoTeams')?.checked);
-
-  const payload=noTeams
-    ? []
-    : Object.entries(state.staffingDraft)
-      .map(([teamId,requiredCount])=>({
-        teamId,
-        requiredCount:Math.max(0,Math.floor(Number(requiredCount||0)))
-      }))
-      .filter(x=>x.requiredCount>0);
-
-  // Guardamos una copia solo por si Google Sheets devuelve error.
+  const payload=noTeams?[]:Object.entries(state.staffingDraft).map(([teamId,requiredCount])=>({
+    teamId,requiredCount:Math.max(0,Math.floor(Number(requiredCount)||0))
+  })).filter(x=>x.requiredCount>0);
   const previousRequirements=(state.service.requirements||[]).map(r=>({...r}));
-
-  // ACTUALIZACIÓN LOCAL INSTANTÁNEA:
-  // sustituimos los objetivos de este día + tipo de servicio en memoria.
-  state.service.requirements=(state.service.requirements||[])
-    .filter(r=>!(
-      r.serviceDate===serviceDate &&
-      normalize(r.trabajo)===normalize(trabajo)
-    ))
-    .concat(
-      noTeams
-        ? [{
-            serviceDate,
-            trabajo,
-            teamId:NO_TEAMS_REQUIREMENT_TEAM_ID,
-            requiredCount:0
-          }]
-        : payload.map(r=>({
-            serviceDate,
-            trabajo,
-            teamId:r.teamId,
-            requiredCount:r.requiredCount
-          }))
-    );
-
+  const matches=r=>r.serviceDate===serviceDate&&works.some(w=>normalize(w)===normalize(r.trabajo));
+  // Los objetivos son compartidos: al guardar o quitar objetivos se actualizan
+  // TODOS los tipos enlazados, tanto en memoria como en la persistencia remota.
+  state.service.requirements=(state.service.requirements||[]).filter(r=>!matches(r)).concat(
+    works.flatMap(work=>noTeams?[{
+      serviceDate,trabajo:work,teamId:NO_TEAMS_REQUIREMENT_TEAM_ID,requiredCount:0
+    }]:payload.map(r=>({serviceDate,trabajo:work,...r})))
+  );
   closeStaffingModal();
-
-  // Solo actualiza el resumen afectado; NO vuelve a pintar 158 personas.
-  updateGroupSummary(trabajo);
+  renderPersonnel(true);
   renderOperationalAlerts();
   setSaveState('Guardando planificación…','saving');
-
-  backend.run
-    .withSuccessHandler(result=>{
-      // La UI ya estaba actualizada. El servidor solo confirma.
-      if(result&&Array.isArray(result.saved)){
-        state.service.requirements=(state.service.requirements||[])
-          .filter(r=>!(
-            r.serviceDate===serviceDate &&
-            normalize(r.trabajo)===normalize(trabajo)
-          ))
-          .concat(result.saved);
-      }
-
+  let index=0;
+  const saveNext=()=>{
+    if(index>=works.length){
       setSaveState('Guardado','saved');
-    })
-    .withFailureHandler(err=>{
-      // Si falla el servidor, restauramos lo anterior para no mentir en pantalla.
+      renderPersonnel(true);
+      return;
+    }
+    const work=works[index++];
+    backend.run.withSuccessHandler(result=>{
+      if(result&&Array.isArray(result.saved)){
+        state.service.requirements=(state.service.requirements||[]).filter(r=>!(
+          r.serviceDate===serviceDate&&normalize(r.trabajo)===normalize(work)
+        )).concat(result.saved);
+      }
+      saveNext();
+    }).withFailureHandler(err=>{
+      // Restaurar la vista y avisar: los cambios remotos anteriores pueden
+      // haberse guardado, por lo que es necesario revisar la sincronización.
       state.service.requirements=previousRequirements;
-      updateGroupSummary(trabajo);
+      renderPersonnel(true);
       renderOperationalAlerts();
       setSaveState('Error al guardar','error');
-      alert(errorMessage(err));
-    })
-    .saveTeamRequirements(
-      state.service.code,
-      serviceDate,
-      trabajo,
-      payload,
-      noTeams
-    );
+      alert('No se ha podido guardar toda la planificación compartida. Revisa los objetivos y vuelve a intentarlo. '+errorMessage(err));
+    }).saveTeamRequirements(state.service.code,serviceDate,work,payload,noTeams);
+  };
+  saveNext();
 }
 
 function clearStaffingPlan(){
