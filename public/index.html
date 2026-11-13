@@ -9281,6 +9281,32 @@ html body #personnelGroups details.work-group .table-wrap table tbody tr[data-wo
 html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected>td:nth-child(n){position:relative!important;z-index:1!important;background:transparent!important;background-image:none!important;box-shadow:none!important}
 }
 </style>
+
+<style id="crew-table-centered-columns-20261113">
+@media(min-width:901px){
+/* Center every header and its matching value within the same fixed table track. */
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table>thead>tr>th:nth-child(n+4),
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table>tbody>tr[data-worker-row]>td:nth-child(n+4){
+ text-align:center!important;vertical-align:middle!important;
+ padding-left:3px!important;padding-right:3px!important;box-sizing:border-box!important;
+}
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table>tbody>tr[data-worker-row]>td:nth-child(n+4)>*{
+ margin-left:auto!important;margin-right:auto!important;
+}
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap td.mobile-team select[data-team-worker]{
+ display:block!important;width:calc(100% - 6px)!important;max-width:125px!important;
+ margin-left:auto!important;margin-right:auto!important;
+}
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap td.mobile-team .no-teams-chip{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ margin-left:auto!important;margin-right:auto!important;text-align:center!important;
+}
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap td.mobile-phone .crew-phone-desktop-v11264{
+ display:inline-flex!important;justify-content:center!important;
+ margin-left:auto!important;margin-right:auto!important;
+}
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
