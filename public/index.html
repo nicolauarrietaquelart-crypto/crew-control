@@ -8008,6 +8008,24 @@ select.status[data-status-worker].status-NO-PRESENTADO{
  }
 }
 </style>
+<style id="crew-control-square-left-v123">
+/* Control view: compact icon-only status, anchored to the left. */
+@media(min-width:901px){
+ body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td.mobile-status{
+  text-align:left!important;padding-left:6px!important;padding-right:0!important;
+ }
+ body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td.mobile-status select.status[data-status-worker]{
+  display:block!important;box-sizing:border-box!important;
+  width:44px!important;min-width:44px!important;max-width:44px!important;
+  height:44px!important;min-height:44px!important;max-height:44px!important;
+  margin:0!important;padding:0!important;border-radius:11px!important;
+  background-position:center!important;background-size:21px 21px!important;
+ }
+ body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(2){
+  text-align:left!important;padding-left:6px!important;
+ }
+}
+</style>
 <style id="crew-login-photo-background-v119">
 /* Actual access-page background, not a hidden pseudo-element behind the card. */
 /* Two independent layers allow true crossfade (background-image is not animatable). */
