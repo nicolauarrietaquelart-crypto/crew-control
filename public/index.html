@@ -14115,6 +14115,7 @@ function crewMobileScopeRowsV11259(){
   return state.service.workers.filter(w=>
     w.included &&
     (w.serviceDate||'SIN FECHA')===state.activeDay &&
+    !isWorkTypeHidden(w.trabajo||'SIN TIPO') &&
     (!crewMobileSelectedWorks.size||[...crewMobileSelectedWorks].some(x=>normalize(x)===normalize(w.trabajo||'SIN TIPO')))
   );
 }
@@ -14212,6 +14213,7 @@ function workersForActiveDay(){
   return state.service.workers.filter(w=>{
     if(!w.included)return false;
     if((w.serviceDate||'SIN FECHA')!==state.activeDay)return false;
+    if(isWorkTypeHidden(w.trabajo||'SIN TIPO'))return false;
     if(window.matchMedia('(max-width: 900px)').matches && crewMobileWorkV11259!=='ALL' && normalize(w.trabajo||'SIN TIPO')!==normalize(crewMobileWorkV11259))return false;
     if(window.matchMedia('(max-width: 900px)').matches && crewMobileShiftV11256!=='ALL' && workerEntryTime(w)!==crewMobileShiftV11256)return false;
 
@@ -17617,6 +17619,7 @@ function operationalWorkersForSummary(){
   return state.service.workers.filter(w=>
     (w.serviceDate||'SIN FECHA')===state.activeDay &&
     w.included &&
+    !isWorkTypeHidden(w.trabajo||'SIN TIPO') &&
     operationalWorkMatches(w.trabajo||'SIN TIPO') &&
     operationalTimeMatches(w)
   );
@@ -17638,7 +17641,7 @@ function updateScopeSelectButton(){
   const rows=operationalWorkersForSummary();
   const allSelected=rows.length>0 && rows.every(w=>state.selected.has(w.id));
 
-  label.textContent=operationalScopeLabel();
+  label.textContent='Seleccionar';
   count.textContent=String(rows.length);
   btn.classList.toggle('active',allSelected);
 }
@@ -17692,7 +17695,7 @@ function getDayOperationalMetrics(){
   if(!state.service)return null;
 
   const workers=window.matchMedia('(max-width: 900px)').matches
-    ?crewMobileScopeRowsV11259().filter(w=>crewMobileShiftV11256==='ALL'||workerEntryTime(w)===crewMobileShiftV11256)
+    ?crewMobileScopeRowsV11259().filter(w=>!crewMobileSelectedShifts.size||crewMobileSelectedShifts.has(workerEntryTime(w)))
     :operationalWorkersForSummary();
 
   const present=workers.filter(w=>w.status==='PRESENTE').length;
