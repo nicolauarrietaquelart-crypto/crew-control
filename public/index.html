@@ -10728,6 +10728,78 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
  }
 }
 </style>
+<style id="crew-mobile-operational-two-toolbar-rows-v2">
+@media(max-width:900px){
+ html body #mobileOperationalDrawerV11234 .personnel-sidebar-toolbar-v121{
+  display:flex!important;flex-direction:column!important;gap:10px!important;
+  align-items:stretch!important;min-width:0!important;
+ }
+ html body #mobileOperationalDrawerV11234 .personnel-sidebar-toolbar-v121>.crew-filter-action-row{
+  display:flex!important;align-items:stretch!important;flex-flow:row nowrap!important;
+  width:100%!important;min-width:0!important;gap:8px!important;
+  order:1!important;
+ }
+ html body #mobileOperationalDrawerV11234 .crew-filter-action-row>#quickStatusFilter{
+  flex:1 1 0!important;width:auto!important;min-width:0!important;
+  max-width:none!important;min-height:48px!important;
+  grid-column:auto!important;grid-row:auto!important;
+ }
+ html body #mobileOperationalDrawerV11234 .crew-filter-action-row>#scopeSelectBtn{
+  display:inline-flex!important;position:static!important;order:0!important;
+  flex:0 0 auto!important;align-items:center!important;justify-content:center!important;
+  width:auto!important;max-width:145px!important;min-width:0!important;
+  min-height:48px!important;height:auto!important;
+  padding:8px 10px!important;margin:0!important;
+  border:1px solid #e4e4e4!important;border-radius:13px!important;
+  box-sizing:border-box!important;gap:6px!important;
+  white-space:nowrap!important;
+ }
+ html body #mobileOperationalDrawerV11234 .crew-filter-action-row>#scopeSelectBtn .scope-icon{
+  font-size:17px!important;flex-shrink:0!important;
+ }
+ html body #mobileOperationalDrawerV11234 .crew-filter-action-row>#scopeSelectBtn #scopeSelectLabel{
+  font-size:12px!important;max-width:83px!important;overflow:hidden!important;
+  text-overflow:ellipsis!important;white-space:nowrap!important;
+ }
+ html body #mobileOperationalDrawerV11234 .crew-filter-action-row>#scopeSelectBtn #scopeSelectCount{
+  flex-shrink:0!important;font-size:11px!important;
+ }
+ html body #mobileOperationalDrawerV11234 .crew-filter-action-row>.crew-search-toggle{
+  flex:0 0 44px!important;width:44px!important;min-height:48px!important;height:48px!important;
+ }
+ html body #mobileOperationalDrawerV11234 .personnel-sidebar-toolbar-v121>.sidebar-link-actions-v129{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  grid-column:auto!important;grid-row:auto!important;order:2!important;
+  gap:8px!important;width:100%!important;min-width:0!important;max-width:100%!important;
+  margin:0!important;padding:0!important;align-items:stretch!important;
+ }
+ html body #mobileOperationalDrawerV11234 .sidebar-link-actions-v129>.sidebar-link-btn-v129,
+ html body #mobileOperationalDrawerV11234 .sidebar-link-actions-v129>.crew-inline-teams-btn{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  width:100%!important;max-width:none!important;min-width:0!important;
+  min-height:54px!important;height:54px!important;
+  padding:7px 5px!important;margin:0!important;gap:5px!important;
+  border:1px solid #e4e4e4!important;border-radius:13px!important;
+  background:#fff!important;color:#111!important;box-sizing:border-box!important;
+ }
+ html body #mobileOperationalDrawerV11234 .sidebar-link-actions-v129>.crew-inline-teams-btn .label{
+  display:none!important;
+ }
+ html body #mobileOperationalDrawerV11234 .sidebar-link-actions-v129>.crew-inline-teams-btn .icon svg,
+ html body #mobileOperationalDrawerV11234 .sidebar-link-actions-v129>.sidebar-link-btn-v129 .icon svg{
+  display:block!important;width:23px!important;height:23px!important;
+ }
+ html body #mobileOperationalDrawerV11234 .personnel-sidebar-toolbar-v121>.crew-search-reveal{
+  order:0!important;
+ }
+ html body #mobileOperationalDrawerV11234 .personnel-sidebar-toolbar-v121>#arrivalModeBtn{order:3!important}
+ html body #mobileOperationalDrawerV11234 .personnel-sidebar-toolbar-v121>#mobileOperationalMoreV11234{order:4!important}
+ html body #mobileOperationalDrawerV11234 .personnel-sidebar-toolbar-v121>#sidebarPdfManager{order:5!important}
+ html body #mobileOperationalDrawerV11234 .personnel-sidebar-toolbar-v121>#selectedCounter{order:7!important}
+ html body #mobileOperationalDrawerV11234 .personnel-sidebar-toolbar-v121>.sidebar-icon-actions-v124{order:8!important}
+}
+</style>
+
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -13289,6 +13361,44 @@ function mountPersonnelSidebarPortal(){
 }
 
 
+function crewArrangeMobileOperationalActions(){
+  const toolbar=document.querySelector('.personnel-sidebar-toolbar-v121');
+  if(!toolbar)return;
+  const filterRow=toolbar.querySelector('.crew-filter-action-row');
+  const actions=toolbar.querySelector('.sidebar-link-actions-v129');
+  const teams=toolbar.querySelector('.crew-inline-teams-btn');
+  const select=toolbar.querySelector('#scopeSelectBtn');
+  const pdf=toolbar.querySelector('#sidebarPdfManager');
+  const counter=toolbar.querySelector('#selectedCounter');
+  if(!filterRow||!actions||!teams||!select)return;
+
+  const mobile=window.matchMedia('(max-width:900px)').matches;
+  if(mobile){
+    // Real DOM movement avoids cloned controls with conflicting counters/events.
+    if(select.parentElement!==filterRow){
+      filterRow.insertBefore(select,filterRow.querySelector('.crew-search-toggle'));
+    }
+    if(teams.parentElement!==actions)actions.appendChild(teams);
+    // Three full-width utility actions directly below filtering controls.
+    if(actions.previousElementSibling!==filterRow){
+      filterRow.insertAdjacentElement('afterend',actions);
+    }
+  }else{
+    if(teams.parentElement!==filterRow){
+      filterRow.insertBefore(teams,filterRow.querySelector('.crew-search-toggle'));
+    }
+    if(select.parentElement!==toolbar){
+      if(counter)toolbar.insertBefore(select,counter);
+      else if(pdf)pdf.insertAdjacentElement('afterend',select);
+      else toolbar.appendChild(select);
+    }
+    if(actions.parentElement===toolbar && actions.previousElementSibling!==toolbar.querySelector('#mobileOperationalMoreV11234')){
+      const more=toolbar.querySelector('#mobileOperationalMoreV11234');
+      if(more)more.insertAdjacentElement('afterend',actions);
+    }
+  }
+}
+
 function syncPersonnelSidebarPlacement(){
   const sidebar=document.querySelector('.personnel-sidebar-v121');
   const mobileDrawer=document.getElementById('mobileOperationalDrawerV11234');
@@ -13308,6 +13418,7 @@ function syncPersonnelSidebarPlacement(){
     }
     sidebar.classList.add('personnel-sidebar-portal-v1215');
   }
+  crewArrangeMobileOperationalActions();
 }
 
 function restorePersonnelSidebarHome(){
