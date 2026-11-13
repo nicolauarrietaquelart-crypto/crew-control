@@ -8322,6 +8322,25 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
   color:#f58220!important;text-decoration:none!important;
  }
 }
+
+/* Desktop call control: compact phone pill, bold number, no underline. */
+@media(min-width:901px){
+ #personnelGroups .work-group .table-wrap td.mobile-phone a.crew-phone-desktop-v11264,
+ #personnelGroups .work-group .table-wrap td.mobile-phone a.crew-phone-desktop-v11264:link,
+ #personnelGroups .work-group .table-wrap td.mobile-phone a.crew-phone-desktop-v11264:visited,
+ #personnelGroups .work-group .table-wrap td.mobile-phone a.crew-phone-desktop-v11264:hover{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  width:max-content!important;max-width:100%!important;min-height:34px!important;
+  padding:6px 11px!important;border:1px solid #e3e5e9!important;border-radius:10px!important;
+  background:#f5f6f8!important;color:#111!important;font-weight:800!important;
+  text-decoration:none!important;text-decoration-line:none!important;
+  box-shadow:none!important;white-space:nowrap!important;
+  transition:background .18s ease,border-color .18s ease!important;
+ }
+ #personnelGroups .work-group .table-wrap td.mobile-phone a.crew-phone-desktop-v11264:hover{
+  background:#fff0e4!important;border-color:#f58220!important;
+ }
+}
 </style></head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -12254,6 +12273,13 @@ function looksLikePhoneNumber(value){
   if(digits.length===9)return /^[6789]/.test(digits);
   if(digits.length===11&&digits.startsWith('34'))return /^[6789]/.test(digits.slice(2));
   if(digits.length===13&&digits.startsWith('0034'))return /^[6789]/.test(digits.slice(4));
+  // International numbers from PDF: +39..., 0039..., or 39 followed by an Italian number.
+  // Keep E.164 length limits to avoid mistaking times or reference IDs for phones.
+  if((raw.startsWith('+')||raw.startsWith('00'))&&digits.length>=10&&digits.length<=17){
+    const international=raw.startsWith('00')?digits.slice(2):digits;
+    return international.length>=8&&international.length<=15&&international[0]!=='0';
+  }
+  if(digits.startsWith('39')&&digits.length>=11&&digits.length<=13)return true;
   return false;
 }
 
@@ -12307,7 +12333,8 @@ function normalizePhone(v){
   if(!looksLikePhoneNumber(raw))return'';
 
   let x=raw.replace(/[()\s.-]/g,'').trim();
-  if(x.startsWith('0034'))x='+34'+x.slice(4);
+  if(x.startsWith('00'))x='+'+x.slice(2);
+  else if(x.startsWith('39')&&x.length>=11&&x.length<=13)x='+'+x;
   return x;
 }
 function normalizeTime(v){
