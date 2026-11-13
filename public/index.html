@@ -9635,7 +9635,26 @@ html body #personnelGroups details.work-group > .table-wrap > table > thead > tr
 html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col.crew-flex-spacer-col{width:auto!important;min-width:0!important;max-width:none!important}
 html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-spacer-cell{min-width:0!important;width:auto!important;padding:0!important;border-left:0!important}
 }
-</style></head>
+</style><style id="crew-pause-shifts-style">
+.crew-staffing-actions{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:8px!important}
+.crew-staffing-actions button{width:auto!important;flex:0 1 auto!important}
+.crew-pause-card{width:min(820px,calc(100vw - 24px))!important;max-height:calc(100dvh - 32px)!important;overflow-y:auto!important}
+.crew-pause-controls{display:grid;gap:14px;margin:14px 0 18px}
+.crew-pause-controls label{display:grid;gap:6px;font-weight:700}
+.crew-pause-controls select,.crew-pause-controls input,.crew-pause-search{width:100%;min-width:0;box-sizing:border-box}
+.crew-pause-create{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}
+.crew-pause-shift-list{display:grid;gap:14px}
+.crew-pause-shift{border:1px solid #dedede;border-radius:15px;padding:15px;display:grid;gap:12px}
+.crew-pause-shift-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.crew-pause-shift-head strong{font-size:17px}
+.crew-pause-worker-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:7px;max-height:240px;overflow:auto}
+.crew-pause-worker{display:flex;align-items:center;gap:8px;padding:9px;border:1px solid #e3e3e3;border-radius:9px;cursor:pointer;font-size:13px}
+.crew-pause-worker input{accent-color:#ff7a14}
+.crew-pause-worker span{min-width:0;overflow-wrap:anywhere}
+.crew-pause-mobile-action svg{width:21px;height:21px}
+@media(max-width:700px){.crew-pause-create{grid-template-columns:1fr 1fr}.crew-pause-create button{grid-column:1/-1}.crew-pause-mobile-action{flex:0 0 52px!important;min-width:52px!important}.crew-mds-actions{display:flex!important;gap:7px!important}.crew-mds-actions>.crew-mds-action:not(.crew-pause-mobile-action){flex:1 1 0!important;min-width:0!important}.crew-pause-card{width:calc(100vw - 20px)!important}}
+</style>
+</head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
 <div class="crew-access-photo-slide" id="crewAccessPhotoB" aria-hidden="true"></div>
@@ -9852,6 +9871,7 @@ html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-s
           <button type="button" class="sidebar-link-btn-v129" onclick="openIncidentsBoardModal()" title="Ver incidencias">
             <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 9v5M12 18h.01"/></svg></span><span class="label">Incidencias</span><span id="sidebarIncidentsCount" class="sidebar-utility-badge-v1210">0</span>
           </button>
+          <button type="button" class="sidebar-link-btn-v129" onclick="openCrewPauseShifts()" title="Turnos de pausa"><span class="icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2M4 3l2 2M20 3l-2 2"/></svg></span><span class="label">Turnos de pausa</span></button>
           <button type="button" class="sidebar-link-btn-v129" onclick="openScenariosTeamsModal()" title="Escenarios y equipos">
             <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16M15 10v10"/></svg></span><span class="label">Equipos</span><span id="sidebarTeamsCount" class="sidebar-utility-badge-v1210">0</span>
           </button>
@@ -10375,10 +10395,10 @@ html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-s
         </div>
 
           <div id="staffingRows"></div>
-          <button type="button" class="secondary" style="margin-top:12px;width:100%" onclick="randomlyAssignHandsToTeams()">Equipos Aleatorios</button>
         </div>
 
-        <div class="modal-actions">
+        <div class="modal-actions crew-staffing-actions">
+          <button type="button" class="secondary" onclick="randomlyAssignHandsToTeams()">Equipos Aleatorios</button>
           <button class="secondary" onclick="clearStaffingPlan()">Quitar objetivos</button>
           <button class="secondary" onclick="closeStaffingModal()">Cancelar</button>
           <button class="primary" onclick="saveStaffingPlan()">Guardar planificación</button>
@@ -10386,6 +10406,24 @@ html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-s
       </div>
     </div>
 
+    <div id="crewPauseShiftsModal" class="modal hidden" onclick="if(event.target===this)closeCrewPauseShifts()">
+      <div class="modal-card crew-pause-card">
+        <div class="modal-head">
+          <div><h3>Turnos de pausa</h3><div class="modal-sub">Organización independiente de las pausas del servicio</div></div>
+          <button type="button" class="modal-close" onclick="closeCrewPauseShifts()" aria-label="Cerrar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="crew-pause-controls">
+          <label>Tipo de servicio<select id="crewPauseWork" onchange="crewPauseChooseWork(this.value)"></select></label>
+          <div class="crew-pause-create">
+            <label>Inicio<input type="time" id="crewPauseStart" value="13:00"></label>
+            <label>Fin<input type="time" id="crewPauseEnd" value="14:00"></label>
+            <button type="button" class="primary" onclick="crewPauseAddShift()">Crear turno</button>
+          </div>
+        </div>
+        <div id="crewPauseShiftList" class="crew-pause-shift-list"></div>
+        <div class="modal-actions"><button type="button" class="secondary" onclick="closeCrewPauseShifts()">Cerrar</button></div>
+      </div>
+    </div>
     <div id="historyModal" class="modal hidden" onclick="historyBackdropClick(event)">
       <div class="modal-card">
         <div class="modal-head">
@@ -13799,7 +13837,7 @@ function renderCrewMobileDayShiftV11256(){
   const canPlan=!state.service.closed;
   const actions='<div class="crew-mds-actions">'+
     '<button type="button" class="crew-mds-action crew-mds-action-plan" onclick="crewMobileOpenTeamsV11262()">'+planIcon+'<span>Equipos</span></button>'+
-    '<button type="button" class="crew-mds-action" onclick="openIncidentsBoardModal()">'+incidentIcon+'<span>Incidencias</span>'+(incidentCount?'<b>'+incidentCount+'</b>':'')+'</button></div>';
+    '<button type="button" class="crew-mds-action" onclick="openIncidentsBoardModal()">'+incidentIcon+'<span>Incidencias</span>'+(incidentCount?'<b>'+incidentCount+'</b>':'')+'</button>'+    '<button type="button" class="crew-mds-action crew-pause-mobile-action" onclick="openCrewPauseShifts()" title="Turnos de pausa" aria-label="Turnos de pausa"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2M4 3l2 2M20 3l-2 2"/></svg></button></div>';
   host.innerHTML=dayControls+workControls+shiftControls+actions;
   host.hidden=!(dayControls||workControls||shiftControls);
   const active=host.querySelector('.crew-mds-work-line .crew-mds-pill.active');
@@ -15069,6 +15107,64 @@ function closeTeamMembersModal(){
 
 function teamMembersBackdropClick(event){
   if(event.target?.id==='teamMembersModal')closeTeamMembersModal();
+}
+
+
+// Turnos de pausa: planificación operativa separada de w.pausa, w.actualPause y los horarios PDF.
+let crewPauseWork='';
+const crewPauseRecords=()=>{if(!Array.isArray(state.service.pauseShifts))state.service.pauseShifts=[];return state.service.pauseShifts};
+function crewPauseSave(){crewPersist(state.service).then(()=>setSaveState('Turnos de pausa guardados','saved')).catch(e=>{console.error(e);setSaveState('Error al guardar turnos','error')})}
+function openCrewPauseShifts(){
+  if(!state.service)return;
+  const works=[...new Set((state.service.workers||[]).filter(w=>w.included&&w.serviceDate===state.activeDay).map(w=>w.trabajo||'SIN TIPO'))].sort();
+  const selected=crewMobileWorkV11259!=='ALL'&&works.includes(crewMobileWorkV11259)?crewMobileWorkV11259:works[0]||'';
+  crewPauseWork=works.includes(crewPauseWork)?crewPauseWork:selected;
+  const select=document.getElementById('crewPauseWork');
+  select.innerHTML=works.map(w=>'<option value="'+escapeAttr(w)+'">'+escapeHtml(w)+'</option>').join('');
+  select.value=crewPauseWork;
+  renderCrewPauseShifts();
+  document.getElementById('crewPauseShiftsModal').classList.remove('hidden');
+}
+function closeCrewPauseShifts(){document.getElementById('crewPauseShiftsModal').classList.add('hidden')}
+function crewPauseChooseWork(work){crewPauseWork=work;renderCrewPauseShifts()}
+function crewPauseAddShift(){
+  if(!state.service||state.service.closed||!crewPauseWork)return;
+  const start=document.getElementById('crewPauseStart').value,end=document.getElementById('crewPauseEnd').value;
+  if(!start||!end||start===end){alert('Indica un inicio y un fin distintos.');return}
+  crewPauseRecords().push({id:'PS_'+crypto.randomUUID(),serviceDate:state.activeDay,trabajo:crewPauseWork,start,end,workerIds:[]});
+  crewPauseSave();renderCrewPauseShifts();
+}
+function crewPauseRemoveShift(id){
+  if(!state.service||state.service.closed||!confirm('¿Eliminar este turno de pausa?'))return;
+  state.service.pauseShifts=crewPauseRecords().filter(x=>x.id!==id);
+  crewPauseSave();renderCrewPauseShifts();
+}
+function crewPauseToggleWorker(id,workerId,checked){
+  if(!state.service||state.service.closed)return;
+  const shift=crewPauseRecords().find(x=>x.id===id);if(!shift)return;
+  // Un trabajador solo puede pertenecer a un turno de pausa del mismo día y tipo.
+  crewPauseRecords().filter(x=>x.serviceDate===shift.serviceDate&&normalize(x.trabajo)===normalize(shift.trabajo)).forEach(x=>{x.workerIds=(x.workerIds||[]).filter(w=>w!==workerId)});
+  if(checked)shift.workerIds.push(workerId);
+  crewPauseSave();renderCrewPauseShifts();
+}
+function crewPauseFilterWorkers(id,value){
+  const container=document.getElementById('crewPauseWorkers_'+id);if(!container)return;
+  const term=normalize(value);
+  container.querySelectorAll('[data-pause-person]').forEach(el=>el.hidden=!normalize(el.dataset.pausePerson).includes(term));
+}
+function renderCrewPauseShifts(){
+  const host=document.getElementById('crewPauseShiftList');if(!host||!state.service)return;
+  const shifts=crewPauseRecords().filter(x=>x.serviceDate===state.activeDay&&normalize(x.trabajo)===normalize(crewPauseWork)).sort((a,b)=>a.start.localeCompare(b.start));
+  const workers=(state.service.workers||[]).filter(w=>w.included&&w.serviceDate===state.activeDay&&normalize(w.trabajo)===normalize(crewPauseWork));
+  host.innerHTML=shifts.length?shifts.map(shift=>{
+    const count=(shift.workerIds||[]).filter(id=>workers.some(w=>w.id===id)).length;
+    const entries=workers.map(w=>{
+      const checked=(shift.workerIds||[]).includes(w.id);
+      const other=shifts.find(x=>x.id!==shift.id&&(x.workerIds||[]).includes(w.id));
+      return '<label class="crew-pause-worker" data-pause-person="'+escapeAttr(w.personal)+'"><input type="checkbox" '+(checked?'checked ':'')+(state.service.closed?'disabled ':'')+'onchange="crewPauseToggleWorker(\''+escapeJsString(shift.id)+'\',\''+escapeJsString(w.id)+'\',this.checked)"><span>'+escapeHtml(w.personal)+(other&&!checked?' · '+escapeHtml(other.start):'')+'</span></label>';
+    }).join('');
+    return '<section class="crew-pause-shift"><div class="crew-pause-shift-head"><strong>'+escapeHtml(shift.start)+' – '+escapeHtml(shift.end)+' · '+count+' personas</strong><button class="secondary" type="button" '+(state.service.closed?'disabled ':'')+'onclick="crewPauseRemoveShift(\''+escapeJsString(shift.id)+'\')">Eliminar</button></div><input class="crew-pause-search" type="search" placeholder="Buscar personal..." oninput="crewPauseFilterWorkers(\''+escapeJsString(shift.id)+'\',this.value)"><div class="crew-pause-worker-list" id="crewPauseWorkers_'+escapeAttr(shift.id)+'">'+entries+'</div></section>';
+  }).join(''):'<div class="hint">Todavía no hay turnos de pausa para este tipo de servicio y día.</div>';
 }
 
 function openStaffingModal(trabajo){
