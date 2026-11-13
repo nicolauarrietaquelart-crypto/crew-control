@@ -9621,8 +9621,8 @@ html body #personnelGroups details.work-group > .table-wrap{width:100%!important
 html body #personnelGroups details.work-group > .table-wrap > table{table-layout:fixed!important;width:100%!important;min-width:957px!important;max-width:none!important;transform:none!important;margin:0!important;border-spacing:0!important}
 html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(1){width:20px!important;min-width:20px!important;max-width:20px!important}
 html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(2){width:70px!important;min-width:70px!important;max-width:70px!important}
-html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(3){width:130px!important;min-width:130px!important;max-width:130px!important}
-html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(4){width:90px!important;min-width:90px!important;max-width:90px!important}
+html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(3){width:140px!important;min-width:140px!important;max-width:140px!important}
+html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(4){width:80px!important;min-width:80px!important;max-width:80px!important}
 html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(5){width:145px!important;min-width:145px!important;max-width:145px!important}
 html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(6){width:65px!important;min-width:65px!important;max-width:65px!important}
 html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(7){width:65px!important;min-width:65px!important;max-width:65px!important}
@@ -10375,6 +10375,7 @@ html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-s
         </div>
 
           <div id="staffingRows"></div>
+          <button type="button" class="secondary" style="margin-top:12px;width:100%" onclick="randomlyAssignHandsToTeams()">Asignar hands aleatoriamente</button>
         </div>
 
         <div class="modal-actions">
@@ -14426,7 +14427,7 @@ function renderPersonnel(light=false){
       ${workTeamFilterHtml(trabajo,includedRows)}
       <div class="table-wrap" style="display:block;width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:auto;overscroll-behavior-x:contain">
         <table style="display:table;table-layout:fixed;width:100%;min-width:957px;max-width:none;flex-shrink:0;transform:none">
-          <colgroup><col style="width:20px;min-width:20px;max-width:20px"><col style="width:70px;min-width:70px;max-width:70px"><col style="width:130px;min-width:130px;max-width:130px"><col style="width:90px;min-width:90px;max-width:90px"><col style="width:145px;min-width:145px;max-width:145px"><col style="width:65px;min-width:65px;max-width:65px"><col style="width:65px;min-width:65px;max-width:65px"><col style="width:110px;min-width:110px;max-width:110px"><col style="width:110px;min-width:110px;max-width:110px"><col style="width:75px;min-width:75px;max-width:75px"><col style="width:77px;min-width:77px;max-width:77px"></colgroup>
+          <colgroup><col style="width:20px;min-width:20px;max-width:20px"><col style="width:70px;min-width:70px;max-width:70px"><col style="width:140px;min-width:140px;max-width:140px"><col style="width:80px;min-width:80px;max-width:80px"><col style="width:145px;min-width:145px;max-width:145px"><col style="width:65px;min-width:65px;max-width:65px"><col style="width:65px;min-width:65px;max-width:65px"><col style="width:110px;min-width:110px;max-width:110px"><col style="width:110px;min-width:110px;max-width:110px"><col style="width:75px;min-width:75px;max-width:75px"><col style="width:77px;min-width:77px;max-width:77px"></colgroup>
           <thead><tr>
             <th></th>
             <th class="sortable-th">${sortHeaderHtml(trabajo,'estado','Estado')}</th>
@@ -15236,6 +15237,34 @@ function renderStaffingRows(){
       }).join('')}
     </div>`;
   }).join('');
+}
+
+function randomlyAssignHandsToTeams(){
+  if(!state.service||state.service.closed||!state.staffingWork)return;
+  const work=state.staffingWork;
+  if(document.getElementById('staffingNoTeams')?.checked){alert('Este tipo de servicio está configurado sin equipos.');return;}
+  const isProtected=name=>/\\b(CREW[\\s_-]*HEAD|FORK[\\s_-]*LIFT(?:ER)?|FORKLIFTER|CARRETILLERO)\\b/.test(normalize(name));
+  const teams=(state.service.teams||[]).filter(t=>!isProtected(t.name));
+  const hands=(state.service.workers||[]).filter(w=>w.included&&w.serviceDate===state.activeDay&&normalize(w.trabajo)===normalize(work)&&!isProtected(w.especialidad)&&!isProtected(w.categoria)&&!isProtected(w.role)&&!isProtected(w.teamName));
+  if(!teams.length){alert('Primero crea los equipos a los que asignar los hands.');return;}
+  if(!hands.length){alert('No hay hands disponibles en este tipo de servicio.');return;}
+  if(!confirm('¿Asignar aleatoriamente '+hands.length+' hands entre '+teams.length+' equipos? Se sustituirán sus asignaciones actuales. Crew Head y Forklifter no se modificarán.'))return;
+  // Barajado Fisher-Yates y reparto equilibrado; nunca modifica otros tipos ni días.
+  const shuffled=[...hands];
+  for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
+  const updates=[];
+  shuffled.forEach((w,i)=>{
+    const team=teams[i%teams.length];
+    if(w.teamId===team.id)return;
+    w.teamId=team.id;
+    w.scenarioId=team.scenarioId||'';
+    updates.push({workerId:w.id,teamId:team.id});
+  });
+  if(updates.length)saveWorkerUpdates(updates);
+  renderStaffingRows();
+  updateGroupSummary(work);
+  renderOperationalAlerts();
+  setSaveState(updates.length+' asignaciones aleatorias aplicadas','saving');
 }
 
 function saveStaffingPlan(){
