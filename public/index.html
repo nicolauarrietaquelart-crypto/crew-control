@@ -8119,7 +8119,7 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
   -webkit-tap-highlight-color:transparent;touch-action:manipulation;
  }
  #personnelGroups > details.work-group{
-  overflow:clip;border-radius:17px!important;
+  overflow:visible!important;border-radius:17px!important;
   transition:box-shadow .28s var(--crew-touch-ease),border-color .28s var(--crew-touch-ease)!important;
  }
  #personnelGroups > details.work-group:has(> summary:active){
@@ -8179,6 +8179,25 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
  #personnelGroups > details.work-group,
  #personnelGroups > details.work-group > summary.work-group-head,
  #crewMobileBottomV11238 button{transition:none!important}
+}
+
+/* iOS mobile: do not crop worker names or their glyph corners. */
+@media(max-width:900px){
+ #personnelGroups .work-group .table-wrap table td.mobile-name{
+  overflow:visible!important;min-width:0!important;
+  border-radius:0!important;clip-path:none!important;
+ }
+ #personnelGroups .work-group .table-wrap table td.mobile-name .worker-open{
+  display:block!important;width:100%!important;max-width:100%!important;
+  overflow:visible!important;text-overflow:clip!important;
+  white-space:normal!important;overflow-wrap:break-word!important;
+  word-break:normal!important;line-height:1.35!important;
+  border-radius:0!important;clip-path:none!important;
+  padding:3px 0!important;
+ }
+ #personnelGroups .work-group .table-wrap table tr[data-worker-row]{
+  overflow:visible!important;
+ }
 }
 </style></head>
 <body>
