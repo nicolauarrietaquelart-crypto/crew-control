@@ -15390,10 +15390,80 @@ function crewVestIcon(color){
  '</svg>';
 }
 
-function crewStaffingWorks(){const key=state.activeDay+'|'+normalize(state.staffingWork);return [state.staffingWork,...((state.service.staffingLinkedWorks||{})[key]||[])];}
-function crewStaffingChooseWork(){const el=document.getElementById('crewStaffingAddWork');if(!el||!el.value)return;const key=state.activeDay+'|'+normalize(state.staffingWork);const old=(state.service.staffingLinkedWorks||{})[key]||[];if(!old.includes(el.value)){state.service.staffingLinkedWorks={...(state.service.staffingLinkedWorks||{}),[key]:[...old,el.value]};crewPersist(state.service).catch(console.error);}renderCrewStaffingLinkedWorks();renderStaffingRows();}
-function crewStaffingRemoveWork(work){const key=state.activeDay+'|'+normalize(state.staffingWork);state.service.staffingLinkedWorks={...(state.service.staffingLinkedWorks||{}),[key]:((state.service.staffingLinkedWorks||{})[key]||[]).filter(x=>x!==work)};crewPersist(state.service).catch(console.error);renderCrewStaffingLinkedWorks();renderStaffingRows();}
-function renderCrewStaffingLinkedWorks(){const host=document.getElementById('crewStaffingLinkedWorks');if(!host)return;const all=[...new Set((state.service.workers||[]).filter(w=>w.serviceDate===state.activeDay).map(w=>w.trabajo).filter(Boolean))];const available=all.filter(w=>!crewStaffingWorks().includes(w));host.innerHTML='<div class="crew-linked-chips">'+crewStaffingWorks().slice(1).map(w=>'<span>'+escapeHtml(w)+' <button type="button" onclick="crewStaffingRemoveWork(\''+escapeJsString(w)+'\')">×</button></span>').join('')+'</div><div class="crew-linked-add"><select id="crewStaffingAddWork"><option value="">Añadir tipo de servicio…</option>'+available.map(w=>'<option value="'+escapeAttr(w)+'">'+escapeHtml(w)+'</option>').join('')+'</select><button type="button" class="secondary" onclick="crewStaffingChooseWork()">+ Añadir</button></div>';}
+// Agrupación compartida de tipos de servicio por fecha: la relación es bidireccional.
+// Se resuelven también conexiones transitivas (A+B y B+C => A+B+C).
+function crewStaffingGroupFor(day,work){
+  const links=state.service?.staffingLinkedWorks||{};
+  const normalized=normalize(work);
+  const available=[...new Set((state.service?.workers||[]).filter(w=>w.serviceDate===day&&w.trabajo).map(w=>w.trabajo))];
+  const names=new Map(available.map(w=>[normalize(w),w]));
+  names.set(normalized,names.get(normalized)||work);
+  const graph=new Map();
+  function connect(a,b){
+    if(!graph.has(a))graph.set(a,new Set());
+    if(!graph.has(b))graph.set(b,new Set());
+    graph.get(a).add(b);graph.get(b).add(a);
+  }
+  Object.entries(links).forEach(([key,values])=>{
+    const divider=key.indexOf('|');if(divider<0||key.slice(0,divider)!==day)return;
+    const a=key.slice(divider+1);
+    if(!Array.isArray(values))return;
+    values.forEach(value=>{
+      const b=normalize(value);if(!b||!a||a===b)return;
+      names.set(b,names.get(b)||value);
+      connect(a,b);
+    });
+  });
+  const visited=new Set([normalized]),queue=[normalized];
+  while(queue.length){
+    const current=queue.shift();
+    (graph.get(current)||[]).forEach(next=>{if(!visited.has(next)){visited.add(next);queue.push(next)}});
+  }
+  return [...visited].map(key=>names.get(key)||key);
+}
+function crewStaffingWorks(){return crewStaffingGroupFor(state.activeDay,state.staffingWork)}
+function crewStaffingChooseWork(){
+  const el=document.getElementById('crewStaffingAddWork');if(!el||!el.value||!state.service)return;
+  const work=el.value,group=crewStaffingWorks();
+  if(group.some(x=>normalize(x)===normalize(work)))return;
+  const key=state.activeDay+'|'+normalize(state.staffingWork);
+  const linked=state.service.staffingLinkedWorks||{};
+  linked[key]=[...new Set([...(linked[key]||[]),work])];
+  state.service.staffingLinkedWorks=linked;
+  crewPersist(state.service).catch(console.error);
+  renderCrewStaffingLinkedWorks();renderStaffingRows();
+}
+function crewStaffingRemoveWork(work){
+  if(!state.service)return;
+  const group=crewStaffingWorks(),target=normalize(work);
+  const linked=state.service.staffingLinkedWorks||{};
+  // Eliminar la conexión con el grupo actual desde ambos extremos.
+  Object.keys(linked).forEach(key=>{
+    if(!key.startsWith(state.activeDay+'|'))return;
+    const origin=key.slice((state.activeDay+'|').length);
+    if(origin===target){
+      linked[key]=(linked[key]||[]).filter(x=>!group.some(g=>normalize(g)===normalize(x)));
+    }else if(group.some(g=>normalize(g)===origin)){
+      linked[key]=(linked[key]||[]).filter(x=>normalize(x)!==target);
+    }
+    if(!linked[key].length)delete linked[key];
+  });
+  state.service.staffingLinkedWorks=linked;
+  crewPersist(state.service).catch(console.error);
+  renderCrewStaffingLinkedWorks();renderStaffingRows();
+}
+function renderCrewStaffingLinkedWorks(){
+  const host=document.getElementById('crewStaffingLinkedWorks');if(!host||!state.service)return;
+  const all=[...new Set((state.service.workers||[]).filter(w=>w.serviceDate===state.activeDay&&w.trabajo).map(w=>w.trabajo))];
+  const group=crewStaffingWorks();
+  const available=all.filter(w=>!group.some(x=>normalize(x)===normalize(w)));
+  host.innerHTML='<div class="crew-linked-chips">'+group.slice(1).map(w=>
+    '<span>'+escapeHtml(w)+' <button type="button" title="Separar tipo de servicio" onclick="crewStaffingRemoveWork(\''+escapeJsString(w)+'\')">×</button></span>'
+  ).join('')+'</div><div class="crew-linked-add"><select id="crewStaffingAddWork"><option value="">Añadir tipo de servicio…</option>'+
+  available.map(w=>'<option value="'+escapeAttr(w)+'">'+escapeHtml(w)+'</option>').join('')+
+  '</select><button type="button" class="secondary" onclick="crewStaffingChooseWork()">+ Añadir</button></div>'+
+  '<div class="hint" style="margin-top:7px">Los asignados y presentes se suman entre todos los tipos vinculados, sin duplicar trabajadores. El recuento será el mismo al abrir cualquiera de ellos.</div>';
+}
 
 function renderStaffingRows(){
   const rows=state.service.workers.filter(w=>
@@ -15402,10 +15472,18 @@ function renderStaffingRows(){
     w.included
   );
 
-  // Una sola pasada por los trabajadores.
+  // Un trabajador puede tener varias franjas/tipos: contarlo una sola vez por equipo.
+  const uniqueRows=new Map();
+  rows.forEach(w=>{
+    const phone=String(w.movil||'').replace(/\\D/g,'');
+    const identity=phone.length>=9?'TEL:'+phone:'ID:'+String(w.id);
+    const key=identity+'|'+String(w.teamId||'');
+    const prior=uniqueRows.get(key);
+    if(!prior||(!prior.status||prior.status!=='PRESENTE')&&w.status==='PRESENTE')uniqueRows.set(key,w);
+  });
   const counts={};
 
-  rows.forEach(w=>{
+  uniqueRows.forEach(w=>{
     if(!w.teamId)return;
 
     if(!counts[w.teamId]){
