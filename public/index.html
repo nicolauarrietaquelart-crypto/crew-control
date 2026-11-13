@@ -15452,16 +15452,8 @@ function randomlyAssignHandsToTeams(){
   if(document.getElementById('staffingNoTeams')?.checked){alert('Este tipo de servicio está configurado sin equipos.');return;}
   const protectedRole=value=>/\\b(CREW[\\s_-]*HEAD|FORK[\\s_-]*LIFT(?:ER)?|FORKLIFTER|CARRETILLERO)\\b/.test(normalize(value));
   const hands=(state.service.workers||[]).filter(w=>w.included&&w.status!=='NO PRESENTADO'&&w.serviceDate===state.activeDay&&normalize(w.trabajo)===normalize(work)&&!protectedRole(w.especialidad)&&!protectedRole(w.categoria)&&!protectedRole(w.role)&&!w.isReserve);
-  // Restaurar equipos exclusivos a roles protegidos, incluso si una ejecución anterior los movió.
+  // No modificar roles protegidos durante el reparto.
   const protectedUpdates=[];
-  (state.service.workers||[]).filter(w=>w.included&&w.serviceDate===state.activeDay&&normalize(w.trabajo)===normalize(work)&&protectedRole(w.especialidad)).forEach(w=>{
-    const role=normalize(w.especialidad);
-    const expected=(state.service.teams||[]).find(t=>role.includes('CREW HEAD')?normalize(t.name).includes('CREW HEAD'):/FORKLIFT|FORK LIFT/.test(normalize(t.name)));
-    if(!expected||w.teamId===expected.id)return;
-    w.teamId=expected.id;w.scenarioId=expected.scenarioId||'';
-    protectedUpdates.push({workerId:w.id,teamId:expected.id});
-    refreshWorkerRow(w.id);
-  });
   // Reservas: equipo propio, fuera de las plazas ordinarias del reparto.
   let reserveTeam=(state.service.teams||[]).find(t=>normalize(t.name)==='RESERVAS');
   const reserveWorkers=(state.service.workers||[]).filter(w=>w.included&&w.isReserve&&w.serviceDate===state.activeDay&&normalize(w.trabajo)===normalize(work));
@@ -15478,7 +15470,7 @@ function randomlyAssignHandsToTeams(){
     w.teamId=reserveTeam.id;w.scenarioId=reserveTeam.scenarioId||'';
     reserveUpdates.push({workerId:w.id,teamId:reserveTeam.id});refreshWorkerRow(w.id);
   });
-  const targets=Object.entries(state.staffingDraft||{}).map(([teamId,count])=>({team:state.service.teams.find(t=>t.id===teamId),count:Math.max(0,Math.floor(Number(count)||0))})).filter(x=>x.team&&x.count>0&&!protectedRole(x.team.name));
+  const targets=Object.entries(state.staffingDraft||{}).map(([teamId,count])=>({team:state.service.teams.find(t=>t.id===teamId),count:Math.max(0,Math.floor(Number(count)||0))})).filter(x=>x.team&&x.count>0&&!protectedRole(x.team.name)&&normalize(x.team.name)!=='RESERVAS');
   if(!targets.length){alert('Primero indica cuántas personas necesitas en cada equipo de la planificación.');return;}
   if(!hands.length){alert('No hay hands para asignar en este tipo de servicio.');return;}
   const total=targets.reduce((n,x)=>n+x.count,0);
