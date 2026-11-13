@@ -12565,12 +12565,20 @@ async function crewCheckRemoteChanges(){
     document.querySelector('.modal:not(.hidden)')||
     document.activeElement?.matches('input,textarea,select,[contenteditable="true"]'))return;
   const code=state.service.code;
+  const checkStarted=Date.now();
+  const localRevision=state.service._syncRevision;
   crewRemoteCheckInFlight=true;
   try{
     await crewSaveQueue;
+    // Do not allow an older remote response to roll back an attendance edit
+    // made while this request was pending.
+    if(state.workerSaveInFlight||Object.keys(state.pendingWorkerUpdates||{}).length||
+       crewLastLocalWrite>checkStarted||state.service?._syncRevision!==localRevision)return;
     const response=await crewApi(code);
     const remote=response.service;
     if(!remote||state.service?.code!==code)return;
+    if(state.workerSaveInFlight||Object.keys(state.pendingWorkerUpdates||{}).length||
+       crewLastLocalWrite>checkStarted||state.service?._syncRevision!==localRevision)return;
     if(remote._syncRevision===state.service._syncRevision)return;
     state.service=remote;
     const active=state.activeDay;
@@ -12779,16 +12787,47 @@ async function crewD1Dispatch(method,args){
     await crewPersist(next);return next;
   }
   if(method==='saveWorkerChanges'){
-    const next={...state.service,workers:(state.service?.workers||[]).map(w=>{
-      const change=(args[1]||[]).find(x=>String(x.workerId)===String(w.id));
-      if(!change)return w;
-      const {workerId,...fields}=change;
-      const manualSpecialtyOverride=
-        Object.prototype.hasOwnProperty.call(fields,'especialidad')
-          ? true : Boolean(w.manualSpecialtyOverride);
-      return {...w,...fields,manualSpecialtyOverride};
-    })};
-    await crewPersist(next);return {ok:true};
+    const changes=(args[1]||[]).filter(x=>x&&x.workerId);
+    if(!changes.length)return {ok:true};
+    const byId=new Map(changes.map(change=>[String(change.workerId),change]));
+    // Serialize with all other D1 writes and patch the most recent snapshot,
+    // instead of overwriting it with an old whole-service copy.
+    const applyChanges=service=>({
+      ...service,
+      workers:(service.workers||[]).map(w=>{
+        const change=byId.get(String(w.id));
+        if(!change)return w;
+        const {workerId,...fields}=change;
+        const manualSpecialtyOverride=
+          Object.prototype.hasOwnProperty.call(fields,'especialidad')
+            ? true : Boolean(w.manualSpecialtyOverride);
+        return {...w,...fields,manualSpecialtyOverride};
+      })
+    });
+    const task=crewSaveQueue.then(async()=>{
+      // Use the latest server version and retry revision conflicts.
+      // This prevents other devices and parallel edits from restoring PRESENTE.
+      for(let attempt=0;attempt<3;attempt++){
+        const response=await crewApi(code);
+        const remote=response.service;
+        if(!remote)throw new Error('No se ha encontrado el servicio');
+        const next=applyChanges(remote);
+        try{
+          const saved=await crewApi(code,'PUT',{
+            service:next,revision:String(remote._syncRevision||'')
+          });
+          if(state.service?.code===code){
+            state.service._syncRevision=saved.revision;
+          }
+          crewLastLocalWrite=Date.now();
+          return {ok:true,revision:saved.revision};
+        }catch(error){
+          if(!String(error?.message||'').includes('Otro dispositivo')||attempt===2)throw error;
+        }
+      }
+    });
+    crewSaveQueue=task.catch(()=>{});
+    return task;
   }
   if(method==='addManualWorker'){
     const data=args[1]||{},id=crypto.randomUUID();
@@ -13596,9 +13635,12 @@ function saveWorkerUpdates(updates){
     };
   });
 
+  // Mark a local edit before the debounce, so remote synchronization cannot
+  // restore stale presence data while the user is changing status.
+  crewLastLocalWrite=Date.now();
   setSaveState('Guardando…','saving');
   clearTimeout(state.workerSaveTimer);
-  state.workerSaveTimer=setTimeout(()=>flushPendingWorkerSaves(),220);
+  state.workerSaveTimer=setTimeout(()=>flushPendingWorkerSaves(),120);
 }
 
 function flushPendingWorkerSaves(callback){
@@ -17404,6 +17446,7 @@ function quickSelectedStatus(status){
   renderPersonnel();
   affectedWorks.forEach(updateGroupSummary);
   renderStats();
+  renderOperationalDashboard();
   renderOperationalAlerts();
   saveWorkerUpdates(updates);
 }
@@ -17675,6 +17718,7 @@ function changeWorkerStatus(id,status){
   // Todo esto ocurre localmente e inmediatamente.
   refreshWorkerRow(id);
   renderStats();
+  renderOperationalDashboard();
 
   const trabajo=w.trabajo||'SIN TIPO';
 
