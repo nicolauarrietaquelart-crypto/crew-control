@@ -9934,6 +9934,7 @@ body #personnelGroups > .crew-linked-work-heading button.staffing-chip .team-chi
  html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(9){width:20.556%!important}
 }
 </style>
+<style id="crew-control-removed">#controlViewBtn{display:none!important}</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -10000,9 +10001,7 @@ body #personnelGroups > .crew-linked-work-heading button.staffing-chip .team-chi
       </div>
       <div class="service-actions">
         <span id="saveState" class="save-state saved">Guardado</span>
-        <button id="controlViewBtn" class="secondary control-toggle icon-btn" onclick="toggleControlView()" title="Vista control">
-          <svg viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg><span>Control</span>
-        </button>
+
         <button id="closeServiceBtn" class="close-service-btn icon-btn" onclick="requestCloseService()" title="Cerrar servicio">
           <svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg><span>Cerrar</span>
         </button>
@@ -17799,22 +17798,11 @@ function shiftsOverlap(a,b){
   );
 }
 
-function toggleControlView(){
-  if(window.matchMedia('(max-width:900px)').matches){
-    disableMobileControlView();
-    return;
-  }
-  state.controlMode=!state.controlMode;
-  document.body.classList.toggle('control-mode',state.controlMode);
-  document.getElementById('controlViewBtn')?.classList.toggle('on',state.controlMode);
-}
-
 function disableMobileControlView(){
-  if(!window.matchMedia('(max-width:900px)').matches)return;
   state.controlMode=false;
   document.body.classList.remove('control-mode');
-  document.getElementById('controlViewBtn')?.classList.remove('on');
 }
+
 window.addEventListener('resize',disableMobileControlView);
 window.addEventListener('orientationchange',disableMobileControlView);
 if(document.readyState==='loading'){
