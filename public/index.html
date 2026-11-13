@@ -8016,6 +8016,34 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
  #hiddenWorkTypesBar .hidden-work-label-v11227{position:static!important;padding:0!important}
  #hiddenWorkTypesBar .hidden-work-chips-v11260{scroll-snap-type:x proximity}
 }
+
+/* Selection control is a compact vector tick on desktop; never alter its SVG text. */
+@media(min-width:901px){
+ .work-group-head .crew-group-select-v11261{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  width:30px!important;min-width:30px!important;height:30px!important;
+  padding:0!important;border:1px solid rgba(255,255,255,.36)!important;
+  border-radius:9px!important;background:rgba(255,255,255,.10)!important;
+  color:#fff!important;cursor:pointer;transition:background .2s ease,transform .2s ease,border-color .2s ease!important;
+ }
+ .work-group-head .crew-group-select-v11261 svg{
+  width:17px;height:17px;display:block;pointer-events:none;
+  opacity:.65;transition:opacity .2s ease,transform .2s ease;
+ }
+ .work-group-head .crew-group-select-v11261:hover{
+  background:rgba(245,130,32,.22)!important;border-color:#f58220!important;
+ }
+ .work-group-head .crew-group-select-v11261.active{
+  background:#f58220!important;color:#111!important;border-color:#f58220!important;
+ }
+ .work-group-head .crew-group-select-v11261.active svg{opacity:1;transform:scale(1.09)}
+ .work-group-head .crew-group-select-v11261:active{transform:scale(.94)}
+}
+@media(max-width:900px){
+ /* Coordinator details remain available in worker profiles, not on mobile service bands. */
+ .work-group-head .coord-summary{display:none!important}
+ .work-group-head .crew-group-select-v11261{display:none!important}
+}
 </style></head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -12759,9 +12787,13 @@ function renderPersonnel(light=false){
           <span class="group-bulk-actions">
             
             <button type="button"
-              class="group-bulk-btn"
-              onclick="event.preventDefault();event.stopPropagation();selectWorkGroupReserves('${escapeJsString(trabajo)}')">
-              Reservas
+              class="group-bulk-btn crew-group-select-v11261"
+              data-group-select-all="${escapeAttr(trabajo)}"
+              aria-label="Seleccionar todo el personal de ${escapeAttr(trabajo)}"
+              aria-pressed="${includedRows.length>0&&includedRows.every(w=>state.selected.has(w.id))?'true':'false'}"
+              title="Seleccionar o deseleccionar todo el personal de este tipo"
+              onclick="event.preventDefault();event.stopPropagation();toggleSelectWorkGroup('${escapeJsString(trabajo)}')">
+              <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.3 4.3L19 7"/></svg>
             </button>
             <button type="button"
               class="group-bulk-btn"
@@ -14029,8 +14061,13 @@ function updateGroupSelectionButton(trabajo){
   document.querySelectorAll('[data-group-select-all]').forEach(btn=>{
     if(btn.getAttribute('data-group-select-all')!==trabajo)return;
 
-    btn.textContent=(allSelected?'Deseleccionar ':'Seleccionar ')+trabajo;
+    if(!btn.classList.contains('crew-group-select-v11261')){
+      btn.textContent=(allSelected?'Deseleccionar ':'Seleccionar ')+trabajo;
+    }
     btn.classList.toggle('active',allSelected);
+    btn.setAttribute('aria-pressed',String(allSelected));
+    btn.setAttribute('aria-label',(allSelected?'Deseleccionar':'Seleccionar')+' todo el personal de '+trabajo);
+    btn.title=(allSelected?'Deseleccionar':'Seleccionar')+' personal de '+trabajo;
   });
 }
 
