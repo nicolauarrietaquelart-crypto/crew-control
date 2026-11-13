@@ -8974,6 +8974,30 @@ margin-left:0!important;margin-right:auto!important;
 }
 }
 </style>
+<style id="crew-selection-gradient-final-fix-20261113">
+@media(min-width:901px){
+/* Paint the gradient on the row, not as separate blocks on its cells. */
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected{
+background:linear-gradient(to right,rgba(245,130,32,.30) 0%,rgba(245,130,32,.17) 27%,rgba(245,130,32,.07) 65%,rgba(245,130,32,0) 100%)!important;
+background-color:transparent!important;
+box-shadow:inset 5px 0 0 #f58220!important;
+}
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td,
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-status,
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-name,
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-role,
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-schedule,
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-pause,
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-diet,
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td.mobile-phone{
+background:transparent!important;background-color:transparent!important;background-image:none!important;
+box-shadow:none!important;
+}
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td:first-child{
+border-left:0!important;
+}
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
