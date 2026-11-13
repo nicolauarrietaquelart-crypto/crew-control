@@ -9706,6 +9706,7 @@ html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-s
 .personnel-sidebar-v121 .sidebar-link-actions-v129>.sidebar-link-btn-v129 .sidebar-utility-badge-v1210{font-size:10px!important;padding:3px 5px!important}
 }
 </style>
+<style id="crew-linked-work-plan-style">.crew-linked-add{display:flex;gap:8px;margin:12px 0}.crew-linked-add select{flex:1;min-width:0}.crew-linked-chips{display:flex;flex-wrap:wrap;gap:6px}.crew-linked-chips span{border:1px solid #ddd;border-radius:20px;padding:5px 9px;font-size:12px}.crew-linked-chips button{border:0;background:transparent;cursor:pointer}</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -10446,7 +10447,7 @@ html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-s
           <button type="button" class="secondary" onclick="copyStaffingPlanFromSource()">Copiar</button>
         </div>
 
-          <div id="staffingRows"></div>
+          <div id="crewStaffingLinkedWorks"></div><div id="staffingRows"></div>
         </div>
 
         <div class="modal-actions crew-staffing-actions">
@@ -15282,6 +15283,7 @@ function openStaffingModal(trabajo){
   document.getElementById('staffingSub').textContent=`${dayLabel(state.activeDay)} · ${state.activeDay}`;
 
   populateStaffingCopySources();
+  renderCrewStaffingLinkedWorks();
   renderStaffingRows();
   toggleStaffingNoTeamsUI();
   if(!crewTeamsEmbeddedStaffV11263)
@@ -15382,10 +15384,15 @@ function crewVestIcon(color){
  '</svg>';
 }
 
+function crewStaffingWorks(){const key=state.activeDay+'|'+normalize(state.staffingWork);return [state.staffingWork,...((state.service.staffingLinkedWorks||{})[key]||[])];}
+function crewStaffingChooseWork(){const el=document.getElementById('crewStaffingAddWork');if(!el||!el.value)return;const key=state.activeDay+'|'+normalize(state.staffingWork);const old=(state.service.staffingLinkedWorks||{})[key]||[];if(!old.includes(el.value)){state.service.staffingLinkedWorks={...(state.service.staffingLinkedWorks||{}),[key]:[...old,el.value]};crewPersist(state.service).catch(console.error);}renderCrewStaffingLinkedWorks();renderStaffingRows();}
+function crewStaffingRemoveWork(work){const key=state.activeDay+'|'+normalize(state.staffingWork);state.service.staffingLinkedWorks={...(state.service.staffingLinkedWorks||{}),[key]:((state.service.staffingLinkedWorks||{})[key]||[]).filter(x=>x!==work)};crewPersist(state.service).catch(console.error);renderCrewStaffingLinkedWorks();renderStaffingRows();}
+function renderCrewStaffingLinkedWorks(){const host=document.getElementById('crewStaffingLinkedWorks');if(!host)return;const all=[...new Set((state.service.workers||[]).filter(w=>w.serviceDate===state.activeDay).map(w=>w.trabajo).filter(Boolean))];const available=all.filter(w=>!crewStaffingWorks().includes(w));host.innerHTML='<div class="crew-linked-chips">'+crewStaffingWorks().slice(1).map(w=>'<span>'+escapeHtml(w)+' <button type="button" onclick="crewStaffingRemoveWork(\''+escapeJsString(w)+'\')">×</button></span>').join('')+'</div><div class="crew-linked-add"><select id="crewStaffingAddWork"><option value="">Añadir tipo de servicio…</option>'+available.map(w=>'<option value="'+escapeAttr(w)+'">'+escapeHtml(w)+'</option>').join('')+'</select><button type="button" class="secondary" onclick="crewStaffingChooseWork()">+ Añadir</button></div>';}
+
 function renderStaffingRows(){
   const rows=state.service.workers.filter(w=>
     w.serviceDate===state.activeDay &&
-    normalize(w.trabajo)===normalize(state.staffingWork) &&
+    crewStaffingWorks().some(x=>normalize(w.trabajo)===normalize(x)) &&
     w.included
   );
 
@@ -15449,14 +15456,15 @@ function renderStaffingRows(){
 function randomlyAssignHandsToTeams(){
   if(!state.service||state.service.closed||!state.staffingWork)return;
   const work=state.staffingWork;
+  const inWork=w=>crewStaffingWorks().some(x=>normalize(x)===normalize(w.trabajo));
   if(document.getElementById('staffingNoTeams')?.checked){alert('Este tipo de servicio está configurado sin equipos.');return;}
   const protectedRole=value=>/\b(CREW[\s_-]*HEAD|FORK[\s_-]*LIFT(?:ER)?|CARRETILLERO)\b/.test(normalize(value));
-  const hands=(state.service.workers||[]).filter(w=>w.included&&w.status!=='NO PRESENTADO'&&w.serviceDate===state.activeDay&&normalize(w.trabajo)===normalize(work)&&!protectedRole(w.especialidad)&&!protectedRole(w.categoria)&&!protectedRole(w.role)&&!w.isReserve);
+  const hands=(state.service.workers||[]).filter(w=>w.included&&w.status!=='NO PRESENTADO'&&w.serviceDate===state.activeDay&&inWork(w)&&!protectedRole(w.especialidad)&&!protectedRole(w.categoria)&&!protectedRole(w.role)&&!w.isReserve);
   // No modificar roles protegidos durante el reparto.
   const protectedUpdates=[];
   // Reservas: equipo propio, fuera de las plazas ordinarias del reparto.
   let reserveTeam=(state.service.teams||[]).find(t=>normalize(t.name)==='RESERVAS');
-  const reserveWorkers=(state.service.workers||[]).filter(w=>w.included&&w.isReserve&&w.serviceDate===state.activeDay&&normalize(w.trabajo)===normalize(work));
+  const reserveWorkers=(state.service.workers||[]).filter(w=>w.included&&w.isReserve&&w.serviceDate===state.activeDay&&inWork(w));
   if(reserveWorkers.length&&!reserveTeam){
     const scenario=state.service.scenarios[0];
     if(!scenario){alert('Primero crea un escenario para el equipo Reserva.');return;}
@@ -15478,7 +15486,7 @@ function randomlyAssignHandsToTeams(){
   // La planificación indica el número TOTAL de personas por equipo, incluidas las protegidas.
   const slots=[];
   targets.forEach(({team,count})=>{
-    const protectedAssigned=state.service.workers.filter(w=>w.included&&w.serviceDate===state.activeDay&&normalize(w.trabajo)===normalize(work)&&w.teamId===team.id&&!hands.includes(w)).length;
+    const protectedAssigned=state.service.workers.filter(w=>w.included&&w.serviceDate===state.activeDay&&inWork(w)&&w.teamId===team.id&&!hands.includes(w)).length;
     for(let i=0;i<Math.max(0,count-protectedAssigned);i++)slots.push(team);
   });
   const shuffled=[...hands];
