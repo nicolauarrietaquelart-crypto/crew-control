@@ -1,0 +1,115 @@
+/* Crew Control — Lista de regreso tras pausas */
+#crewPauseReturnModal .crew-pause-return-card{
+  width:min(900px,calc(100vw - 24px))!important;max-height:min(90dvh,900px)!important;
+  display:flex!important;flex-direction:column!important;overflow:hidden!important;gap:0
+}
+#crewPauseReturnModal .modal-head{flex:0 0 auto}
+#crewPauseReturnModal .crew-return-stats{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:15px 0
+}
+#crewPauseReturnModal .crew-return-stat{
+  display:grid;gap:5px;min-width:0;padding:14px 15px;border:1px solid #e5e5e5;
+  border-radius:12px;background:#fafafa
+}
+#crewPauseReturnModal .crew-return-stat span{font-size:12px;color:#5c5c5c;font-weight:700}
+#crewPauseReturnModal .crew-return-stat strong{font-size:29px;line-height:1;font-weight:800;font-variant-numeric:tabular-nums}
+#crewPauseReturnModal .crew-return-stat[data-status="CONTACTADO"]{border-left:4px solid #d79627}
+#crewPauseReturnModal .crew-return-stat[data-status="PRESENTE"]{border-left:4px solid #288b57}
+#crewPauseReturnModal .crew-return-stat[data-status="NO PRESENTADO"]{border-left:4px solid #cc4444}
+#crewPauseReturnModal .crew-return-missing{
+  border:1px solid #f3d9bf;background:#fff8f0;border-radius:12px;
+  display:grid;gap:8px;padding:12px 14px;margin-bottom:13px;min-width:0
+}
+#crewPauseReturnModal .crew-return-missing>strong{font-size:14px}
+#crewPauseReturnModal .crew-return-missing>small{font-size:11px;color:#686868}
+#crewPauseReturnModal .crew-return-missing-names{display:flex;gap:6px;flex-wrap:wrap;max-height:96px;overflow-y:auto}
+#crewPauseReturnModal .crew-return-missing-names span{
+  background:#fff;border:1px solid #ead8c9;border-radius:6px;
+  padding:5px 8px;font-size:12px;font-weight:650;overflow-wrap:anywhere
+}
+#crewPauseReturnModal .crew-return-list-head{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;margin:2px 0 10px;font-size:14px;font-weight:750
+}
+#crewPauseReturnModal .crew-return-list-head small{font-size:12px;font-weight:600;color:#777}
+#crewPauseReturnModal .crew-return-list{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;
+  overflow-y:auto;overflow-x:hidden;align-content:start;min-height:0;
+  flex:1 1 auto;padding:2px 5px 10px 1px
+}
+#crewPauseReturnModal .crew-return-person{
+  position:relative;display:flex;align-items:center;justify-content:space-between;
+  gap:10px;min-width:0;border:1px solid #dedede;border-radius:12px;
+  padding:12px;background:white
+}
+#crewPauseReturnModal .crew-return-person[data-status="PRESENTE"]{border-color:#b8dec7;background:#f8fdfa}
+#crewPauseReturnModal .crew-return-person[data-status="NO PRESENTADO"]{border-color:#ecc5c5;background:#fffafa}
+#crewPauseReturnModal .crew-return-identity{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1}
+#crewPauseReturnModal .crew-return-identity strong{
+  font-size:13px;line-height:1.35;font-weight:750;overflow-wrap:anywhere
+}
+#crewPauseReturnModal .crew-return-details{
+  font-size:11px;color:#666;line-height:1.4;overflow-wrap:anywhere
+}
+#crewPauseReturnModal .crew-return-details b{font-weight:750;color:#171717}
+#crewPauseReturnModal .crew-return-right{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+#crewPauseReturnModal .crew-return-status-label{
+  font-size:10px;font-weight:800;white-space:nowrap;color:#777
+}
+#crewPauseReturnModal .crew-return-person[data-status="CONTACTADO"] .crew-return-status-label{color:#a66a0d}
+#crewPauseReturnModal .crew-return-person[data-status="PRESENTE"] .crew-return-status-label{color:#258551}
+#crewPauseReturnModal .crew-return-person[data-status="NO PRESENTADO"] .crew-return-status-label{color:#c94747}
+#crewPauseReturnModal .crew-return-picker{position:relative;flex:none}
+#crewPauseReturnModal .crew-return-toggle{
+  border:1px solid #d2d2d2;border-radius:8px;background:#f4f4f4;color:#666;
+  width:39px;height:39px;padding:0;display:grid;place-items:center;cursor:pointer;
+  transition:background .15s,border-color .15s,transform .15s
+}
+#crewPauseReturnModal .crew-return-toggle:active{transform:scale(.94)}
+#crewPauseReturnModal .crew-return-person[data-status="CONTACTADO"] .crew-return-toggle{
+  color:white;background:#e6a139;border-color:#e6a139
+}
+#crewPauseReturnModal .crew-return-person[data-status="PRESENTE"] .crew-return-toggle{
+  color:white;background:#238956;border-color:#238956
+}
+#crewPauseReturnModal .crew-return-person[data-status="NO PRESENTADO"] .crew-return-toggle{
+  color:white;background:#c94747;border-color:#c94747
+}
+#crewPauseReturnModal .crew-return-toggle:focus-visible,
+#crewPauseReturnModal .crew-return-menu button:focus-visible{outline:3px solid #ff7a14;outline-offset:2px}
+#crewPauseReturnModal .crew-return-menu{
+  position:absolute;right:0;top:calc(100% + 5px);z-index:25;
+  display:grid;gap:2px;width:185px;padding:5px;background:#fff;
+  border:1px solid #dedede;border-radius:10px;box-shadow:0 10px 24px #0002
+}
+#crewPauseReturnModal .crew-return-menu[hidden]{display:none!important}
+#crewPauseReturnModal .crew-return-menu button{
+  border:0;border-radius:6px;background:#fff;text-align:left;cursor:pointer;
+  font-size:12px;color:#191919;font-weight:700;padding:10px 9px
+}
+#crewPauseReturnModal .crew-return-menu button:hover,
+#crewPauseReturnModal .crew-return-menu button[aria-pressed="true"]{background:#fff0e5}
+#crewPauseReturnModal .modal-actions{margin-top:10px;flex:0 0 auto}
+#crewPauseReturnModal .modal-close{background:#ff7a14!important;color:white!important;border-color:#ff7a14!important}
+#crewPauseReturnModal .crew-return-back{background:#ff7a14!important;color:white!important;border:1px solid #ff7a14!important}
+#crewPauseReturnModal .modal-close:hover,#crewPauseReturnModal .crew-return-back:hover{background:#e96e06!important}
+#crewPausePeopleModal .crew-pause-return-open,
+#crewPauseShiftList .crew-pause-return-shortcut{
+  background:#ff7a14!important;color:white!important;border:1px solid #ff7a14!important;
+  border-radius:10px!important;padding:11px 13px!important;font-size:12px;
+  font-weight:750;white-space:nowrap;cursor:pointer
+}
+#crewPausePeopleModal .crew-pause-return-open:hover,
+#crewPauseShiftList .crew-pause-return-shortcut:hover{background:#e96e06!important}
+@media(max-width:700px){
+  #crewPauseReturnModal .crew-return-stats{gap:6px;margin:12px 0}
+  #crewPauseReturnModal .crew-return-stat{padding:10px 8px}
+  #crewPauseReturnModal .crew-return-stat span{font-size:10px}
+  #crewPauseReturnModal .crew-return-stat strong{font-size:23px}
+  #crewPauseReturnModal .crew-return-list{grid-template-columns:1fr!important}
+  #crewPauseReturnModal .crew-return-person{padding:10px 9px}
+  #crewPauseReturnModal .crew-return-status-label{font-size:9px}
+  #crewPauseShiftList .crew-pause-collapsed{flex-wrap:wrap}
+  #crewPauseShiftList .crew-pause-open{flex:1 1 100%}
+  #crewPauseShiftList .crew-pause-return-shortcut{flex:1}
+}
