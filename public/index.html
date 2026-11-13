@@ -8566,6 +8566,16 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
   max-width:100%!important;min-width:0!important;
  }
 }
+/* Never carry compact Control view into responsive/mobile layout. */
+@media(max-width:900px){
+ body.control-mode #personnelGroups .work-group th,
+ body.control-mode #personnelGroups .work-group td{
+  display:revert;
+ }
+ body.control-mode #personnelGroups .work-group .table-wrap colgroup col{
+  display:table-column!important;visibility:visible!important;
+ }
+}
 /* Control view is a desktop-only feature. */
 @media(max-width:900px){
  #controlViewBtn{display:none!important}
@@ -16052,10 +16062,27 @@ function shiftsOverlap(a,b){
 }
 
 function toggleControlView(){
-  if(window.matchMedia('(max-width:900px)').matches)return;
+  if(window.matchMedia('(max-width:900px)').matches){
+    disableMobileControlView();
+    return;
+  }
   state.controlMode=!state.controlMode;
   document.body.classList.toggle('control-mode',state.controlMode);
-  document.getElementById('controlViewBtn').classList.toggle('on',state.controlMode);
+  document.getElementById('controlViewBtn')?.classList.toggle('on',state.controlMode);
+}
+
+function disableMobileControlView(){
+  if(!window.matchMedia('(max-width:900px)').matches)return;
+  state.controlMode=false;
+  document.body.classList.remove('control-mode');
+  document.getElementById('controlViewBtn')?.classList.remove('on');
+}
+window.addEventListener('resize',disableMobileControlView);
+window.addEventListener('orientationchange',disableMobileControlView);
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',disableMobileControlView,{once:true});
+}else{
+  disableMobileControlView();
 }
 
 function applyClosedState(){
