@@ -7004,6 +7004,25 @@ html:has(.modal:not(.hidden)),body:has(.modal:not(.hidden)){overflow:hidden!impo
 .operational-work-pager-v11233 #operationalWorkNext{right:2px!important;left:auto!important}
 .operational-work-pager-v11233 #operationalWorkPrevious:disabled,
 .operational-work-pager-v11233 #operationalWorkNext:disabled{opacity:.4!important;pointer-events:none!important}
+/* Consistent rounded native time fields in worker dialogs. */
+#workerModal input[type="time"],
+#addWorkerModal input[type="time"],
+#modalActualStart,#modalActualEnd,#modalActualPause,
+#addWorkerStart,#addWorkerEnd{
+ border-radius:12px!important;
+ border:1px solid #cecece!important;
+ background:#fff!important;
+ background-clip:padding-box!important;
+ padding:8px 12px!important;
+ min-height:40px;
+ font:inherit;
+}
+#workerModal input[type="time"]:focus,
+#addWorkerModal input[type="time"]:focus{
+ outline:none!important;
+ border-color:var(--orange)!important;
+ box-shadow:0 0 0 3px rgba(245,130,32,.12)!important;
+}
 /* Rounded service navigation arrow buttons. */
 .operational-work-pager-v11233 #operationalWorkPrevious,
 .operational-work-pager-v11233 #operationalWorkNext{
