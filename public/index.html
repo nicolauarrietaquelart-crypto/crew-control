@@ -8386,6 +8386,28 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
 .modal-close:hover{background:#e5e5e5!important}
 .modal-close:active{transform:scale(.94)}
 .modal-close:focus-visible{outline:2px solid #f58220!important;outline-offset:2px}
+
+/* Teams planning: neutral typography, never Safari's default blue button/link color. */
+#scenariosTeamsModal #crewTeamsPlanningListV11263,
+#scenariosTeamsModal #crewTeamsPlanningListV11263 *,
+#scenariosTeamsModal .crew-team-work-list-v11263 button,
+#scenariosTeamsModal .crew-team-work-list-v11263 button:link,
+#scenariosTeamsModal .crew-team-work-list-v11263 button:visited{
+ font-family:"Plus Jakarta Sans",sans-serif!important;
+}
+#scenariosTeamsModal .crew-team-work-list-v11263 button,
+#scenariosTeamsModal .crew-team-work-list-v11263 button > span:first-child,
+#scenariosTeamsModal .crew-team-work-list-v11263 button > span:first-child:not(small){
+ color:#111!important;-webkit-text-fill-color:#111!important;
+ text-decoration:none!important;
+}
+#scenariosTeamsModal .crew-team-work-list-v11263 button small,
+#scenariosTeamsModal .crew-team-work-list-v11263 button > span:last-child{
+ color:#777!important;-webkit-text-fill-color:#777!important;
+}
+#scenariosTeamsModal .crew-team-work-list-v11263 button:active{
+ background:#f5f5f5!important;
+}
 </style></head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
