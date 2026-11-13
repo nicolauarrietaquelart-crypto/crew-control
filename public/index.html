@@ -10198,6 +10198,26 @@ body #personnelGroups > .crew-linked-work-heading .staffing-summary button.staff
  }
 }
 </style>
+<style id="crew-mobile-name-full-card-width-v7">
+@media(max-width:700px){
+ html body #personnelGroups tbody[data-work-team-body] tr[data-worker-row]{
+  grid-template-columns:78px minmax(0,1fr)!important;
+  column-gap:8px!important;
+ }
+ html body #personnelGroups tbody[data-work-team-body] tr[data-worker-row] > td.worker-name.mobile-name,
+ html body #personnelGroups tbody[data-work-team-body] tr[data-worker-row] > td.mobile-role{
+  grid-column:2!important;left:auto!important;position:static!important;
+  width:100%!important;max-width:none!important;min-width:0!important;
+  padding:0!important;margin:0!important;justify-self:stretch!important;
+ }
+ html body #personnelGroups tbody[data-work-team-body] tr[data-worker-row] > td.worker-name.mobile-name .worker-open{
+  display:block!important;width:100%!important;max-width:none!important;
+  font-size:17px!important;line-height:1.15!important;
+  text-align:left!important;white-space:normal!important;
+  word-break:normal!important;overflow-wrap:normal!important;
+ }
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
