@@ -9697,6 +9697,15 @@ html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-s
 #crewPausePeopleModal .crew-pause-person-info .crew-pause-team{display:inline!important}
 #crewPausePeopleModal .crew-pause-other-time{display:inline-block!important;font-size:11px!important;font-weight:750!important;color:#ed6b08!important;margin-left:8px!important}
 </style>
+<style id="crew-mobile-sidebar-icons-only-v113">
+@media(max-width:900px){
+.personnel-sidebar-v121 .sidebar-link-actions-v129{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}
+.personnel-sidebar-v121 .sidebar-link-actions-v129>.sidebar-link-btn-v129{min-width:0!important;width:100%!important;min-height:48px!important;gap:4px!important}
+.personnel-sidebar-v121 .sidebar-link-actions-v129>.sidebar-link-btn-v129 .label{display:none!important}
+.personnel-sidebar-v121 .sidebar-link-actions-v129>.sidebar-link-btn-v129 .icon svg{width:24px!important;height:24px!important}
+.personnel-sidebar-v121 .sidebar-link-actions-v129>.sidebar-link-btn-v129 .sidebar-utility-badge-v1210{font-size:10px!important;padding:3px 5px!important}
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -9916,7 +9925,7 @@ html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-s
           </button>
           <button type="button" class="sidebar-link-btn-v129" onclick="openCrewPauseShifts()" title="Turnos de pausa"><span class="icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2M4 3l2 2M20 3l-2 2"/></svg></span><span class="label">Turnos de pausa</span></button>
           <button type="button" class="sidebar-link-btn-v129" onclick="openScenariosTeamsModal()" title="Escenarios y equipos">
-            <span class="icon"><svg viewBox="0 0 48 54" width="22" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M11 4 19 1h10l8 3 8 12-9 6-3-5v30H15V17l-3 5-9-6Z"/><path d="M19 1 24 13 29 1M24 13v38M15 25h18M15 34h18"/></svg></span><span class="label">Equipos</span><span id="sidebarTeamsCount" class="sidebar-utility-badge-v1210">0</span>
+            <span class="icon"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="6" rx="1.5"/><path d="M17.5 15v6M14.5 18h6"/></svg></span><span class="label">Equipos</span><span id="sidebarTeamsCount" class="sidebar-utility-badge-v1210">0</span>
           </button>
         </div>
 
@@ -13882,7 +13891,7 @@ function renderCrewMobileDayShiftV11256(){
   const canPlan=!state.service.closed;
   const actions='<div class="crew-mds-actions">'+
     '<button type="button" class="crew-mds-action" onclick="openIncidentsBoardModal()" title="Incidencias" aria-label="Incidencias">'+incidentIcon+(incidentCount?'<b>'+incidentCount+'</b>':'')+'</button>'+
-    '<button type="button" class="crew-mds-action crew-mds-action-plan" onclick="crewMobileOpenTeamsV11262()" title="Equipos" aria-label="Equipos"><svg viewBox="0 0 48 54" width="22" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M11 4 19 1h10l8 3 8 12-9 6-3-5v30H15V17l-3 5-9-6Z"/><path d="M19 1 24 13 29 1M24 13v38M15 25h18M15 34h18"/></svg></button>'+
+    '<button type="button" class="crew-mds-action crew-mds-action-plan" onclick="crewMobileOpenTeamsV11262()" title="Equipos" aria-label="Equipos"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="6" rx="1.5"/><path d="M17.5 15v6M14.5 18h6"/></svg></button>'+
     '<button type="button" class="crew-mds-action crew-pause-mobile-action" onclick="openCrewPauseShifts()" title="Turnos de pausa" aria-label="Turnos de pausa"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2M4 3l2 2M20 3l-2 2"/></svg></button></div>';
   host.innerHTML=dayControls+workControls+shiftControls+actions;
   host.hidden=!(dayControls||workControls||shiftControls);
