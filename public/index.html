@@ -10243,7 +10243,28 @@ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data
  html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-role > *{margin:0!important;flex:0 0 auto!important;max-width:100%!important;}
  html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-vest *{font-size:10px!important;}
 </style>
-</head>
+<style id="crew-mobile-name-safe-clearance-v12">
+@media(max-width:700px){
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.worker-name.mobile-name,
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-role{
+  grid-column:3/-1!important;
+  padding-left:12px!important;padding-right:3px!important;
+  min-width:0!important;width:100%!important;max-width:100%!important;
+  box-sizing:border-box!important;overflow:hidden!important;
+  margin:0!important;transform:none!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.worker-name.mobile-name .worker-open{
+  display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;
+  padding:0!important;margin:0!important;
+  font-size:12px!important;line-height:1.25!important;
+  white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important;
+  text-align:left!important;box-sizing:border-box!important;overflow:hidden!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-status{
+  grid-column:1/3!important;min-width:0!important;overflow:hidden!important;
+ }
+}
+</style></head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
 <div class="crew-access-photo-slide" id="crewAccessPhotoB" aria-hidden="true"></div>
