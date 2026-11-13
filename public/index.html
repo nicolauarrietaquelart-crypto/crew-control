@@ -8526,6 +8526,16 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
   display:none!important;width:0!important;min-width:0!important;padding:0!important;border:0!important;
  }
 }
+/* Hide Especialidad and its reserved width in desktop Control view. */
+@media(min-width:901px){
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(4){
+  display:none!important;width:0!important;min-width:0!important;
+ }
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(4),
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(4){
+  display:none!important;width:0!important;min-width:0!important;padding:0!important;border:0!important;
+ }
+}
 /* Control view is a desktop-only feature. */
 @media(max-width:900px){
  #controlViewBtn{display:none!important}
