@@ -9107,6 +9107,27 @@ html body:not(.control-mode) #personnelGroups details.work-group .table-wrap td.
  text-align:center!important;box-sizing:border-box!important;
 }
 </style>
+
+<style id="crew-right-columns-alignment-20261113">
+@media(min-width:901px){
+/* Reserve compact tracks for team, vest and rating; keep the final edge inside the table. */
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table{table-layout:fixed!important;width:100%!important;max-width:100%!important}
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table>colgroup>col:nth-child(9){width:14%!important}
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table>colgroup>col:nth-child(10){width:8%!important}
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table>colgroup>col:nth-child(11){width:7%!important}
+html body #personnelGroups details.work-group .table-wrap table>thead>tr>th:nth-child(9),
+html body #personnelGroups details.work-group .table-wrap table>tbody>tr[data-worker-row]>td:nth-child(9){text-align:left!important;padding-left:5px!important;padding-right:4px!important;box-sizing:border-box!important}
+html body #personnelGroups details.work-group .table-wrap table>thead>tr>th:nth-child(10),
+html body #personnelGroups details.work-group .table-wrap table>tbody>tr[data-worker-row]>td:nth-child(10){text-align:left!important;padding-left:4px!important;padding-right:3px!important;box-sizing:border-box!important}
+html body #personnelGroups details.work-group .table-wrap table>thead>tr>th:nth-child(11),
+html body #personnelGroups details.work-group .table-wrap table>tbody>tr[data-worker-row]>td:nth-child(11){text-align:left!important;padding-left:3px!important;padding-right:3px!important;box-sizing:border-box!important}
+html body #personnelGroups details.work-group .table-wrap td.mobile-team select[data-team-worker]{display:block!important;margin-left:0!important;margin-right:auto!important;max-width:125px!important;width:100%!important;min-width:0!important}
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap td.mobile-team .no-teams-chip{margin-left:0!important;margin-right:auto!important}
+html body.control-mode #personnelGroups details.work-group .table-wrap table>colgroup>col:nth-child(9){width:14%!important}
+html body.control-mode #personnelGroups details.work-group .table-wrap table>colgroup>col:nth-child(10){width:11%!important;visibility:visible!important;display:table-column!important}
+html body.control-mode #personnelGroups details.work-group .table-wrap table>colgroup>col:nth-child(8){width:18%!important}
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
