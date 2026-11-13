@@ -8831,6 +8831,88 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
  }
 }
 </style>
+<style id="crew-column-tracks-fix-20261113">
+/* One source of truth for desktop column tracks: headings and cells share colgroup. */
+@media(min-width:901px){
+ html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table{
+  table-layout:fixed!important;width:100%!important;min-width:1180px!important;max-width:none!important;
+ }
+ html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > colgroup{
+  display:table-column-group!important;
+ }
+ html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > colgroup > col{
+  display:table-column!important;
+ }
+ html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(1){width:2%!important;}
+ html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(2){width:6%!important;}
+ html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(3){width:23%!important;}
+ html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(4){width:11%!important;}
+ html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(5){width:11%!important;}
+ html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(6){width:5%!important;}
+ html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(7){width:5%!important;}
+ html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(8){width:10%!important;}
+ html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(9){width:15%!important;}
+ html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(10){width:7%!important;}
+ html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(11){width:5%!important;}
+ html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > thead > tr > th,
+ html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td{
+  box-sizing:border-box!important;min-width:0!important;max-width:none!important;
+ }
+ html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(n),
+ html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(n){
+  width:auto!important;
+ }
+ html body.control-mode #personnelGroups details.work-group .table-wrap table{
+  table-layout:fixed!important;width:100%!important;min-width:0!important;max-width:100%!important;
+ }
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup{
+  display:table-column-group!important;
+ }
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(1){display:table-column!important;width:2%!important;}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(2){display:table-column!important;width:7%!important;}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(3){display:table-column!important;width:36%!important;}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(5){display:table-column!important;width:14%!important;}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(8){display:table-column!important;width:15%!important;}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(9){display:table-column!important;width:26%!important;}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(4){display:none!important;width:0!important;}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(6){display:none!important;width:0!important;}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(7){display:none!important;width:0!important;}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(10){display:none!important;width:0!important;}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(11){display:none!important;width:0!important;}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(n),
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(n){
+  width:auto!important;min-width:0!important;max-width:none!important;box-sizing:border-box!important;
+ }
+ #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(2),
+ #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(2){
+  text-align:left!important;padding-left:3px!important;padding-right:2px!important;
+ }
+ #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(2) .sort-btn{
+  text-align:left!important;padding-left:3px!important;
+ }
+ #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(2) select.status[data-status-worker]{
+  display:block!important;margin-left:0!important;margin-right:auto!important;
+  width:44px!important;min-width:44px!important;max-width:44px!important;
+ }
+ #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(5),
+ #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(6),
+ #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(7),
+ #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(8),
+ #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(5),
+ #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(6),
+ #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(7),
+ #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(8){
+  text-align:center!important;padding-left:3px!important;padding-right:3px!important;
+  vertical-align:middle!important;
+ }
+ #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(5) .sort-btn,
+ #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(6) .sort-btn,
+ #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(7) .sort-btn,
+ #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(8) .sort-btn{
+  text-align:center!important;padding-left:2px!important;padding-right:2px!important;
+ }
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
