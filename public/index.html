@@ -8341,6 +8341,24 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
   background:#fff0e4!important;border-color:#f58220!important;
  }
 }
+
+/* Prevent selection from shifting the desktop personnel grid sideways. */
+@media(min-width:901px){
+ #personnelGroups .work-group .table-wrap{
+  overflow-x:auto!important;scrollbar-gutter:stable!important;
+  overflow-anchor:none;
+ }
+ #personnelGroups .work-group .table-wrap table{
+  table-layout:fixed!important;
+ }
+ #personnelGroups tr[data-worker-row],
+ #personnelGroups tr[data-worker-row].worker-row-selected{
+  transform:none!important;translate:none!important;
+ }
+ #personnelGroups tr[data-worker-row].worker-row-selected td{
+  border-left-width:0!important;border-right-width:0!important;
+ }
+}
 </style></head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -14430,6 +14448,9 @@ function handleWorkerRowClick(event,id){
 }
 
 function toggleSelected(id,checked){
+  // Preserve horizontal position when the selection toolbar or row styles change.
+  const scrollers=[document.scrollingElement,...document.querySelectorAll('#personnelGroups .table-wrap,#appScreen,.personnel-main')].filter(Boolean);
+  const positions=scrollers.map(el=>[el,el.scrollLeft]);
   if(checked)state.selected.add(id);else state.selected.delete(id);
 
   const w=state.service.workers.find(x=>x.id===id);
@@ -14437,6 +14458,7 @@ function toggleSelected(id,checked){
 
   syncWorkerRowSelectionVisual(id);
   updateSelectedCounter();
+  positions.forEach(([el,left])=>{if(el.scrollLeft!==left)el.scrollLeft=left;});
 }
 function selectVisible(){
   const visible=workersForActiveDay().filter(w=>w.included);
