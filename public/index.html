@@ -17712,9 +17712,9 @@ function updateSidebarUtilityBadges(){
 function getDayOperationalMetrics(){
   if(!state.service)return null;
 
-  const workers=window.matchMedia('(max-width: 900px)').matches
-    ?crewMobileScopeRowsV11259().filter(w=>!crewMobileSelectedShifts.size||crewMobileSelectedShifts.has(workerEntryTime(w)))
-    :operationalWorkersForSummary();
+  // Both desktop and mobile dashboard metrics must use the same selected
+  // operational work types and times as the visible control panel.
+  const workers=operationalWorkersForSummary();
 
   const present=workers.filter(w=>w.status==='PRESENTE').length;
   const contacted=workers.filter(w=>w.status==='CONTACTADO').length;
