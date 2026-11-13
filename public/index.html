@@ -62,7 +62,7 @@
     .scenario-head input{font-weight:800;background:#fff}
     .scenario-body{padding:10px}
     .team-row{display:grid;grid-template-columns:minmax(150px,1.3fr) minmax(90px,.7fr) 52px 40px 110px 44px;gap:7px;align-items:center;margin-bottom:7px}
-    .team-row input[type=color]{width:45px;height:38px;padding:2px;border:1px solid #ccc;border-radius:7px;background:white}
+    .team-remove-vector{display:inline-flex;align-items:center;justify-content:center;min-width:40px;min-height:40px;padding:8px;line-height:0}\n    .team-remove-vector svg{display:block;flex:none}\n    .team-row input[type=color]{width:45px;height:38px;padding:2px;border:1px solid #ccc;border-radius:7px;background:white}
     .palette-trigger{
       width:38px;height:38px;min-height:38px;padding:0;border:1px solid #ccc;border-radius:7px;
       background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer
@@ -11276,7 +11276,7 @@ function teamRowHtml(team){
           onchange="updateTeam('${escapeAttr(team.id)}','noVest',this.checked)">
         Sin chaleco
       </label>
-      <button class="danger" onclick="removeTeam('${escapeAttr(team.id)}')">×</button>
+      <button type="button" class="danger team-remove-vector" onclick="removeTeam('${escapeAttr(team.id)}')" title="Eliminar equipo" aria-label="Eliminar equipo"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>`;
 }
 
