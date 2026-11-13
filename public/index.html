@@ -7004,6 +7004,27 @@ html:has(.modal:not(.hidden)),body:has(.modal:not(.hidden)){overflow:hidden!impo
 .operational-work-pager-v11233 #operationalWorkNext{right:2px!important;left:auto!important}
 .operational-work-pager-v11233 #operationalWorkPrevious:disabled,
 .operational-work-pager-v11233 #operationalWorkNext:disabled{opacity:.4!important;pointer-events:none!important}
+/* Ensure Control view actually hides the secondary columns, even when
+   later table rules set display on cells. Keep shift separator rows intact. */
+body.control-mode .work-group .table-wrap table > thead > tr > th:nth-child(4),
+body.control-mode .work-group .table-wrap table > thead > tr > th:nth-child(6),
+body.control-mode .work-group .table-wrap table > thead > tr > th:nth-child(7),
+body.control-mode .work-group .table-wrap table > thead > tr > th:nth-child(10),
+body.control-mode .work-group .table-wrap table > thead > tr > th:nth-child(11),
+body.control-mode .work-group .table-wrap table > tbody > tr:not(.shift-divider-row) > td:nth-child(4),
+body.control-mode .work-group .table-wrap table > tbody > tr:not(.shift-divider-row) > td:nth-child(6),
+body.control-mode .work-group .table-wrap table > tbody > tr:not(.shift-divider-row) > td:nth-child(7),
+body.control-mode .work-group .table-wrap table > tbody > tr:not(.shift-divider-row) > td:nth-child(10),
+body.control-mode .work-group .table-wrap table > tbody > tr:not(.shift-divider-row) > td:nth-child(11){
+ display:none!important;
+}
+body.control-mode .work-group .table-wrap table > colgroup > col:nth-child(4),
+body.control-mode .work-group .table-wrap table > colgroup > col:nth-child(6),
+body.control-mode .work-group .table-wrap table > colgroup > col:nth-child(7),
+body.control-mode .work-group .table-wrap table > colgroup > col:nth-child(10),
+body.control-mode .work-group .table-wrap table > colgroup > col:nth-child(11){
+ visibility:collapse!important;
+}
 /* Consistent rounded native time fields in worker dialogs. */
 #workerModal input[type="time"],
 #addWorkerModal input[type="time"],
