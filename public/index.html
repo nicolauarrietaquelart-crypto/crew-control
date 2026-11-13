@@ -8026,6 +8026,49 @@ select.status[data-status-worker].status-NO-PRESENTADO{
  }
 }
 </style>
+<style id="crew-left-aligned-grid-v124">
+/* Keep the grid anchored to the left and fill the available main panel.
+   Header and worker rows use the same column geometry. */
+@media(min-width:901px){
+ #personnelGroups details.work-group .table-wrap{
+  width:100%!important;max-width:100%!important;margin-left:0!important;
+ }
+ #personnelGroups details.work-group .table-wrap table{
+  margin-left:0!important;margin-right:0!important;
+  width:100%!important;max-width:none!important;
+ }
+ #personnelGroups details.work-group .table-wrap table > thead > tr > th,
+ #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td{
+  box-sizing:border-box!important;
+  padding-left:5px!important;padding-right:5px!important;
+  text-align:left!important;vertical-align:middle!important;
+ }
+ #personnelGroups details.work-group .table-wrap table > thead > tr > th:first-child,
+ #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:first-child{
+  padding-left:2px!important;padding-right:2px!important;
+ }
+ #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td.mobile-status select.status[data-status-worker]{
+  margin-left:0!important;margin-right:auto!important;
+ }
+ body.control-mode #personnelGroups details.work-group .table-wrap table{
+  table-layout:fixed!important;min-width:850px!important;
+ }
+ body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(1),
+ body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(1){width:4%!important;min-width:0!important;max-width:none!important}
+ body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(2),
+ body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(2){width:7%!important;min-width:0!important;max-width:none!important}
+ body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(3),
+ body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(3){width:28%!important;min-width:0!important;max-width:none!important}
+ body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(5),
+ body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(5){width:14%!important;min-width:0!important;max-width:none!important}
+ body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(8),
+ body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(8){width:13%!important;min-width:0!important;max-width:none!important}
+ body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(9),
+ body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(9){width:23%!important;min-width:0!important;max-width:none!important}
+ body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(10),
+ body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(10){width:11%!important;min-width:0!important;max-width:none!important}
+}
+</style>
 <style id="crew-login-photo-background-v119">
 /* Actual access-page background, not a hidden pseudo-element behind the card. */
 /* Two independent layers allow true crossfade (background-image is not animatable). */
