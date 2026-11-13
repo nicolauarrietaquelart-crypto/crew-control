@@ -8042,7 +8042,32 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
 @media(max-width:900px){
  /* Coordinator details remain available in worker profiles, not on mobile service bands. */
  .work-group-head .coord-summary{display:none!important}
- .work-group-head .crew-group-select-v11261{display:none!important}
+ .work-group-head .crew-group-select-v11261{
+  display:inline-flex!important;
+  align-items:center!important;justify-content:center!important;
+  flex:0 0 34px!important;width:34px!important;min-width:34px!important;
+  height:34px!important;min-height:34px!important;
+  padding:0!important;margin:0 2px 0 0!important;
+  background:rgba(255,255,255,.1)!important;
+  border:1px solid rgba(255,255,255,.3)!important;
+  border-radius:9px!important;color:#fff!important;
+ }
+ .work-group-head .crew-group-select-v11261 svg{
+  display:block!important;width:18px!important;height:18px!important;
+  opacity:.7;pointer-events:none;
+ }
+ .work-group-head .crew-group-select-v11261.active{
+  background:#f58220!important;border-color:#f58220!important;
+  color:#111!important;
+ }
+ .work-group-head .crew-group-select-v11261.active svg{opacity:1}
+ .work-group-head .work-group-title{
+  display:flex!important;align-items:center!important;gap:7px!important;min-width:0;
+ }
+ .work-group-head .work-group-title > .work-hide-btn-v11227,
+ .work-group-head .work-group-title > .crew-group-select-v11261{
+  flex-shrink:0!important;
+ }
 }
 
 /* Keep the desktop group selection tick immediately to the right of Hide. */
