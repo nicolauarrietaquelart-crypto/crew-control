@@ -9714,6 +9714,7 @@ html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-s
 .crew-linked-work-heading{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff3e8;border:1px solid #e8c5a5;border-bottom:0;border-radius:13px 13px 0 0;padding:12px 17px;margin-top:12px}
 .crew-linked-work-heading span{font-size:10px;font-weight:800;color:#a15a17;letter-spacing:.07em}
 .crew-linked-work-heading strong{font-size:13px;font-weight:800;overflow-wrap:anywhere}
+.crew-shared-heading-stats{flex:1;min-width:0}.crew-shared-heading-stats .staffing-summary{margin:0!important;padding:0!important;background:transparent!important;border:0!important;display:flex;flex-wrap:wrap;gap:6px}
 #personnelGroups > details.work-group.crew-linked-work-member{margin-top:0!important;margin-bottom:0!important;border-radius:0!important;border-bottom:0!important}
 #personnelGroups > details.work-group.crew-linked-work-member.crew-linked-work-last{border-bottom:1px solid #ddd!important;border-radius:0 0 13px 13px!important;margin-bottom:13px!important}
 </style>
@@ -10443,7 +10444,7 @@ html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-s
         </div>
 
         <label class="no-teams-option">
-          <input id="staffingNoTeams" type="checkbox" onchange="toggleStaffingNoTeamsUI()">
+          <input id="staffingNoTeams" type="checkbox" onchange="toggleStaffingNoTeamsUI();crewScheduleStaffingAutosave()"
           <span>
             <strong>Sin equipos</strong>
           </span>
@@ -10463,8 +10464,7 @@ html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-s
         <div class="modal-actions crew-staffing-actions">
           <button type="button" class="secondary" onclick="randomlyAssignHandsToTeams()">Equipos Aleatorios</button><div class="crew-assign-personnel"><button type="button" class="secondary" onclick="crewToggleAssignPersonnel()">Asignar personal</button><div id="crewAssignPersonnelDropdown" class="crew-assign-personnel-menu" hidden></div></div>
           <button class="secondary" onclick="clearStaffingPlan()">Quitar objetivos</button>
-          <button class="secondary" onclick="closeStaffingModal()">Cancelar</button>
-          <button class="primary" onclick="saveStaffingPlan()">Guardar planificación</button>
+          <button class="primary" onclick="closeStaffingModal()">Cerrar</button>
         </div>
       </div>
     </div>
@@ -12029,15 +12029,19 @@ function crewTeamsRenderPlanningListV11263(){
     days.map(day=>{
       const rows=state.service.workers.filter(w=>w.included&&(w.serviceDate||'SIN FECHA')===day);
       const works=orderedWorkTypes([...new Set(rows.map(w=>w.trabajo||'SIN TIPO'))]);
+      const seenShared=new Set();
       return '<div class="crew-team-day-v11263"><strong>'+escapeHtml(dayLabel(day))+' · '+escapeHtml(day)+'</strong>'+
         '<div class="crew-team-work-list-v11263">'+works.map(work=>{
-          const count=rows.filter(w=>normalize(w.trabajo||'SIN TIPO')===normalize(work)).length;
+          const group=crewStaffingGroupFor(day,work).filter(w=>works.some(x=>normalize(x)===normalize(w)));
+          const groupKey=group.map(normalize).sort().join('|');
+          if(group.length>1){if(seenShared.has(groupKey))return '';seenShared.add(groupKey)}
+          const count=rows.filter(w=>group.some(x=>normalize(w.trabajo||'SIN TIPO')===normalize(x))).length;
           const targets=(state.service.requirements||[]).filter(r=>r.serviceDate===day&&normalize(r.trabajo)===normalize(work));
           const noTeams=targets.some(r=>r.teamId===NO_TEAMS_REQUIREMENT_TEAM_ID);
           const planned=targets.reduce((sum,r)=>sum+(r.teamId===NO_TEAMS_REQUIREMENT_TEAM_ID?0:Number(r.requiredCount||0)),0);
           const label=noTeams?'Sin equipos':planned?planned+' necesarios':'Sin objetivos';
           return '<button type="button" onclick="crewTeamsOpenPlanningV11263('+JSON.stringify(day).replace(/"/g,'&quot;')+','+JSON.stringify(work).replace(/"/g,'&quot;')+')">'+
-            '<span>'+escapeHtml(work)+' <small>'+count+' trabajadores</small></span><span>'+escapeHtml(label)+' <b>›</b></span></button>';
+            '<span>'+escapeHtml(group.length>1?'PLANIFICACIÓN COMPARTIDA':work)+' <small>'+count+' trabajadores</small></span><span>'+escapeHtml(label)+' <b>›</b></span></button>';
         }).join('')+'</div></div>';
     }).join('');
   if(!days.length)host.innerHTML='<p class="hint">Importa el personal del servicio para definir objetivos por día y tipo.</p>';
@@ -14541,7 +14545,7 @@ function renderPersonnel(light=false){
           ${coordinatorHtml}
         </div>
       </summary>
-      ${staffing.html}
+      ${crewStaffingGroupFor(state.activeDay,trabajo).length>1?'':staffing.html}
       ${workTeamFilterHtml(trabajo,includedRows)}
       <div class="table-wrap" style="display:block;width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:auto;overscroll-behavior-x:contain">
         <table style="display:table;table-layout:fixed;width:100%;min-width:957px;max-width:none;flex-shrink:0;transform:none">
@@ -14607,7 +14611,7 @@ function renderPersonnel(light=false){
     if(linked.length>1){
       const heading=document.createElement('div');
       heading.className='crew-linked-work-heading';
-      heading.innerHTML='<span>PLANIFICACIÓN COMPARTIDA</span><strong>'+linked.map(n=>escapeHtml(n.getAttribute('data-work-group'))).join(' + ')+'</strong>';
+      heading.innerHTML='<span>PLANIFICACIÓN COMPARTIDA</span><div class="crew-shared-heading-stats">'+staffingSummaryForWork(work,(state.service.workers||[]).filter(w=>w.serviceDate===state.activeDay&&normalize(w.trabajo)===normalize(work)&&w.included)).html+'</div>';
       groupedNodes.push(heading);
       linked.forEach((entry,i)=>{
         const name=normalize(entry.getAttribute('data-work-group')||'');
@@ -15330,13 +15334,13 @@ function openStaffingModal(trabajo){
   state.staffingWork=trabajo;
   state.staffingDraft={};
 
-  requirementsForWork(trabajo).forEach(r=>{
+  crewStaffingGroupFor(state.activeDay,trabajo).flatMap(work=>requirementsForWork(work)).forEach(r=>{
     state.staffingDraft[r.teamId]=Number(r.requiredCount||0);
   });
 
   document.getElementById('staffingNoTeams').checked=workHasNoTeams(trabajo);
 
-  document.getElementById('staffingTitle').textContent='Planificación · '+trabajo;
+  document.getElementById('staffingTitle').textContent=crewStaffingWorks().length>1?'Planificación compartida':'Planificación · '+trabajo;
   document.getElementById('staffingSub').textContent=`${dayLabel(state.activeDay)} · ${state.activeDay}`;
 
   populateStaffingCopySources();
@@ -15483,7 +15487,7 @@ function crewStaffingChooseWork(){
   linked[key]=[...new Set([...(linked[key]||[]),work])];
   state.service.staffingLinkedWorks=linked;
   crewPersist(state.service).catch(console.error);
-  renderCrewStaffingLinkedWorks();renderStaffingRows();
+  renderCrewStaffingLinkedWorks();renderStaffingRows();crewScheduleStaffingAutosave();
 }
 function crewStaffingRemoveWork(work){
   if(!state.service)return;
@@ -15502,7 +15506,7 @@ function crewStaffingRemoveWork(work){
   });
   state.service.staffingLinkedWorks=linked;
   crewPersist(state.service).catch(console.error);
-  renderCrewStaffingLinkedWorks();renderStaffingRows();
+  renderCrewStaffingLinkedWorks();renderStaffingRows();crewScheduleStaffingAutosave();
 }
 function renderCrewStaffingLinkedWorks(){
   const host=document.getElementById('crewStaffingLinkedWorks');if(!host||!state.service)return;
@@ -15574,7 +15578,7 @@ function renderStaffingRows(){
             step="1"
             value="${value||''}"
             placeholder="Necesarios"
-            oninput="state.staffingDraft['${escapeAttr(team.id)}']=Math.max(0,Number(this.value||0))">
+            oninput="state.staffingDraft['${escapeAttr(team.id)}']=Math.max(0,Number(this.value||0));crewScheduleStaffingAutosave()">
 
           <div class="requirement-current">
             <strong>${count.assigned}</strong><br>asignados
@@ -15711,8 +15715,18 @@ function randomlyAssignHandsToTeams(){
   else if(hands.length>slots.length)alert('Objetivos cubiertos. '+(hands.length-slots.length)+' hands quedan sin asignar porque superan las plazas planificadas.');
 }
 
-function saveStaffingPlan(){
-  if(!state.service||state.service.closed)return;
+let crewStaffingAutoTimer=null;
+let crewStaffingSaveBusy=false;
+let crewStaffingQueued=false;
+function crewScheduleStaffingAutosave(){
+  if(!state.staffingWork||!state.service||state.service.closed)return;
+  clearTimeout(crewStaffingAutoTimer);
+  crewStaffingAutoTimer=setTimeout(()=>{crewStaffingAutoTimer=null;saveStaffingPlan(true)},550);
+}
+function saveStaffingPlan(keepOpen=false){
+  if(!state.service||state.service.closed||!state.staffingWork)return;
+  if(crewStaffingSaveBusy){crewStaffingQueued=true;return}
+  crewStaffingSaveBusy=true;
   const trabajo=state.staffingWork,serviceDate=state.activeDay;
   const works=crewStaffingGroupFor(serviceDate,trabajo);
   const noTeams=Boolean(document.getElementById('staffingNoTeams')?.checked);
@@ -15728,15 +15742,17 @@ function saveStaffingPlan(){
       serviceDate,trabajo:work,teamId:NO_TEAMS_REQUIREMENT_TEAM_ID,requiredCount:0
     }]:payload.map(r=>({serviceDate,trabajo:work,...r})))
   );
-  closeStaffingModal();
+  if(!keepOpen)closeStaffingModal(false);
   renderPersonnel(true);
   renderOperationalAlerts();
   setSaveState('Guardando planificación…','saving');
   let index=0;
   const saveNext=()=>{
     if(index>=works.length){
+      crewStaffingSaveBusy=false;
       setSaveState('Guardado','saved');
       renderPersonnel(true);
+      if(crewStaffingQueued){crewStaffingQueued=false;if(state.staffingWork)saveStaffingPlan(true)}
       return;
     }
     const work=works[index++];
@@ -15750,6 +15766,8 @@ function saveStaffingPlan(){
     }).withFailureHandler(err=>{
       // Restaurar la vista y avisar: los cambios remotos anteriores pueden
       // haberse guardado, por lo que es necesario revisar la sincronización.
+      crewStaffingSaveBusy=false;
+      crewStaffingQueued=false;
       state.service.requirements=previousRequirements;
       renderPersonnel(true);
       renderOperationalAlerts();
@@ -15770,7 +15788,12 @@ function clearStaffingPlan(){
   saveStaffingPlan();
 }
 
-function closeStaffingModal(){
+function closeStaffingModal(save=true){
+  if(save&&state.staffingWork){
+    clearTimeout(crewStaffingAutoTimer);crewStaffingAutoTimer=null;
+    saveStaffingPlan(false);
+    return;
+  }
   const modal=document.getElementById('staffingModal');
   modal.classList.add('hidden');
   if(crewTeamsEmbeddedStaffV11263){
