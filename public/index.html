@@ -12480,29 +12480,103 @@ function crewAssignDefaultSpecialtyTeam(worker,teams,scenarios){
 async function crewD1Dispatch(method,args){
   const code=String(args[0]||state.service?.code||'');
   if(method==='replaceWorkersFromPdf'){
+    // Finish earlier worker edits before taking the import snapshot.
+    await crewSaveQueue;
     const parsed=args[1]||{},old=state.service||{},previous=old.workers||[];
-    const key=w=>[String(w.personal||'').trim().toLocaleUpperCase(),String(w.serviceDate||''),String(w.trabajo||'').trim().toLocaleUpperCase()].join('|');
-    const buckets=new Map();
-    for(const w of previous){const k=key(w);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(w)}
+    const incoming=Array.isArray(parsed.workers)?parsed.workers:[];
+    if(!incoming.length)throw new Error('El PDF no contiene trabajadores válidos; no se ha modificado el servicio.');
+
+    const normalName=value=>normalize(value).replace(/[^A-Z0-9 ]/g,'').replace(/\\s+/g,' ').trim();
+    const normalPhone=value=>{
+      const digits=String(value||'').replace(/\\D/g,'');
+      return digits.length>=9?digits.slice(-9):'';
+    };
+    const sameDate=(a,b)=>String(a.serviceDate||'')===String(b.serviceDate||'');
+    const sameWork=(a,b)=>normalize(a.trabajo)===normalize(b.trabajo);
+    const sameName=(a,b)=>Boolean(normalName(a.personal))&&normalName(a.personal)===normalName(b.personal);
+    const samePhone=(a,b)=>Boolean(normalPhone(a.movil))&&normalPhone(a.movil)===normalPhone(b.movil);
+    const used=new Set();
+    // Only match one-to-one; never guess when multiple people could match.
+    const findPrevious=(w)=>{
+      const available=previous.filter(oldW=>!used.has(oldW));
+      const pick=(predicate)=>{
+        const found=available.filter(predicate);
+        if(found.length===1)return found[0];
+        if(found.length>1){
+          const sameTime=found.filter(oldW=>
+            String(oldW.inicio||'')===String(w.inicio||'')&&
+            String(oldW.fin||'')===String(w.fin||''));
+          if(sameTime.length===1)return sameTime[0];
+        }
+        return null;
+      };
+      // Names and mobile numbers survive PDF row/order changes.
+      const match=
+        pick(o=>sameDate(o,w)&&sameWork(o,w)&&sameName(o,w)&&
+          (!normalPhone(o.movil)||!normalPhone(w.movil)||samePhone(o,w)))||
+        pick(o=>sameDate(o,w)&&sameWork(o,w)&&samePhone(o,w))||
+        pick(o=>sameDate(o,w)&&sameName(o,w)&&
+          (!normalPhone(o.movil)||!normalPhone(w.movil)||samePhone(o,w)))||
+        pick(o=>sameDate(o,w)&&samePhone(o,w)&&
+          (!normalName(o.personal)||!normalName(w.personal)||sameName(o,w)));
+      if(match)used.add(match);
+      return match;
+    };
+
     let matched=0,added=0,scheduleChanged=0,pauseChanged=0,dietChanged=0,coordinatorChanged=0,movedToReserve=0;
     const changedNames=[];
-    if((parsed.workers||[]).some(w=>w.isReserve)&&!(old.teams||[]).some(t=>normalize(t.name)==='RESERVAS')){
+    // Preserve the existing team catalog, assignments, ratings and worker metadata.
+    const teams=[...(old.teams||[])];
+    if(incoming.some(w=>w.isReserve)&&!teams.some(t=>normalize(t.name)==='RESERVAS')){
       const scenario=(old.scenarios||[])[0];
-      if(scenario)old.teams=[...(old.teams||[]),{id:'T_RESERVAS_'+Date.now(),scenarioId:scenario.id,name:'RESERVAS',colorName:'GRIS',colorHex:'#BDBDBD',noVest:true,sortOrder:(old.teams||[]).length+1}];
+      if(scenario)teams.push({id:'T_RESERVAS_'+Date.now(),scenarioId:scenario.id,name:'RESERVAS',colorName:'GRIS',colorHex:'#BDBDBD',noVest:true,sortOrder:teams.length+1});
     }
-    const workers=(parsed.workers||[]).map((w,index)=>{
-      const oldWorker=(buckets.get(key(w))||[]).shift();
-      if(!oldWorker){added++;return crewAssignDefaultSpecialtyTeam({...w,id:w.id||crypto.randomUUID(),sortOrder:index+1,status:'PENDIENTE',included:true},old.teams,old.scenarios)}
+    const workers=incoming.map((w,index)=>{
+      const oldWorker=findPrevious(w);
+      if(!oldWorker){
+        added++;
+        return crewAssignDefaultSpecialtyTeam({
+          ...w,id:w.id||crypto.randomUUID(),sortOrder:index+1,
+          status:'PENDIENTE',included:true
+        },teams,old.scenarios);
+      }
       matched++;
       if(oldWorker.inicio!==w.inicio||oldWorker.fin!==w.fin){scheduleChanged++;changedNames.push(w.personal||'')}
       if(oldWorker.pausa!==w.pausa)pauseChanged++;
       if(Number(oldWorker.nDieta||0)!==Number(w.nDieta||0))dietChanged++;
       if(Boolean(oldWorker.isCoordinator)!==Boolean(w.isCoordinator))coordinatorChanged++;
       if(!oldWorker.isReserve&&w.isReserve)movedToReserve++;
-      return crewAssignDefaultSpecialtyTeam({...oldWorker,...w,id:oldWorker.id,sortOrder:index+1,status:oldWorker.status,teamId:oldWorker.teamId,scenarioId:oldWorker.scenarioId,arrivalAt:oldWorker.arrivalAt,notes:oldWorker.notes,actualStart:oldWorker.actualStart,actualEnd:oldWorker.actualEnd,actualPause:oldWorker.actualPause,actualDiet:oldWorker.actualDiet,ratingUniformidad:oldWorker.ratingUniformidad,ratingActitud:oldWorker.ratingActitud,ratingPuntualidad:oldWorker.ratingPuntualidad,included:oldWorker.included},old.teams,old.scenarios);
+
+      // Preserve ALL existing fields by default, not just a short list.
+      // Only the PDF's factual roster/schedule fields get refreshed.
+      // In particular keep id, status, arrivalAt, actual times, notes, ratings,
+      // inclusion, manually chosen team/scenario, specialty and reserve flags.
+      const merged={...oldWorker};
+      for(const field of ['personal','movil','serviceDate','trabajo','blockId','blockLabel',
+        'page','pdfRow','hLlam','inicio','fin','pausa','nDieta']){
+        if(Object.prototype.hasOwnProperty.call(w,field))merged[field]=w[field];
+      }
+      // Only fill missing specialty/role information for legacy entries.
+      if(!merged.especialidad)merged.especialidad=w.especialidad;
+      if(merged.isCoordinator===undefined)merged.isCoordinator=w.isCoordinator;
+      if(merged.isReserve===undefined)merged.isReserve=w.isReserve;
+      // Keep deliberate manual team assignments; assign a default only if unset.
+      if(!merged.teamId){
+        return crewAssignDefaultSpecialtyTeam({...merged,sortOrder:index+1},teams,old.scenarios);
+      }
+      merged.sortOrder=index+1;
+      return merged;
     });
     const removed=previous.length-matched;
-    const next={...old,...(parsed.meta||{}),serviceName:String(parsed.meta?.reference||'').trim()||old.serviceName||'',pdfName:parsed.meta?.pdfName||old.pdfName,workers,blocks:parsed.blocks||[],code};
+    // Do not destroy existing data if a parser/template change suddenly stops
+    // recognising most of a previously populated roster.
+    if(previous.length>=5 && matched===0 && added>0){
+      throw new Error('No se ha podido identificar ningún trabajador anterior. Importación cancelada para proteger los equipos, fichajes y valoraciones. Revisa el formato del PDF.');
+    }
+    const next={...old,...(parsed.meta||{}),
+      serviceName:String(parsed.meta?.reference||'').trim()||old.serviceName||'',
+      pdfName:parsed.meta?.pdfName||old.pdfName||'',
+      workers,teams,blocks:parsed.blocks||[],code};
     await crewPersist(next);
     return {service:next,summary:{matched,added,removed,scheduleChanged,pauseChanged,dietChanged,coordinatorChanged,movedToReserve,changedNames}};
   }
