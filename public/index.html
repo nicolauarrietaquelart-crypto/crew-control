@@ -9709,6 +9709,7 @@ html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-s
 <style id="crew-linked-work-plan-style">.crew-linked-add{display:flex;gap:8px;margin:12px 0}.crew-linked-add select{flex:1;min-width:0}.crew-linked-chips{display:flex;flex-wrap:wrap;gap:6px}.crew-linked-chips span{border:1px solid #ddd;border-radius:20px;padding:5px 9px;font-size:12px}.crew-linked-chips button{border:0;background:transparent;cursor:pointer}</style>
 <style id="crew-pause-summary-card-click-v114">#crewPausePeopleModal .crew-pause-person{cursor:pointer}#crewPausePeopleModal .crew-pause-person:has(input:checked){border-color:#ff7a14!important;background:#fff7f0!important}#crewPausePeopleModal .crew-pause-person input{accent-color:#ff7a14!important}.crew-pause-existing-time{display:inline-block;margin-left:8px}.crew-pause-team-summary{display:block;font-size:11px!important;color:#777!important;line-height:1.4}</style>
 <link rel="stylesheet" href="/pause-return.css">
+<style>.crew-assign-personnel{position:relative;display:inline-flex}.crew-assign-personnel-menu{position:absolute;bottom:calc(100% + 8px);left:0;z-index:100;background:#fff;border:1px solid #ddd;border-radius:12px;padding:12px;box-shadow:0 12px 30px #0002;min-width:245px;display:grid;gap:8px}.crew-assign-personnel-menu[hidden]{display:none!important}.crew-assign-personnel-menu select{width:100%;min-width:0}@media(max-width:700px){.crew-assign-personnel-menu{left:auto;right:0;max-width:calc(100vw - 32px)}}</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -10453,7 +10454,7 @@ html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-s
         </div>
 
         <div class="modal-actions crew-staffing-actions">
-          <button type="button" class="secondary" onclick="randomlyAssignHandsToTeams()">Equipos Aleatorios</button>
+          <button type="button" class="secondary" onclick="randomlyAssignHandsToTeams()">Equipos Aleatorios</button><div class="crew-assign-personnel"><button type="button" class="secondary" onclick="crewToggleAssignPersonnel()">Asignar personal</button><div id="crewAssignPersonnelDropdown" class="crew-assign-personnel-menu" hidden></div></div>
           <button class="secondary" onclick="clearStaffingPlan()">Quitar objetivos</button>
           <button class="secondary" onclick="closeStaffingModal()">Cancelar</button>
           <button class="primary" onclick="saveStaffingPlan()">Guardar planificación</button>
@@ -14444,7 +14445,8 @@ function renderPersonnel(light=false){
       shifts:Object.entries(state.collapsedShifts||{}).filter(([k])=>k.startsWith(trabajo+'|')),
       teams:state.service.teams,
       scenarios:state.service.scenarios,
-      requirements:(state.service.requirements||[]).filter(r=>normalize(r.trabajo||'')===key),
+      requirements:(state.service.requirements||[]).filter(r=>crewStaffingGroupFor(state.activeDay,trabajo).some(x=>normalize(x)===normalize(r.trabajo||''))),
+      linkedTeamRows:crewStaffingGroupFor(state.activeDay,trabajo).length>1?(state.service.workers||[]).filter(w=>w.serviceDate===state.activeDay&&crewStaffingGroupFor(state.activeDay,trabajo).some(x=>normalize(x)===normalize(w.trabajo))).map(w=>[w.id,w.teamId,w.status,w.included]):[],
       incidents:(state.service.incidents||[]).filter(i=>rows.some(w=>String(w.id)===String(i.workerId))),
       closed:Boolean(state.service.closed)
     });
@@ -14908,6 +14910,16 @@ function requirementsForWork(trabajo){
   );
 }
 
+function crewStaffingUniqueRows(rows){
+ const map=new Map();
+ rows.forEach(w=>{
+  const p=String(w.movil||'').replace(/\D/g,''),n=normalize(w.personal||'');
+  const key=(p.length>=9?'P:'+p:n?'N:'+n:'I:'+w.id)+'|'+(w.teamId||'');
+  const old=map.get(key);
+  if(!old||(old.status!=='PRESENTE'&&w.status==='PRESENTE'))map.set(key,w);
+ });
+ return [...map.values()];
+}
 function staffingSummaryForWork(trabajo,rows){
   if(workHasNoTeams(trabajo)){
     return {
@@ -14920,7 +14932,9 @@ function staffingSummaryForWork(trabajo,rows){
     };
   }
 
-  const requirements=requirementsForWork(trabajo);
+  const group=crewStaffingGroupFor(state.activeDay,trabajo);
+  if(group.length>1)rows=crewStaffingUniqueRows((state.service.workers||[]).filter(w=>w.included&&w.serviceDate===state.activeDay&&group.some(x=>normalize(x)===normalize(w.trabajo))));
+  const requirements=group.length>1?group.flatMap(w=>requirementsForWork(w)).reduce((acc,r)=>{const prev=acc.find(x=>x.teamId===r.teamId);if(prev)prev.requiredCount=Math.max(Number(prev.requiredCount)||0,Number(r.requiredCount)||0);else acc.push({...r});return acc},[]):requirementsForWork(trabajo);
   const teamIds=new Set(requirements.map(r=>r.teamId));
 
   const counts={};
@@ -15291,6 +15305,7 @@ function openStaffingModal(trabajo){
   populateStaffingCopySources();
   renderCrewStaffingLinkedWorks();
   renderStaffingRows();
+  crewRenderAssignPersonnel();
   toggleStaffingNoTeamsUI();
   if(!crewTeamsEmbeddedStaffV11263)
     document.getElementById('staffingModal').classList.remove('hidden');
@@ -15535,6 +15550,42 @@ function renderStaffingRows(){
       }).join('')}
     </div>`;
   }).join('');
+}
+
+
+function crewRenderAssignPersonnel(){
+ const host=document.getElementById('crewAssignPersonnelDropdown');if(!host||!state.service)return;
+ const works=[...new Set(state.service.workers.filter(w=>w.serviceDate===state.activeDay&&w.trabajo).map(w=>w.trabajo))].filter(w=>normalize(w)!==normalize(state.staffingWork));
+ host.innerHTML='<label>Copiar equipos desde</label><select id="crewAssignPersonnelSource"><option value="">Seleccionar tipo de servicio…</option>'+works.map(w=>'<option value="'+escapeAttr(w)+'">'+escapeHtml(w)+'</option>').join('')+'</select><button type="button" class="primary" onclick="crewAssignPersonnelFromWork()">Asignar</button>';
+}
+function crewToggleAssignPersonnel(){
+ crewRenderAssignPersonnel();const el=document.getElementById('crewAssignPersonnelDropdown');if(el)el.hidden=!el.hidden;
+}
+function crewAssignPersonnelFromWork(){
+ if(!state.service||state.service.closed)return;
+ const source=document.getElementById('crewAssignPersonnelSource')?.value,target=state.staffingWork;
+ if(!source){alert('Selecciona un tipo de servicio de origen.');return}
+ const rows=state.service.workers||[],day=state.activeDay,byPhone=new Map(),byName=new Map();
+ const phone=w=>String(w.movil||'').replace(/\D/g,''),name=w=>normalize(w.personal||'');
+ rows.filter(w=>w.included&&w.serviceDate===day&&normalize(w.trabajo)===normalize(source)&&w.teamId).forEach(w=>{
+  const p=phone(w),n=name(w);
+  if(p.length>=9)byPhone.set(p,byPhone.has(p)?null:w);
+  if(n)byName.set(n,byName.has(n)?null:w);
+ });
+ const protectedRole=v=>/\b(CREW[\s_-]*HEAD|FORK[\s_-]*LIFT(?:ER)?|CARRETILLERO)\b/.test(normalize(v||''));
+ const updates=[];
+ rows.filter(w=>w.included&&w.serviceDate===day&&normalize(w.trabajo)===normalize(target)).forEach(w=>{
+  const p=phone(w),n=name(w),match=(p.length>=9?byPhone.get(p):null)||(!p&&n?byName.get(n):null);
+  if(!match||!match.teamId||w.teamId===match.teamId)return;
+  const team=state.service.teams.find(t=>t.id===match.teamId);if(!team)return;
+  if(protectedRole(team.name)&&!protectedRole(w.especialidad))return;
+  if(protectedRole(w.especialidad)&&!protectedRole(team.name))return;
+  w.teamId=team.id;w.scenarioId=team.scenarioId||'';
+  updates.push({workerId:w.id,teamId:team.id});refreshWorkerRow(w.id);
+ });
+ if(updates.length){saveWorkerUpdates(updates);renderStaffingRows();renderWorkers();renderOperationalAlerts()}
+ document.getElementById('crewAssignPersonnelDropdown').hidden=true;
+ alert(updates.length+' personas coincidentes asignadas desde '+source+'.');
 }
 
 function randomlyAssignHandsToTeams(){
@@ -16448,6 +16499,7 @@ function refreshWorkerRow(id){
 
 
 function updateStaffingChipFast(trabajo,teamId){
+  if(crewStaffingGroupFor(state.activeDay,trabajo).length>1){renderWorkers();return;}
   if(!teamId||!state.service)return;
 
   const details=[...document.querySelectorAll('.work-group')]
