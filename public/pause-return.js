@@ -5,6 +5,7 @@
   const LABELS={'PENDIENTE':'PENDIENTE','CONTACTADO':'CONTACTADO','PRESENTE':'PRESENTE','NO PRESENTADO':'NO PRESENTADO'};
   let activeShiftId='';
   let fromPeople=false;
+  let lastAutoCheck=0;
   const $=id=>document.getElementById(id);
   const icon=status=>{
     const p={
@@ -61,6 +62,10 @@
     const list=$('crewPauseShiftList');
     new MutationObserver(decorateShiftButtons).observe(list,{childList:true});
     decorateShiftButtons();
+    // Revisión en la app abierta, al recuperar el foco y al acceder a pasar lista.
+    setInterval(()=>autoCloseEndedShifts(),15000);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)autoCloseEndedShifts()});
+    window.addEventListener('focus',()=>autoCloseEndedShifts());
 
     // Al sacar a alguien de un turno, borrar únicamente su control de regreso en ese turno.
     // La función original sigue gestionando las asignaciones y su guardado.
@@ -91,14 +96,56 @@
       card.insertBefore(button,card.lastElementChild);
     });
   }
+  function shiftEndDate(shift){
+    const raw=String(shift.serviceDate||'').trim();
+    let y,m,d;
+    let match=raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if(match){y=+match[1];m=+match[2];d=+match[3]}
+    else{
+      match=raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if(!match)return null;
+      d=+match[1];m=+match[2];y=+match[3];
+    }
+    const time=String(shift.end||'').match(/^(\d{1,2}):(\d{2})$/);
+    const start=String(shift.start||'').match(/^(\d{1,2}):(\d{2})$/);
+    if(!time||!start||m<1||m>12||d<1||d>31||+time[1]>23||+time[2]>59)return null;
+    const end=new Date(y,m-1,d,+time[1],+time[2],0,0);
+    if(end.getFullYear()!==y||end.getMonth()!==m-1||end.getDate()!==d)return null;
+    if((+time[1]*60 + +time[2]) <= (+start[1]*60 + +start[2]))end.setDate(end.getDate()+1);
+    return end;
+  }
+  function autoCloseEndedShifts(){
+    if(!state.service||state.service.closed)return;
+    const now=Date.now();
+    if(now-lastAutoCheck<1000)return;
+    lastAutoCheck=now;
+    let changed=false;
+    crewPauseRecords().forEach(shift=>{
+      const end=shiftEndDate(shift);
+      if(!end||now<end.getTime())return;
+      if(!shift.returnStatuses||typeof shift.returnStatuses!=='object'||Array.isArray(shift.returnStatuses))shift.returnStatuses={};
+      getWorkers(shift).forEach(w=>{
+        const id=String(w.id),status=getStatus(shift,id);
+        if(status==='PENDIENTE'||status==='CONTACTADO'){
+          shift.returnStatuses[id]='NO PRESENTADO';
+          changed=true;
+        }
+      });
+    });
+    if(changed){
+      crewPauseSave();
+      if(activeShiftId&&!$('crewPauseReturnModal').classList.contains('hidden'))renderReturn();
+    }
+  }
   function openReturn(id){
     if(!state.service)return;
     const shift=crewPauseRecords().find(s=>s.id===id);
     if(!shift)return;
+    autoCloseEndedShifts();
     fromPeople=!$('crewPausePeopleModal').classList.contains('hidden');
     activeShiftId=shift.id;
     $('crewPauseReturnTitle').textContent='Regreso de la pausa · '+shift.start+' – '+shift.end;
-    $('crewPauseReturnSub').textContent=shift.trabajo+' · '+shift.serviceDate+' · Independiente de la asistencia general';
+    $('crewPauseReturnSub').textContent=shift.trabajo+' · '+shift.serviceDate;
     $('crewPausePeopleModal').classList.add('hidden');
     $('crewPauseShiftsModal').classList.add('hidden');
     renderReturn();
@@ -147,10 +194,15 @@
     list.innerHTML=workers.map(w=>{
       const status=getStatus(shift,w.id),team=(state.service.teams||[]).find(t=>t.id===w.teamId);
       const teamName=team?.name||'SIN EQUIPO',specialty=w.especialidad||'SIN ESPECIALIDAD';
+      const phone=typeof normalizePhone==='function'?normalizePhone(w.movil||''):'';
+      const digits=phone.replace(/\D/g,'');
+      const phoneSvg='<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7l.5 3a2 2 0 0 1-.6 1.8L7.1 10a16 16 0 0 0 6.9 6.9l1.5-1.9a2 2 0 0 1 1.8-.6l3 .5a2 2 0 0 1 1.7 2Z"/></svg>';
+      const waSvg='<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a9 9 0 0 1-13.4 7.8L3 21l1.7-4.6A9 9 0 1 1 21 11.5Z"/><path d="M8.5 8.5c.4 3.4 3.1 6.1 6.5 6.5l1.5-1.5-2.4-1.3-1.1 1a7 7 0 0 1-2.7-2.7l1-1.1L10 7Z"/></svg>';
+      const contacts=phone?'<div class="crew-return-contacts"><a href="tel:'+escapeAttr(phone)+'" title="Llamar a '+escapeAttr(w.personal)+'" aria-label="Llamar a '+escapeAttr(w.personal)+'">'+phoneSvg+'</a><a href="https://wa.me/'+digits+'" target="_blank" rel="noopener noreferrer" title="WhatsApp de '+escapeAttr(w.personal)+'" aria-label="WhatsApp de '+escapeAttr(w.personal)+'">'+waSvg+'</a></div>':'';
       return '<div class="crew-return-person" data-status="'+status+'">'+
         '<div class="crew-return-identity"><strong>'+escapeHtml(w.personal)+'</strong>'+
         '<span class="crew-return-details"><b>'+escapeHtml(teamName)+'</b> · '+escapeHtml(specialty)+'</span></div>'+
-        '<div class="crew-return-right"><span class="crew-return-status-label">'+LABELS[status]+'</span>'+
+        '<div class="crew-return-right">'+contacts+'<span class="crew-return-status-label">'+LABELS[status]+'</span>'+
         '<div class="crew-return-picker"><span class="crew-return-toggle" aria-hidden="true">'+icon(status)+'</span>'+
         '<select class="crew-return-select" data-return-worker="'+escapeAttr(String(w.id))+'" aria-label="Estado de regreso de '+escapeAttr(w.personal)+'" '+(state.service.closed?'disabled ':'')+'>'+
         STATES.map(s=>'<option value="'+s+'" '+(s===status?'selected ':'')+'>'+LABELS[s]+'</option>').join('')+'</select></div></div></div>';
