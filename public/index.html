@@ -10604,6 +10604,102 @@ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data
  }
 }
 </style>
+<style id="crew-operational-search-reveal-v1">
+/* Search lives above the shared filter, Equipos and magnifier toolbar. */
+html body .personnel-sidebar-toolbar-v121{
+ display:flex!important;flex-direction:column!important;align-items:stretch!important;
+ gap:9px!important;min-width:0!important;
+}
+html body .personnel-sidebar-toolbar-v121>.crew-search-reveal{
+ order:0!important;width:100%!important;min-width:0!important;
+ max-height:0!important;opacity:0!important;visibility:hidden!important;
+ overflow:hidden!important;pointer-events:none!important;margin:0!important;
+ transition:max-height .22s ease,opacity .18s ease,visibility .18s ease!important;
+}
+html body .personnel-sidebar-toolbar-v121>.crew-search-reveal.is-open{
+ max-height:65px!important;opacity:1!important;visibility:visible!important;
+ pointer-events:auto!important;
+}
+html body .personnel-sidebar-toolbar-v121>.crew-search-reveal #searchWorker{
+ display:block!important;width:100%!important;max-width:100%!important;
+ min-height:40px!important;margin:0!important;box-sizing:border-box!important;
+ font-size:12px!important;color:#171717!important;
+ padding:9px 12px!important;border:1px solid #d6d9dc!important;
+ border-radius:11px!important;background:#fff!important;
+}
+html body .personnel-sidebar-toolbar-v121>.crew-filter-action-row{
+ order:1!important;display:flex!important;flex-flow:row nowrap!important;
+ align-items:center!important;justify-content:space-between!important;
+ gap:7px!important;width:100%!important;min-width:0!important;
+}
+html body .personnel-sidebar-toolbar-v121>.crew-filter-action-row>#quickStatusFilter{
+ display:block!important;position:static!important;grid-column:auto!important;grid-row:auto!important;
+ flex:1 1 0!important;min-width:75px!important;max-width:none!important;
+ width:auto!important;min-height:42px!important;margin:0!important;
+ font-size:12px!important;padding:7px 9px!important;box-sizing:border-box!important;
+}
+html body .personnel-sidebar-toolbar-v121>.crew-filter-action-row>.crew-inline-teams-btn{
+ display:inline-flex!important;position:static!important;flex:0 1 auto!important;
+ align-items:center!important;justify-content:center!important;
+ min-height:42px!important;min-width:0!important;max-width:125px!important;
+ width:auto!important;padding:8px 9px!important;gap:5px!important;
+ margin:0!important;box-sizing:border-box!important;
+ color:#151515!important;background:transparent!important;
+ border:1px solid #e0e0e0!important;border-radius:11px!important;
+ font-size:11px!important;white-space:nowrap!important;
+}
+html body .personnel-sidebar-toolbar-v121>.crew-filter-action-row>.crew-inline-teams-btn .label{
+ display:inline!important;font-size:11px!important;font-weight:750!important;white-space:nowrap!important;
+}
+html body .personnel-sidebar-toolbar-v121>.crew-filter-action-row>.crew-inline-teams-btn .icon svg{
+ display:block!important;width:20px!important;height:20px!important;
+}
+html body .personnel-sidebar-toolbar-v121>.crew-filter-action-row>.crew-inline-teams-btn .sidebar-utility-badge-v1210{
+ font-size:10px!important;flex-shrink:0!important;
+}
+html body .personnel-sidebar-toolbar-v121>.crew-filter-action-row>.crew-search-toggle{
+ display:inline-flex!important;align-items:center!important;justify-content:center!important;
+ flex:0 0 42px!important;width:42px!important;height:42px!important;min-height:42px!important;
+ margin:0!important;padding:0!important;border-radius:11px!important;
+ border:1px solid #dedede!important;background:#fff!important;
+ color:#111!important;cursor:pointer!important;
+}
+html body .personnel-sidebar-toolbar-v121>.crew-filter-action-row>.crew-search-toggle svg{
+ display:block!important;width:21px!important;height:21px!important;stroke:currentColor!important;
+}
+html body .personnel-sidebar-toolbar-v121>.crew-filter-action-row>.crew-search-toggle[aria-expanded="true"]{
+ background:#f1f1f1!important;border-color:#f58220!important;
+}
+html body .personnel-sidebar-toolbar-v121>#arrivalModeBtn{order:2!important}
+html body .personnel-sidebar-toolbar-v121>#mobileOperationalMoreV11234{order:3!important}
+html body .personnel-sidebar-toolbar-v121>.sidebar-link-actions-v129{order:4!important}
+html body .personnel-sidebar-toolbar-v121>#sidebarPdfManager{order:5!important}
+html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
+@media(max-width:900px){
+ html body #mobileOperationalDrawerV11234 .personnel-sidebar-toolbar-v121{
+  display:flex!important;flex-direction:column!important;align-items:stretch!important;
+ }
+ html body #mobileOperationalDrawerV11234 .personnel-sidebar-toolbar-v121>.crew-filter-action-row{
+  display:flex!important;grid-column:auto!important;grid-row:auto!important;
+  width:100%!important;gap:6px!important;
+ }
+ html body #mobileOperationalDrawerV11234 .crew-filter-action-row>#quickStatusFilter{
+  grid-column:auto!important;grid-row:auto!important;width:auto!important;min-width:0!important;
+ }
+ html body #mobileOperationalDrawerV11234 .crew-filter-action-row>.crew-inline-teams-btn{
+  min-height:42px!important;padding:6px!important;
+ }
+ html body #mobileOperationalDrawerV11234 .crew-filter-action-row>.crew-inline-teams-btn .label{
+  display:none!important;
+ }
+ html body #mobileOperationalDrawerV11234 .crew-filter-action-row>.crew-search-toggle{
+  flex-basis:42px!important;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ html body .personnel-sidebar-toolbar-v121>.crew-search-reveal{transition:none!important}
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -10793,9 +10889,11 @@ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data
           <div id="stats" class="stats sidebar-duplicate-stats-v128"></div>
 
           <div class="toolbar personnel-sidebar-toolbar-v121">
-        <input id="searchWorker" class="search-wide" type="search" placeholder="Buscar persona, especialidad, equipo o coordinador…" oninput="syncArrivalModeState();schedulePersonnelRender()">
-
-        <select id="quickStatusFilter" onchange="syncArrivalModeState();renderPersonnel(true)">
+        <div class="crew-search-reveal" id="crewSearchReveal" aria-hidden="true">
+          <input id="searchWorker" class="search-wide" type="search" placeholder="Buscar persona, especialidad, equipo o coordinador…" oninput="syncArrivalModeState();schedulePersonnelRender()">
+        </div>
+        <div class="crew-filter-action-row">
+          <select id="quickStatusFilter" onchange="syncArrivalModeState();renderPersonnel(true)">
           <option value="ALL">Todos</option>
           <option value="PENDIENTE">Pendientes</option>
           <option value="CONTACTADO">Contactados</option>
@@ -10804,6 +10902,13 @@ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data
           <option value="RESERVA">Reservas</option>
           <option value="SIN_EQUIPO">Sin equipo</option>
         </select>
+          <button type="button" class="sidebar-link-btn-v129 crew-inline-teams-btn" onclick="openScenariosTeamsModal()" title="Escenarios y equipos">
+            <span class="icon"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="6" rx="1.5"/><path d="M17.5 15v6M14.5 18h6"/></svg></span><span class="label">Equipos</span><span id="sidebarTeamsCount" class="sidebar-utility-badge-v1210">0</span>
+          </button>
+          <button type="button" id="crewSearchToggle" class="crew-search-toggle" aria-label="Abrir búsqueda de personal" title="Buscar personal" aria-expanded="false" aria-controls="crewSearchReveal" onclick="toggleCrewWorkerSearch()">
+            <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.8" cy="10.8" r="7.1"/><path d="m16 16 5 5"/></svg>
+          </button>
+        </div>
 
         <button type="button" id="arrivalModeBtn" class="arrival-mode-v128"
           onclick="toggleArrivalMode()" title="Mostrar solo personal pendiente de llegar">
@@ -10820,9 +10925,7 @@ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data
             <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 9v5M12 18h.01"/></svg></span><span class="label">Incidencias</span><span id="sidebarIncidentsCount" class="sidebar-utility-badge-v1210">0</span>
           </button>
           <button type="button" class="sidebar-link-btn-v129" onclick="openCrewPauseShifts()" title="Turnos de pausa"><span class="icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2M4 3l2 2M20 3l-2 2"/></svg></span><span class="label">Turnos de pausa</span></button>
-          <button type="button" class="sidebar-link-btn-v129" onclick="openScenariosTeamsModal()" title="Escenarios y equipos">
-            <span class="icon"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="6" rx="1.5"/><path d="M17.5 15v6M14.5 18h6"/></svg></span><span class="label">Equipos</span><span id="sidebarTeamsCount" class="sidebar-utility-badge-v1210">0</span>
-          </button>
+          
         </div>
 
         <div id="sidebarPdfManager">
@@ -19786,5 +19889,33 @@ async function notifyClosedServiceWhatsApp(person){
 })();
 </script>
 <script src="/pause-return.js" defer></script>
+<script>function toggleCrewWorkerSearch(force){
+  const panel=document.getElementById('crewSearchReveal');
+  const button=document.getElementById('crewSearchToggle');
+  const input=document.getElementById('searchWorker');
+  if(!panel||!button||!input)return;
+  const open=typeof force==='boolean'?force:!panel.classList.contains('is-open');
+  panel.classList.toggle('is-open',open);
+  panel.setAttribute('aria-hidden',String(!open));
+  button.setAttribute('aria-expanded',String(open));
+  button.setAttribute('aria-label',open?'Cerrar búsqueda de personal':'Abrir búsqueda de personal');
+  button.title=open?'Cerrar búsqueda':'Buscar personal';
+  if(open){
+    requestAnimationFrame(()=>input.focus());
+  }else{
+    input.blur();
+    if(input.value){
+      input.value='';
+      syncArrivalModeState();
+      schedulePersonnelRender();
+    }
+  }
+}
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&document.getElementById('crewSearchReveal')?.classList.contains('is-open')){
+    toggleCrewWorkerSearch(false);
+  }
+});
+</script>
 </body>
 </html>
