@@ -10072,6 +10072,18 @@ body #personnelGroups > .crew-linked-work-heading .staffing-summary button.staff
  }
 }
 </style>
+<style id="crew-mobile-pause-diet-text-v1">
+.ops-chip-mobile-label{display:none!important}
+@media(max-width:700px){
+ #personnelGroups tr[data-worker-row] > td.mobile-pause > .ops-chip,
+ #personnelGroups tr[data-worker-row] > td.mobile-diet > .ops-chip{display:none!important}
+ #personnelGroups tr[data-worker-row] > td.mobile-pause > .ops-chip-mobile-label,
+ #personnelGroups tr[data-worker-row] > td.mobile-diet > .ops-chip-mobile-label{
+  display:inline-block!important;width:auto!important;max-width:100%!important;
+  white-space:nowrap!important;font-size:12px!important;font-weight:700!important;
+ }
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -16320,8 +16332,10 @@ function effectivePause(w){
 function pauseChipHtml(w){
   const effective=effectivePause(w);
   const manual=w.actualPause!==undefined&&w.actualPause!==null&&w.actualPause!=='';
-  const label=effective===null?'REVISAR PAUSA':String(Number(effective.slice(0,2)));
-  return `<span class="ops-chip ${manual?'manual':''}" ${effective===null?'title="Pausa fuera del rango permitido (0-3 horas). Revisar ficha del trabajador."':''}>${escapeHtml(label)}</span>`;
+  const hours=effective===null?null:Number(effective.slice(0,2));
+  const label=hours===null?'REVISAR PAUSA':String(hours);
+  const mobileLabel=hours===null?'Revisar pausa':hours===0?'Sin pausa':`${hours}h pausa`;
+  return `<span class="ops-chip ${manual?'manual':''}" ${effective===null?'title="Pausa fuera del rango permitido (0-3 horas). Revisar ficha del trabajador."':''}>${escapeHtml(label)}</span><span class="ops-chip-mobile-label">${escapeHtml(mobileLabel)}</span>`;
 }
 function formatPauseLabel(value){
   const v=validOperationalPause(value);
@@ -16339,8 +16353,10 @@ function effectiveDiet(w){
 function dietChipHtml(w){
   const count=effectiveDiet(w);
   const manual=w.actualDiet!==undefined&&w.actualDiet!==null&&w.actualDiet!=='';
-  const text=String(Number.isFinite(count)?count:0);
-  return `<span class="ops-chip ${manual?'manual':''}">${escapeHtml(text)}</span>`;
+  const amount=Number.isFinite(count)?count:0;
+  const text=String(amount);
+  const mobileLabel=amount===0?'Sin dieta':`${amount} ${amount===1?'dieta':'dietas'}`;
+  return `<span class="ops-chip ${manual?'manual':''}">${escapeHtml(text)}</span><span class="ops-chip-mobile-label">${escapeHtml(mobileLabel)}</span>`;
 }
 
 function overnightBadge(start,end){
