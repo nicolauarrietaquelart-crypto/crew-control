@@ -8750,7 +8750,7 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
               <input id="modalWorkerReserve" type="checkbox">
               <span>
                 <strong>Reserva</strong>
-                <small>Si al cerrar sigue PRESENTE y marcada como reserva: HAND A + 3 h automáticamente.</small>
+                
               </span>
             </label>
           </div>
@@ -16965,8 +16965,8 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
 <div id="crewNotifyOverlay" class="crew-notify-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="crewNotifyTitle" onclick="if(event.target===this)closeCrewCloseNotify()">
  <div class="crew-notify-card">
   <div class="crew-notify-top"><h2 id="crewNotifyTitle">Notificar del cierre a:</h2><button type="button" onclick="closeCrewCloseNotify()" aria-label="Cerrar ventana"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-  <p>Servicio cerrado. Selecciona al coordinador: se abrirá directamente su chat de WhatsApp con el mensaje preparado. En móvil también se descargará el Excel para que puedas adjuntarlo desde Archivos.</p>
-  <p id="crewNotifyExcelStatus" class="hint" role="status" aria-live="polite"></p>
+  
+  <p id="crewNotifyExcelStatus" class="hint" role="status" aria-live="polite" hidden></p>
   <div class="crew-notify-grid">
    <button type="button" onclick="notifyClosedServiceWhatsApp('alvaro')">Álvaro</button>
    <button type="button" onclick="notifyClosedServiceWhatsApp('fran')">Fran</button>
