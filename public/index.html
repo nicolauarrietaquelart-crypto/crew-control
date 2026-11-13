@@ -10583,18 +10583,24 @@ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data
 }
 </style>
 <style id="crew-desktop-specialty-vertical-alignment-v2">
+/* Desktop: name and specialty sit on the centerline of the attendance control.
+   Multi-line names with coordinator/reserve badges remain centered as a block. */
 @media(min-width:901px){
  html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row] > td.worker-name.mobile-name,
  html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row] > td.mobile-role{
-  vertical-align:top!important;
-  padding-top:12px!important;
+  vertical-align:middle!important;
+  padding-top:6px!important;
+  padding-bottom:6px!important;
  }
  html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row] > td.mobile-role{
   text-align:left!important;
   padding-left:8px!important;
  }
  html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row] > td.mobile-role > .role{
-  vertical-align:top!important;
+  vertical-align:middle!important;
+ }
+ html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row] > td.worker-name.mobile-name .crew-desktop-name-line{
+  align-items:center!important;
  }
 }
 </style>
