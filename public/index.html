@@ -12502,9 +12502,9 @@ async function crewD1Dispatch(method,args){
     const incoming=Array.isArray(parsed.workers)?parsed.workers:[];
     if(!incoming.length)throw new Error('El PDF no contiene trabajadores válidos; no se ha modificado el servicio.');
 
-    const normalName=value=>normalize(value).replace(/[^A-Z0-9 ]/g,'').replace(/\\s+/g,' ').trim();
+    const normalName=value=>normalize(value).replace(/[^A-Z0-9 ]/g,'').replace(/\s+/g,' ').trim();
     const normalPhone=value=>{
-      const digits=String(value||'').replace(/\\D/g,'');
+      const digits=String(value||'').replace(/\D/g,'');
       return digits.length>=9?digits.slice(-9):'';
     };
     const sameDate=(a,b)=>String(a.serviceDate||'')===String(b.serviceDate||'');
@@ -12645,7 +12645,11 @@ async function crewD1Dispatch(method,args){
     const next={...state.service,workers:(state.service?.workers||[]).map(w=>{
       const change=(args[1]||[]).find(x=>String(x.workerId)===String(w.id));
       if(!change)return w;
-      const {workerId,...fields}=change;return {...w,...fields};
+      const {workerId,...fields}=change;
+      const manualSpecialtyOverride=
+        Object.prototype.hasOwnProperty.call(fields,'especialidad')
+          ? true : Boolean(w.manualSpecialtyOverride);
+      return {...w,...fields,manualSpecialtyOverride};
     })};
     await crewPersist(next);return {ok:true};
   }
@@ -14205,16 +14209,16 @@ async function parsePennyWisePdf(file){
       // Prefer a recognized specialty token located in the actual category
       // column. PDF.js can return text from adjacent columns in a wrong order.
       // Do not infer a category from the worker's name or an unrelated column.
-      const specialtyLeft=pageLayout?.bounds?.especialidad?.x;
-      const specialtyRight=pageLayout?.bounds?.especialidad?.right ??
-        pageLayout?.bounds?.hLlam?.x ?? firstTime?.x ?? (width*.62);
+      const specialtyLeft=pageLayout?.bounds?.especialidad?.min;
+      const specialtyRight=pageLayout?.bounds?.especialidad?.max ??
+        pageLayout?.bounds?.hLlam?.min ?? firstTime?.x ?? (width*.62);
       if(Number.isFinite(specialtyLeft)){
         const tokens=orderedRowItems
           .filter(i=>i.x>=specialtyLeft-3&&i.x<specialtyRight)
           .map(i=>String(i.text||'').trim())
           .filter(Boolean);
-        const candidate=tokens.join(' ').replace(/\\s+/g,' ').trim();
-        const matched=candidate.match(/\\b(?:CREW\\s+HEAD|FORKLIFT(?:ER)?|HAND\\s+[A-Z]|RUNNER(?:\\s+FURGONETA)?|AUXILIAR|CARGADOR|MONTADOR|CONDUCTOR|PUSHER|LOADER|BACKLINE|CATERING|RIGGER|SEGURIDAD|LUCES|SONIDO|VIDEO|V[IÍ]DEO|SFX)\\b/i);
+        const candidate=tokens.join(' ').replace(/\s+/g,' ').trim();
+        const matched=candidate.match(/\b(?:CREW\s+HEAD|FORKLIFT(?:ER)?|HAND\s+[A-Z]|RUNNER(?:\s+FURGONETA)?|AUXILIAR|CARGADOR|MONTADOR|CONDUCTOR|PUSHER|LOADER|BACKLINE|CATERING|RIGGER|SEGURIDAD|LUCES|SONIDO|VIDEO|V[IÍ]DEO|SFX)\b/i);
         if(matched)especialidad=matched[0].toUpperCase();
       }
       // PDF.js may merge column text or move it across the header boundary.
