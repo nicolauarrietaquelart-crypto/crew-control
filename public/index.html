@@ -7979,15 +7979,26 @@ select.status[data-status-worker].status-NO-PRESENTADO{
  }
  body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(1){width:2%!important}
  body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(2){width:7%!important}
- body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(3){width:19%!important}
- body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(4){width:12%!important}
- body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(5){width:11%!important}
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(3){width:21%!important}
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(4){width:8%!important}
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(5){width:13%!important}
  body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(6){width:7%!important}
  body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(7){width:7%!important}
  body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(8){width:10%!important}
  body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(9){width:15%!important}
  body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(10){width:6%!important}
  body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(11){width:4%!important}
+ /* Especialidad: narrower and centered, header and values on one grid track. */
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table > thead > tr > th:nth-child(4),
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(4){
+  text-align:center!important;
+  width:auto!important;min-width:0!important;max-width:none!important;
+  padding-left:4px!important;padding-right:4px!important;
+ }
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(4) .role{
+  display:block!important;text-align:center!important;
+  overflow-wrap:anywhere!important;
+ }
  /* Remove hardcoded pixel widths on individual Estado cells; let
     their shared colgroup track control the alignment. */
  body:not(.control-mode) #personnelGroups .work-group .table-wrap table > thead > tr > th:nth-child(2),
