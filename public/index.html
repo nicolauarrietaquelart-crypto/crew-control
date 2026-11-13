@@ -7905,6 +7905,25 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
  .team-member-card select.status option,select.status[data-status-worker] option{font-size:16px!important;color:#111!important}
 }
 </style>
+<style id="crew-status-colors-v119">
+/* Same status colors across mobile, normal desktop and Control view. */
+.team-member-card select.status.status-PENDIENTE,
+select.status[data-status-worker].status-PENDIENTE{
+ background-color:#eeeeee!important;border-color:#d1d5db!important;
+}
+.team-member-card select.status.status-CONTACTADO,
+select.status[data-status-worker].status-CONTACTADO{
+ background-color:#ffedd5!important;border-color:#f58220!important;
+}
+.team-member-card select.status.status-PRESENTE,
+select.status[data-status-worker].status-PRESENTE{
+ background-color:#dcfce7!important;border-color:#16a34a!important;
+}
+.team-member-card select.status.status-NO-PRESENTADO,
+select.status[data-status-worker].status-NO-PRESENTADO{
+ background-color:#fee2e2!important;border-color:#dc2626!important;
+}
+</style>
 <style id="crew-login-photo-background-v119">
 /* Actual access-page background, not a hidden pseudo-element behind the card. */
 /* Two independent layers allow true crossfade (background-image is not animatable). */
