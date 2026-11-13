@@ -8084,6 +8084,31 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
   order:0;
  }
 }
+
+/* Compact vector add-worker action directly after the select-all tick. */
+.work-group-head .crew-add-worker-icon-v11262{
+ display:inline-flex!important;align-items:center!important;justify-content:center!important;
+ flex:0 0 30px!important;width:30px!important;min-width:30px!important;
+ height:30px!important;min-height:30px!important;padding:0!important;margin:0!important;
+ border:1px solid rgba(255,255,255,.36)!important;border-radius:9px!important;
+ background:rgba(255,255,255,.10)!important;color:#fff!important;
+ transition:background .2s ease,border-color .2s ease,transform .2s ease!important;
+}
+.work-group-head .crew-add-worker-icon-v11262 svg{
+ display:block!important;width:17px!important;height:17px!important;pointer-events:none!important;
+}
+.work-group-head .crew-add-worker-icon-v11262:hover{
+ background:rgba(245,130,32,.22)!important;border-color:#f58220!important;
+}
+.work-group-head .crew-add-worker-icon-v11262:active{transform:scale(.94)}
+@media(max-width:900px){
+ .work-group-head .crew-add-worker-icon-v11262{
+  display:inline-flex!important;flex:0 0 34px!important;width:34px!important;
+  min-width:34px!important;height:34px!important;min-height:34px!important;
+ }
+ .work-group-head .crew-add-worker-icon-v11262 svg{width:18px!important;height:18px!important}
+ .work-group-head .work-group-title > .crew-add-worker-icon-v11262{flex-shrink:0!important}
+}
 </style></head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -12830,17 +12855,20 @@ function renderPersonnel(light=false){
               title="Seleccionar o deseleccionar todo el personal de este tipo"
               onclick="event.preventDefault();event.stopPropagation();toggleSelectWorkGroup('${escapeJsString(trabajo)}')">
               <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.3 4.3L19 7"/></svg>
-            </button> 
+            </button>
+          <button type="button"
+            class="group-bulk-btn crew-add-worker-icon-v11262"
+            title="Añadir trabajador a ${escapeAttr(trabajo)}"
+            aria-label="Añadir trabajador a ${escapeAttr(trabajo)}"
+            onclick="event.preventDefault();event.stopPropagation();openAddWorkerModal('${escapeJsString(trabajo)}')">
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+          </button>
           ${escapeHtml(trabajo)}
           ${readinessHtml}
           <span class="group-bulk-actions">
             
 
-            <button type="button"
-              class="group-bulk-btn"
-              onclick="event.preventDefault();event.stopPropagation();openAddWorkerModal('${escapeJsString(trabajo)}')">
-              + Añadir trabajador
-            </button>
+
           </span>
           <span class="work-order-touch-v11227">
             <button type="button"
