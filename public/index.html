@@ -9669,6 +9669,18 @@ html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-s
 .crew-pause-alert-banner[hidden]{display:none!important}
 .crew-pause-alert-banner button{border:0;background:transparent;color:white;font-size:23px;cursor:pointer}
 </style>
+<style id="crew-pause-grid-search-fix">
+#crewPausePeopleModal .crew-pause-card{overflow:hidden!important;display:flex!important;flex-direction:column!important;max-height:min(85dvh,850px)!important}
+#crewPausePeopleModal .crew-pause-people-list{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important;max-height:none!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;flex:1 1 auto!important;align-content:start!important}
+#crewPausePeopleModal .crew-pause-person[hidden]{display:none!important}
+#crewPausePeopleModal .crew-pause-person{min-width:0!important;align-items:center!important;padding:10px!important}
+#crewPausePeopleModal .crew-pause-person-info{display:flex!important;flex-direction:column!important;gap:5px!important;min-width:0!important}
+#crewPausePeopleModal .crew-pause-person-info strong{font-size:12px!important;line-height:1.35!important;font-weight:700!important}
+#crewPausePeopleModal .crew-pause-team{font-size:11px!important;font-weight:700!important;text-decoration-line:underline!important;text-decoration-thickness:3px!important;text-underline-offset:4px!important}
+#crewPausePeopleModal .modal-actions{flex-shrink:0!important}
+#crewPausePeopleModal .crew-pause-contact{width:33px!important;height:33px!important}
+@media(max-width:650px){#crewPausePeopleModal .crew-pause-people-list{grid-template-columns:1fr!important}}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -15182,12 +15194,13 @@ function crewPauseOpenPeople(id){
 }
 function crewPauseFilterPeople(value){
  const term=normalize(value);
- document.querySelectorAll('#crewPausePeopleList [data-pause-person]').forEach(el=>el.hidden=!normalize(el.dataset.pausePerson).includes(term));
+ document.querySelectorAll('#crewPausePeopleList [data-pause-person]').forEach(el=>{el.hidden=!normalize(el.dataset.pausePerson).includes(term);});
 }
 function crewPauseRenderPeople(){
  const host=document.getElementById('crewPausePeopleList');
  const shift=crewPauseRecords().find(x=>x.id===crewPauseOpenId);if(!host||!shift)return;
  const workers=(state.service.workers||[]).filter(w=>w.included&&w.serviceDate===shift.serviceDate&&normalize(w.trabajo)===normalize(shift.trabajo));
+ const search=document.querySelector('#crewPausePeopleModal .crew-pause-search')?.value||'';
  const phoneIcon='<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7l.5 3a2 2 0 0 1-.6 1.8L7.1 10a16 16 0 0 0 6.9 6.9l1.5-1.9a2 2 0 0 1 1.8-.6l3 .5a2 2 0 0 1 1.7 2Z"/></svg>';
  const waIcon='<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a9 9 0 0 1-13.4 7.8L3 21l1.7-4.6A9 9 0 1 1 21 11.5Z"/><path d="M8.5 8.5c.4 3.4 3.1 6.1 6.5 6.5l1.5-1.5-2.4-1.3-1.1 1a7 7 0 0 1-2.7-2.7l1-1.1L10 7Z"/></svg>';
  host.innerHTML=workers.map(w=>{
@@ -15195,8 +15208,12 @@ function crewPauseRenderPeople(){
  const phone=normalizePhone(w.movil||'');
  const wa=phone.replace(/\D/g,'');
  const links=phone?'<a class="crew-pause-contact" href="tel:'+escapeAttr(phone)+'" title="Llamar" aria-label="Llamar a '+escapeAttr(w.personal)+'">'+phoneIcon+'</a><a class="crew-pause-contact" href="https://wa.me/'+wa+'" target="_blank" rel="noopener noreferrer" title="WhatsApp" aria-label="WhatsApp de '+escapeAttr(w.personal)+'">'+waIcon+'</a>':'';
- return '<div class="crew-pause-person" data-pause-person="'+escapeAttr(w.personal)+'"><label><input type="checkbox" '+(checked?'checked ':'')+(state.service.closed?'disabled ':'')+'onchange="crewPauseToggleWorker(\''+escapeJsString(shift.id)+'\',\''+escapeJsString(w.id)+'\',this.checked)"><span>'+escapeHtml(w.personal)+'</span></label><div class="crew-pause-contacts">'+links+'</div></div>';
+ const team=(state.service.teams||[]).find(t=>t.id===w.teamId);
+ const teamName=team?.name||'SIN EQUIPO';
+ const vestColor=team?.colorHex&&/^#[0-9a-fA-F]{3,8}$/.test(team.colorHex)?team.colorHex:'#bcbcbc';
+ return '<div class="crew-pause-person" data-pause-person="'+escapeAttr(w.personal+' '+teamName)+'"><label><input type="checkbox" '+(checked?'checked ':'')+(state.service.closed?'disabled ':'')+'onchange="crewPauseToggleWorker(\''+escapeJsString(shift.id)+'\',\''+escapeJsString(w.id)+'\',this.checked)"><span class="crew-pause-person-info"><strong>'+escapeHtml(w.personal)+'</strong><small class="crew-pause-team" style="text-decoration-color:'+vestColor+'">'+escapeHtml(teamName)+'</small></span></label><div class="crew-pause-contacts">'+links+'</div></div>';
  }).join('');
+ crewPauseFilterPeople(search);
 }
 function renderCrewPauseShifts(){
  const host=document.getElementById('crewPauseShiftList');if(!host||!state.service)return;
