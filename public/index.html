@@ -10019,6 +10019,28 @@ body #personnelGroups > .crew-linked-work-heading .staffing-summary button.staff
  }
 }
 </style>
+<style id="crew-mobile-status-name-spacing-v1">
+@media(max-width:700px){
+ /* Keep the worker name and category directly beside the attendance control. */
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody > tr[data-worker-row]{
+  grid-template-columns:92px minmax(0,1fr)!important;
+  column-gap:8px!important;
+ }
+ html body #personnelGroups tr[data-worker-row] > td.mobile-status{
+  grid-column:1!important;grid-row:1!important;
+ }
+ html body #personnelGroups tr[data-worker-row] > td.mobile-name{
+  grid-column:2!important;grid-row:1!important;
+  justify-self:start!important;text-align:left!important;
+  padding-left:0!important;margin-left:0!important;
+ }
+ html body #personnelGroups tr[data-worker-row] > td.mobile-role{
+  grid-column:2!important;grid-row:2!important;
+  justify-self:start!important;text-align:left!important;
+  padding-left:0!important;margin-left:0!important;
+ }
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
