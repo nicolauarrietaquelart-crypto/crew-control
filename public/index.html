@@ -15565,27 +15565,43 @@ function crewAssignPersonnelFromWork(){
  if(!state.service||state.service.closed)return;
  const source=document.getElementById('crewAssignPersonnelSource')?.value,target=state.staffingWork;
  if(!source){alert('Selecciona un tipo de servicio de origen.');return}
- const rows=state.service.workers||[],day=state.activeDay,byPhone=new Map(),byName=new Map();
+ const rows=state.service.workers||[],day=state.activeDay,teams=state.service.teams||[];
  const phone=w=>String(w.movil||'').replace(/\D/g,''),name=w=>normalize(w.personal||'');
- rows.filter(w=>w.included&&w.serviceDate===day&&normalize(w.trabajo)===normalize(source)&&w.teamId).forEach(w=>{
+ const special=v=>/\b(CREW[\s_-]*HEAD|FORK[\s_-]*LIFT(?:ER)?|CARRETILLERO|RESERVAS?|RESERVE)\b/.test(normalize(v||''));
+ const isProtected=w=>{
+  const team=teams.find(t=>t.id===w.teamId);
+  return Boolean(w.isReserve||special(w.especialidad)||special(w.categoria)||special(w.role)||special(team?.name));
+ };
+ // Los roles especiales nunca se copian ni se sobrescriben entre franjas.
+ // Un nombre duplicado o teléfono duplicado no es una coincidencia segura.
+ const sourceRows=rows.filter(w=>w.included&&w.serviceDate===day&&normalize(w.trabajo)===normalize(source)&&w.teamId&&!isProtected(w));
+ const byPhone=new Map(),byName=new Map();
+ sourceRows.forEach(w=>{
   const p=phone(w),n=name(w);
   if(p.length>=9)byPhone.set(p,byPhone.has(p)?null:w);
   if(n)byName.set(n,byName.has(n)?null:w);
  });
- const protectedRole=v=>/\b(CREW[\s_-]*HEAD|FORK[\s_-]*LIFT(?:ER)?|CARRETILLERO)\b/.test(normalize(v||''));
- const updates=[];
+ const updates=[];let skipped=0;
  rows.filter(w=>w.included&&w.serviceDate===day&&normalize(w.trabajo)===normalize(target)).forEach(w=>{
-  const p=phone(w),n=name(w),match=(p.length>=9?byPhone.get(p):null)||(!p&&n?byName.get(n):null);
-  if(!match||!match.teamId||w.teamId===match.teamId)return;
-  const team=state.service.teams.find(t=>t.id===match.teamId);if(!team)return;
-  if(protectedRole(team.name)&&!protectedRole(w.especialidad))return;
-  if(protectedRole(w.especialidad)&&!protectedRole(team.name))return;
+  if(isProtected(w)){skipped++;return}
+  const p=phone(w),n=name(w);
+  // Solo aceptar nombres cuando ambos registros carecen de teléfono válido.
+  const match=p.length>=9?byPhone.get(p):n?byName.get(n):null;
+  if(!match||!match.teamId||isProtected(match))return;
+  if(p.length<9&&phone(match).length>=9)return;
+  const team=teams.find(t=>t.id===match.teamId);
+  if(!team||special(team.name))return;
+  if(w.teamId===team.id)return;
   w.teamId=team.id;w.scenarioId=team.scenarioId||'';
-  updates.push({workerId:w.id,teamId:team.id});refreshWorkerRow(w.id);
+  updates.push({workerId:w.id,teamId:team.id,scenarioId:w.scenarioId});
+  refreshWorkerRow(w.id);
  });
- if(updates.length){saveWorkerUpdates(updates);renderStaffingRows();renderWorkers();renderOperationalAlerts()}
- document.getElementById('crewAssignPersonnelDropdown').hidden=true;
- alert(updates.length+' personas coincidentes asignadas desde '+source+'.');
+ if(updates.length){saveWorkerUpdates(updates);renderWorkers();renderOperationalAlerts()}
+ const dropdown=document.getElementById('crewAssignPersonnelDropdown');
+ if(dropdown)dropdown.hidden=true;
+ // Cerrar también la ventana/panel de planificación para confirmar visualmente la acción.
+ closeStaffingModal();
+ alert(updates.length+' personas asignadas desde '+source+'. Los trabajadores de Reserva, Forklifter y Crew Head mantienen su equipo original en cada tipo de servicio.');
 }
 
 function randomlyAssignHandsToTeams(){
