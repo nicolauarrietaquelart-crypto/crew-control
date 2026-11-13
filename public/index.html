@@ -10423,6 +10423,70 @@ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data
  }
 }
 </style>
+<style id="crew-desktop-role-and-selection-fix-v1">
+/* Only desktop: badges belong to the name, not the specialty column. */
+@media(min-width:901px){
+ html body #personnelGroups .crew-desktop-name-line{
+  display:flex!important;flex-flow:row wrap!important;align-items:center!important;
+  justify-content:flex-start!important;gap:4px 7px!important;
+  min-width:0!important;width:100%!important;
+ }
+ html body #personnelGroups .crew-desktop-name-line>.worker-open{
+  display:inline-block!important;width:auto!important;min-width:0!important;
+  max-width:100%!important;flex:0 1 auto!important;text-align:left!important;
+  white-space:normal!important;overflow-wrap:break-word!important;
+ }
+ html body #personnelGroups .crew-desktop-name-badges{
+  display:inline-flex!important;align-items:center!important;flex-wrap:wrap!important;
+  gap:4px!important;max-width:100%!important;
+ }
+ html body #personnelGroups .crew-desktop-name-badges .reserve-badge,
+ html body #personnelGroups .crew-desktop-name-badges .coordinator-badge{
+  display:inline-flex!important;align-items:center!important;
+  margin:0!important;white-space:nowrap!important;
+ }
+ html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row] > td.mobile-role > .reserve-badge,
+ html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row] > td.mobile-role > .coordinator-badge{
+  display:none!important;
+ }
+ /* Paint the gradient exactly once on the full row. No tinted individual cells. */
+ html body #personnelGroups details.work-group .table-wrap table{
+  border-spacing:0!important;
+ }
+ html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row]{
+  position:relative!important;
+ }
+ html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected{
+  background:linear-gradient(90deg,rgba(245,130,32,.26) 0%,rgba(245,130,32,.11) 46%,rgba(245,130,32,0) 100%)!important;
+  background-size:100% 100%!important;background-repeat:no-repeat!important;
+  box-shadow:inset 5px 0 0 #f58220!important;
+ }
+ html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row] > td{
+  background:transparent!important;
+  background-image:none!important;
+  border-bottom:0!important;border-top:0!important;
+  box-shadow:none!important;
+  outline:none!important;
+ }
+ html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected > td{
+  background:transparent!important;background-image:none!important;
+  border:0!important;box-shadow:none!important;outline:0!important;
+ }
+ html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row] > td::before,
+ html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row] > td::after{
+  background:none!important;box-shadow:none!important;
+ }
+ html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected::before,
+ html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected::after{
+  content:none!important;
+ }
+}
+/* Mobile role tags remain in the specialty line, with unchanged card layout. */
+@media(max-width:900px){
+ html body #personnelGroups .crew-desktop-name-line{display:contents!important;}
+ html body #personnelGroups .crew-desktop-name-badges{display:none!important;}
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -16608,7 +16672,7 @@ function workerRowHtml(w){
     </td>
 
     <td class="worker-name mobile-name">
-      <button class="worker-open" onclick="openWorkerModal('${escapeAttr(w.id)}')">${escapeHtml(w.personal)}</button>
+      <div class="crew-desktop-name-line"><button class="worker-open" onclick="openWorkerModal('${escapeAttr(w.id)}')">${escapeHtml(w.personal)}</button><span class="crew-desktop-name-badges">${reserve}${w.isCoordinator?'<span class="coordinator-badge">CS · COORD.</span>':''}</span></div>
     </td>
 
     <td class="mobile-role"><span class="role">${escapeHtml(w.especialidad)}</span>${reserve}${w.isCoordinator?'<span class="coordinator-badge">CS · COORD.</span>':''}</td>
