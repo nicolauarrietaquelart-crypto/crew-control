@@ -10226,10 +10226,10 @@ body #personnelGroups > .crew-linked-work-heading .staffing-summary button.staff
   grid-column:3/5!important;grid-row:4!important;padding:0!important;
  }
  html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-rating{
-  grid-column:5/7!important;grid-row:4!important;padding:0!important;text-align:center!important;
+  grid-column:5/9!important;grid-row:4!important;padding:0!important;text-align:center!important;
  }
  html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-vest{
-  grid-column:7/-1!important;grid-row:4!important;padding:0!important;text-align:right!important;white-space:nowrap!important;
+  grid-column:9/-1!important;grid-row:4!important;padding:0!important;text-align:right!important;white-space:nowrap!important;
  }
  html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-vest *{white-space:nowrap!important;max-width:100%!important;font-size:11px!important;}
 }
@@ -10239,6 +10239,9 @@ body #personnelGroups > .crew-linked-work-heading .staffing-summary button.staff
  html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-phone .crew-phone-mobile-v11264{overflow:hidden!important;text-overflow:ellipsis!important}
  html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-vest{overflow:hidden!important}
  html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-vest *{display:inline-block!important;overflow:hidden!important;text-overflow:ellipsis!important;vertical-align:middle!important}
+html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-role{display:flex!important;flex-wrap:wrap!important;align-items:center!important;justify-content:flex-start!important;gap:4px!important;margin-top:0!important;}
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-role > *{margin:0!important;flex:0 0 auto!important;max-width:100%!important;}
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-vest *{font-size:10px!important;}
 </style>
 </head>
 <body>
@@ -16425,10 +16428,10 @@ function workerRowHtml(w){
     </td>
 
     <td class="worker-name mobile-name">
-      <button class="worker-open" onclick="openWorkerModal('${escapeAttr(w.id)}')">${escapeHtml(w.personal)}</button>${reserve}${w.isCoordinator?'<span class="coordinator-badge">CS · COORD.</span>':''}
+      <button class="worker-open" onclick="openWorkerModal('${escapeAttr(w.id)}')">${escapeHtml(w.personal)}</button>
     </td>
 
-    <td class="mobile-role"><span class="role">${escapeHtml(w.especialidad)}</span></td>
+    <td class="mobile-role"><span class="role">${escapeHtml(w.especialidad)}</span>${reserve}${w.isCoordinator?'<span class="coordinator-badge">CS · COORD.</span>':''}</td>
     <td class="mobile-schedule">${scheduleRangeHtml(w)}${hoursSummaryHtml(w)}</td>
     <td class="mobile-pause">${pauseChipHtml(w)}</td>
     <td class="mobile-diet">${dietChipHtml(w)}</td>
