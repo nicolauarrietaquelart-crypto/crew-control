@@ -9408,6 +9408,32 @@ html body #personnelGroups details.work-group .table-wrap>table>tbody{
 }
 }
 </style>
+
+<style id="crew-desktop-table-scroll-stable-20261113">
+/* Desktop table retains readable column widths; the viewport scrolls, not the cells shrink. */
+@media (min-width:701px){
+html body #personnelGroups details.work-group{min-width:0!important;max-width:100%!important}
+html body #personnelGroups details.work-group .table-wrap{
+ display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;
+ box-sizing:border-box!important;overflow-x:auto!important;overflow-y:hidden!important;
+ padding:0!important;margin:0!important;overscroll-behavior-x:contain!important;
+}
+html body #personnelGroups details.work-group .table-wrap > table{
+ width:1800px!important;min-width:1800px!important;max-width:none!important;
+ table-layout:fixed!important;margin:0!important;
+}
+html body #personnelGroups details.work-group .table-wrap table>thead>tr>th,
+html body #personnelGroups details.work-group .table-wrap table>tbody>tr[data-worker-row]>td{
+ box-sizing:border-box!important;min-width:0!important;
+}
+html body #personnelGroups details.work-group .table-wrap table>thead>tr>th{
+ white-space:nowrap!important;overflow:visible!important;
+}
+html body #personnelGroups details.work-group .table-wrap table>tbody>tr[data-worker-row]>td.mobile-team select{
+ max-width:100%!important;
+}
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
