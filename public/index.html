@@ -10487,6 +10487,78 @@ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data
  html body #personnelGroups .crew-desktop-name-badges{display:none!important;}
 }
 </style>
+<style id="crew-worker-desktop-compact-layout-v1">
+/* Desktop only. Mobile keeps its original stacking and checkbox behavior. */
+@media(min-width:901px){
+ #workerModal .modal-card{max-width:760px!important;width:min(760px,calc(100vw - 40px))!important;}
+ #workerModal .modal-grid{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+  column-gap:14px!important;row-gap:10px!important;
+  align-items:start!important;
+ }
+ #workerModal .modal-grid>.planned-box{
+  grid-column:1/-1!important;
+ }
+ #workerModal .modal-grid>.worker-reserve-box-v11226{
+  grid-column:1!important;grid-row:2!important;
+  width:100%!important;min-width:0!important;
+ }
+ #workerModal .modal-grid>#modalArrivalRecord{
+  grid-column:2!important;grid-row:2!important;
+  min-width:0!important;min-height:46px!important;
+  box-sizing:border-box!important;margin:0!important;
+ }
+ #workerModal .worker-reserve-toggle-v11226{
+  position:relative!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  min-height:46px!important;width:100%!important;padding:9px 14px!important;
+  border:1px solid #d9dce0!important;border-radius:11px!important;
+  box-sizing:border-box!important;cursor:pointer!important;
+  background:#f5f5f5!important;color:#292929!important;
+  transition:background-color .18s ease,border-color .18s ease,color .18s ease!important;
+ }
+ #workerModal .worker-reserve-toggle-v11226 input[type="checkbox"]{
+  position:absolute!important;opacity:0!important;
+  width:1px!important;height:1px!important;margin:0!important;
+  pointer-events:none!important;
+ }
+ #workerModal .worker-reserve-toggle-v11226 span{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  color:inherit!important;line-height:1!important;
+ }
+ #workerModal .worker-reserve-toggle-v11226 strong{
+  font-size:13px!important;font-weight:750!important;
+ }
+ #workerModal .worker-reserve-toggle-v11226:has(input:checked){
+  background:#171717!important;color:#fff!important;border-color:#171717!important;
+ }
+ #workerModal .worker-reserve-toggle-v11226:focus-within{
+  outline:2px solid #f58220!important;outline-offset:2px!important;
+ }
+ #workerModal .modal-grid>.crew-worker-rating-panel{
+  grid-column:1!important;grid-row:5!important;min-width:0!important;
+  display:flex!important;flex-direction:column!important;gap:6px!important;
+ }
+ #workerModal .modal-grid>.crew-worker-notes-panel{
+  grid-column:2!important;grid-row:5!important;min-width:0!important;
+  display:flex!important;flex-direction:column!important;
+  align-self:stretch!important;
+ }
+ #workerModal .crew-worker-rating-panel .rating-row{
+  display:grid!important;grid-template-columns:minmax(0,115px) minmax(0,1fr)!important;
+  align-items:center!important;gap:7px!important;margin:0!important;min-height:31px!important;
+ }
+ #workerModal .crew-worker-notes-panel .field{
+  margin-bottom:6px!important;
+ }
+ #workerModal #modalNotes{
+  flex:1 1 auto!important;min-height:100px!important;
+  height:100%!important;width:100%!important;
+  resize:vertical!important;box-sizing:border-box!important;
+ }
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -10791,10 +10863,7 @@ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data
           <div class="full worker-reserve-box-v11226">
             <label class="worker-reserve-toggle-v11226">
               <input id="modalWorkerReserve" type="checkbox">
-              <span>
-                <strong>Reserva</strong>
-                
-              </span>
+              <span><strong>Reserva</strong></span>
             </label>
           </div>
 
@@ -10839,7 +10908,7 @@ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data
             </select>
           </div>
 
-          <div class="full">
+          <div class="full crew-worker-rating-panel">
             <div class="rating-row">
               <strong>Uniformidad</strong>
               <div id="starsUniformidad" class="stars"></div>
@@ -10854,7 +10923,7 @@ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data
             </div>
           </div>
 
-          <div class="full">
+          <div class="full crew-worker-notes-panel">
             <label class="field">Notas</label>
             <textarea id="modalNotes" class="worker-notes" placeholder="Incidencias, valoración, observaciones…"></textarea>
           </div>
