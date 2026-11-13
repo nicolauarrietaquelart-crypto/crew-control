@@ -8363,59 +8363,6 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
 /* Consistent scalable vector symbols in operational controls. */
 .sidebar-link-btn-v129 .icon svg{width:19px!important;height:19px!important;display:block!important;flex-shrink:0}
 .crew-mds-actions .crew-mds-action svg{width:21px!important;height:21px!important;display:block!important;flex-shrink:0}
-
-/* Mobile motion + performance pass. Keep animation compositor-only where possible. */
-@media(max-width:900px){
- :root{--crew-motion-fast:160ms;--crew-motion-medium:240ms;--crew-motion-ease:cubic-bezier(.22,1,.36,1)}
- #personnelGroups .work-group,
- #mobileOperationalHome .crew-mds-actions,
- #mobileOperationalHome .crew-mds-pill{
-  -webkit-tap-highlight-color:transparent;
- }
- #personnelGroups details.work-group[open] > :not(summary){
-  animation:crew-reveal-mobile .24s var(--crew-motion-ease) both;
- }
- #personnelGroups details.work-group > summary .work-group-chevron,
- #personnelGroups details.work-group > summary svg{
-  transition:transform var(--crew-motion-medium) var(--crew-motion-ease);
- }
- #mobileOperationalHome .crew-mds-pill,
- #mobileOperationalHome .crew-mds-action,
- #personnelGroups .work-group-title > button,
- #crewMobileBottomV11238 button{
-  transition:transform var(--crew-motion-fast) var(--crew-motion-ease),
-    background-color var(--crew-motion-fast) ease,
-    border-color var(--crew-motion-fast) ease!important;
-  touch-action:manipulation;
- }
- #mobileOperationalHome .crew-mds-pill:active,
- #mobileOperationalHome .crew-mds-action:active,
- #personnelGroups .work-group-title > button:active{
-  transform:scale(.95)!important;
- }
- #mobileOperationalHome .crew-mds-track{
-  -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
- }
- #personnelGroups .work-group .table-wrap{
-  -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
- }
- #personnelGroups .work-group .worker-open:active{opacity:.8}
- #personnelGroups .work-group .crew-phone-mobile-v11264:active{
-  transform:scale(.94)!important;
- }
- /* Avoid costly permanent blur on the frequently interacted fixed footer. */
- #crewMobileBottomV11238{
-  -webkit-backdrop-filter:none!important;backdrop-filter:none!important;
-  background:rgba(255,255,255,.98)!important;
- }
-}
-@keyframes crew-reveal-mobile{
- from{opacity:.65;transform:translate3d(0,-7px,0)}
- to{opacity:1;transform:translate3d(0,0,0)}
-}
-@media(prefers-reduced-motion:reduce){
- #personnelGroups details.work-group[open] > :not(summary){animation:none!important}
-}
 </style></head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -13065,8 +13012,7 @@ function renderPersonnel(light=false){
   }
 
   const host=document.getElementById('personnelGroups');
-  // Avoid rebuilding mobile day/shift controls on selection-only refreshes.
-  if(!light)renderCrewMobileDayShiftV11256();
+  renderCrewMobileDayShiftV11256();
   const workers=workersForActiveDay();
 
   if(!workers.length){
