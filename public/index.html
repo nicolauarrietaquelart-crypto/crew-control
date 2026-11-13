@@ -8509,6 +8509,23 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
  body.control-mode #personnelGroups .work-group .table-wrap thead th:nth-child(8){width:17%!important}
  body.control-mode #personnelGroups .work-group .table-wrap thead th:nth-child(9){width:18%!important}
 }
+/* In desktop Control view, omit Pause, Diet and Rating entirely,
+   including cells and their reserved column widths. */
+@media(min-width:901px){
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(6),
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(7),
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(11){
+  display:none!important;width:0!important;min-width:0!important;
+ }
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(6),
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(7),
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(11),
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(6),
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(7),
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(11){
+  display:none!important;width:0!important;min-width:0!important;padding:0!important;border:0!important;
+ }
+}
 /* Control view is a desktop-only feature. */
 @media(max-width:900px){
  #controlViewBtn{display:none!important}
