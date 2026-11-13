@@ -101,6 +101,18 @@
 }
 #crewPausePeopleModal .crew-pause-return-open:hover,
 #crewPauseShiftList .crew-pause-return-shortcut:hover{background:#e96e06!important}
+/* El control cuadrado usa un selector nativo accesible, sin menús recortados por scroll. */
+#crewPauseReturnModal .crew-return-picker{width:39px;height:39px}
+#crewPauseReturnModal .crew-return-toggle{pointer-events:none}
+#crewPauseReturnModal .crew-return-select{
+  position:absolute!important;inset:0!important;width:39px!important;height:39px!important;
+  min-width:39px!important;max-width:39px!important;padding:0!important;
+  margin:0!important;opacity:0!important;cursor:pointer!important;
+  appearance:none!important;-webkit-appearance:none!important;border:0!important
+}
+#crewPauseReturnModal .crew-return-picker:focus-within .crew-return-toggle{
+  outline:3px solid #ff7a14;outline-offset:2px
+}
 @media(max-width:700px){
   #crewPauseReturnModal .crew-return-stats{gap:6px;margin:12px 0}
   #crewPauseReturnModal .crew-return-stat{padding:10px 8px}
