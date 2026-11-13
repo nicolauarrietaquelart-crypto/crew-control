@@ -10323,6 +10323,66 @@ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data
  }
 }
 </style>
+<style id="crew-mobile-card-layout-v14">
+/* Espaciado compacto y seguro, con chaleco y valoración bajo sus columnas. */
+@media(max-width:700px){
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row]{
+  grid-template-columns:repeat(20,minmax(0,1fr))!important;
+  column-gap:3px!important;
+  row-gap:8px!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-status{
+  grid-column:1/4!important;grid-row:1/span 2!important;
+  align-self:center!important;min-width:0!important;padding:0!important;
+  overflow:visible!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.worker-name.mobile-name,
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-role{
+  grid-column:4/-1!important;
+  padding-left:3px!important;padding-right:0!important;
+  min-width:0!important;max-width:100%!important;
+  overflow:hidden!important;margin:0!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.worker-name.mobile-name{
+  grid-row:1!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-role{
+  grid-row:2!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-schedule{
+  grid-column:1/10!important;grid-row:3!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-team{
+  grid-column:10/15!important;grid-row:3!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-phone{
+  grid-column:15/21!important;grid-row:3!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-pause{
+  grid-column:1/5!important;grid-row:4!important;
+  min-width:0!important;overflow:hidden!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-diet{
+  grid-column:5/10!important;grid-row:4!important;
+  min-width:0!important;overflow:hidden!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-vest{
+  grid-column:10/15!important;grid-row:4!important;
+  min-width:0!important;text-align:left!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-rating{
+  grid-column:15/21!important;grid-row:4!important;
+  min-width:0!important;text-align:center!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-pause *,
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-diet *{
+  max-width:100%!important;min-width:0!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+ }
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
