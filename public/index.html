@@ -15245,6 +15245,16 @@ function randomlyAssignHandsToTeams(){
   if(document.getElementById('staffingNoTeams')?.checked){alert('Este tipo de servicio está configurado sin equipos.');return;}
   const protectedRole=value=>/\\b(CREW[\\s_-]*HEAD|FORK[\\s_-]*LIFT(?:ER)?|FORKLIFTER|CARRETILLERO)\\b/.test(normalize(value));
   const hands=(state.service.workers||[]).filter(w=>w.included&&w.serviceDate===state.activeDay&&normalize(w.trabajo)===normalize(work)&&!protectedRole(w.especialidad)&&!protectedRole(w.categoria)&&!protectedRole(w.role));
+  // Restaurar equipos exclusivos a roles protegidos, incluso si una ejecución anterior los movió.
+  const protectedUpdates=[];
+  (state.service.workers||[]).filter(w=>w.included&&w.serviceDate===state.activeDay&&normalize(w.trabajo)===normalize(work)&&protectedRole(w.especialidad)).forEach(w=>{
+    const role=normalize(w.especialidad);
+    const expected=(state.service.teams||[]).find(t=>role.includes('CREW HEAD')?normalize(t.name).includes('CREW HEAD'):/FORKLIFT|FORK LIFT/.test(normalize(t.name)));
+    if(!expected||w.teamId===expected.id)return;
+    w.teamId=expected.id;w.scenarioId=expected.scenarioId||'';
+    protectedUpdates.push({workerId:w.id,teamId:expected.id});
+    refreshWorkerRow(w.id);
+  });
   const targets=Object.entries(state.staffingDraft||{}).map(([teamId,count])=>({team:state.service.teams.find(t=>t.id===teamId),count:Math.max(0,Math.floor(Number(count)||0))})).filter(x=>x.team&&x.count>0&&!protectedRole(x.team.name));
   if(!targets.length){alert('Primero indica cuántas personas necesitas en cada equipo de la planificación.');return;}
   if(!hands.length){alert('No hay hands para asignar en este tipo de servicio.');return;}
@@ -15269,7 +15279,7 @@ function randomlyAssignHandsToTeams(){
     updates.push({workerId:w.id,teamId});
     refreshWorkerRow(w.id);
   });
-  if(updates.length)saveWorkerUpdates(updates);
+  if(updates.length||protectedUpdates.length)saveWorkerUpdates([...protectedUpdates,...updates]);
   renderStaffingRows();
   updateGroupSummary(work);
   renderOperationalAlerts();
@@ -15492,23 +15502,17 @@ function scheduleRangeHtml(w){
 
 
 function hoursSummaryHtml(w){
-  // El tiempo mostrado junto al horario es la duración BRUTA del turno.
-  // plannedMinutes/actualMinutes pueden descontar la pausa y no deben confundirse
-  // con la diferencia entre las horas de inicio y fin que se ven en pantalla.
-  const start=normalizeTime(w.actualStart)||normalizeTime(w.inicio);
-  const end=normalizeTime(w.actualEnd)||normalizeTime(w.fin);
-  if(isValidClock(start)&&isValidClock(end)){
-    const from=clockToMinutes(start);
-    let to=clockToMinutes(end);
-    if(to<from)to+=24*60;
-    const gross=to-from;
-    const pause=effectivePause(w);
-    const pauseMinutes=pause===null?0:Number(pause.slice(0,2))*60;
-    const detail=pauseMinutes>0?' · '+formatMinutesClient(Math.max(0,gross-pauseMinutes))+' efectivas':'';
-    return '<span class="hours-chip" title="Duración total del turno'+(pauseMinutes?' (pausa descontada solo en horas efectivas)':'')+'">'+formatMinutesClient(gross)+detail+'</span>';
-  }
-  const minutes=w.actualMinutes!==undefined&&w.actualMinutes!==null&&w.actualMinutes!==''?Number(w.actualMinutes):Number(w.plannedMinutes||0);
-  return minutes?'<span class="hours-chip">'+formatMinutesClient(minutes)+'</span>':'';
+  const planned=Number(w.plannedMinutes||0);
+  const hasActualMinutes=w.actualMinutes!==undefined&&w.actualMinutes!==null&&w.actualMinutes!=='';
+  const actual=hasActualMinutes?Number(w.actualMinutes):planned;
+  const hasDiff=w.overtimeMinutes!==undefined&&w.overtimeMinutes!==null&&w.overtimeMinutes!=='';
+  const diff=hasDiff?Number(w.overtimeMinutes):(actual-planned);
+  if(!planned&&!actual)return'';
+  let cls='';
+  if(diff>0)cls=' extra';
+  if(diff<0)cls=' less';
+  const text=`${formatMinutesClient(actual)}${diff?` · ${diff>0?'+':''}${formatMinutesClient(diff)}`:''}`;
+  return `<span class="hours-chip${cls}">${text}</span>`;
 }
 
 function formatMinutesClient(minutes){
