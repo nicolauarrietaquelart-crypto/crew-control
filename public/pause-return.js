@@ -50,15 +50,10 @@
     modal.addEventListener('click',e=>{
       if(e.target===modal||e.target.closest('.crew-return-close,.crew-return-back'))closeReturn();
     });
-    $('crewPauseReturnList').addEventListener('click',e=>{
-      const choice=e.target.closest('button[data-return-choice]');
-      if(choice){setStatus(choice.dataset.workerId,choice.dataset.returnChoice);return}
-      const toggle=e.target.closest('button.crew-return-toggle');
-      if(toggle){toggleMenu(toggle);return}
-    });
-    document.addEventListener('pointerdown',e=>{
-      if(e.target.closest('#crewPauseReturnModal .crew-return-picker'))return;
-      closeMenus();
+    // Selector nativo: permite elegir los cuatro estados sin menús recortados en móvil.
+    $('crewPauseReturnList').addEventListener('change',e=>{
+      const select=e.target.closest('select[data-return-worker]');
+      if(select)setStatus(select.dataset.returnWorker,select.value);
     });
     document.addEventListener('keydown',e=>{
       if(e.key==='Escape'&&!modal.classList.contains('hidden')){e.stopPropagation();closeReturn()}
@@ -121,17 +116,6 @@
     activeShiftId='';
     fromPeople=false;
   }
-  function closeMenus(){
-    document.querySelectorAll('#crewPauseReturnModal .crew-return-menu').forEach(el=>el.hidden=true);
-    document.querySelectorAll('#crewPauseReturnModal .crew-return-toggle').forEach(el=>el.setAttribute('aria-expanded','false'));
-  }
-  function toggleMenu(toggle){
-    if(toggle.disabled)return;
-    const menu=toggle.nextElementSibling;
-    const open=Boolean(menu?.hidden);
-    closeMenus();
-    if(menu){menu.hidden=!open;toggle.setAttribute('aria-expanded',String(open))}
-  }
   function setStatus(workerId,status){
     if(!state.service||state.service.closed||!STATES.includes(status))return;
     const shift=getShift();
@@ -167,8 +151,9 @@
         '<div class="crew-return-identity"><strong>'+escapeHtml(w.personal)+'</strong>'+
         '<span class="crew-return-details"><b>'+escapeHtml(teamName)+'</b> · '+escapeHtml(specialty)+'</span></div>'+
         '<div class="crew-return-right"><span class="crew-return-status-label">'+LABELS[status]+'</span>'+
-        '<div class="crew-return-picker"><button type="button" class="crew-return-toggle" aria-label="Cambiar estado de '+escapeAttr(w.personal)+'" aria-expanded="false" title="'+LABELS[status]+'" '+(state.service.closed?'disabled ':'')+'>'+icon(status)+'</button>'+
-        '<div class="crew-return-menu" hidden>'+STATES.map(s=>'<button type="button" data-worker-id="'+escapeAttr(String(w.id))+'" data-return-choice="'+s+'" aria-pressed="'+(s===status)+'" '+(state.service.closed?'disabled ':'')+'>'+LABELS[s]+'</button>').join('')+'</div></div></div></div>';
+        '<div class="crew-return-picker"><span class="crew-return-toggle" aria-hidden="true">'+icon(status)+'</span>'+
+        '<select class="crew-return-select" data-return-worker="'+escapeAttr(String(w.id))+'" aria-label="Estado de regreso de '+escapeAttr(w.personal)+'" '+(state.service.closed?'disabled ':'')+'>'+
+        STATES.map(s=>'<option value="'+s+'" '+(s===status?'selected ':'')+'>'+LABELS[s]+'</option>').join('')+'</select></div></div></div>';
     }).join('');
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});
