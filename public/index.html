@@ -8199,6 +8199,35 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
   overflow:visible!important;
  }
 }
+
+/* A phone number is only clickable inside its own clearly bounded call control. */
+@media(max-width:900px){
+ #personnelGroups td.mobile-phone{
+  overflow:visible!important;min-width:0!important;
+  background:transparent!important;
+ }
+ #personnelGroups td.mobile-phone .crew-phone-call-v11263{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  gap:8px!important;width:fit-content!important;max-width:100%!important;
+  min-height:44px!important;min-width:0!important;padding:9px 12px!important;
+  border:1px solid #e4e7eb!important;border-radius:12px!important;
+  background:#f5f6f8!important;color:#111!important;
+  text-decoration:none!important;font-weight:750!important;
+  position:relative!important;z-index:1!important;
+  white-space:normal!important;overflow-wrap:anywhere!important;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+  transition:background .18s ease,transform .18s ease!important;
+ }
+ #personnelGroups td.mobile-phone .crew-phone-call-v11263 svg{
+  width:17px;height:17px;flex:0 0 17px;color:#f58220;pointer-events:none;
+ }
+ #personnelGroups td.mobile-phone .crew-phone-call-v11263:active{
+  background:#ffe9d7!important;transform:scale(.97)!important;
+ }
+ #personnelGroups td.mobile-phone .crew-phone-call-v11263:focus-visible{
+  outline:2px solid #f58220!important;outline-offset:2px;
+ }
+}
 </style></head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -13952,7 +13981,7 @@ function workerRowHtml(w){
     <td class="mobile-diet">${dietChipHtml(w)}</td>
 
     <td class="mobile-phone">${w.movil
-      ? `<a href="tel:${escapeAttr(w.movil)}" style="color:#111;text-decoration:none;font-weight:700">${escapeHtml(w.movil)}</a>`
+      ? `<a class="crew-phone-call-v11263" href="tel:${escapeAttr(String(w.movil).replace(/[^+\\d]/g,''))}" aria-label="Llamar al ${escapeAttr(w.movil)}" title="Llamar al ${escapeAttr(w.movil)}" onclick="event.stopPropagation()" onpointerdown="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.68 2.8a2 2 0 0 1-.45 2.11L8.07 9.91a16 16 0 0 0 6 6l1.28-1.27a2 2 0 0 1 2.11-.45c.9.32 1.84.55 2.8.68A2 2 0 0 1 22 16.92Z"/></svg><span>${escapeHtml(w.movil)}</span></a>`
       : '—'}</td>
 
     <td class="mobile-team">
