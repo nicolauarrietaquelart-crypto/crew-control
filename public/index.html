@@ -9597,7 +9597,31 @@ html body #personnelGroups details.work-group .table-wrap > table > colgroup > c
 #personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(11){width:83px!important}
 #personnelGroups .work-group > .table-wrap > table td:nth-child(3){overflow-wrap:anywhere!important}
 </style>
-</head>
+<style id="crew-no-condensation-scroll-fix">
+/* El ancho del contenido es independiente del viewport; solo se desplaza la tabla. */
+html body #personnelGroups details.work-group > .table-wrap{
+ width:100%!important;max-width:100%!important;min-width:0!important;
+ overflow-x:auto!important;overflow-y:hidden!important;
+ overscroll-behavior-x:contain!important;scrollbar-width:auto!important;
+}
+html body #personnelGroups details.work-group > .table-wrap > table{
+ table-layout:fixed!important;width:1600px!important;min-width:1600px!important;max-width:1600px!important;
+ flex-shrink:0!important;transform:none!important;
+}
+html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(1){width:48px!important}
+html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(2){width:145px!important}
+html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(3){width:230px!important}
+html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(4){width:200px!important}
+html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(5){width:155px!important}
+html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(6){width:70px!important}
+html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(7){width:70px!important}
+html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(8){width:155px!important}
+html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(9){width:240px!important}
+html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(10){width:145px!important}
+html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(11){width:142px!important}
+html body #personnelGroups details.work-group > .table-wrap > table th,
+html body #personnelGroups details.work-group > .table-wrap > table td{overflow:hidden!important;text-overflow:clip!important}
+</style></head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
 <div class="crew-access-photo-slide" id="crewAccessPhotoB" aria-hidden="true"></div>
