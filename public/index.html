@@ -15251,7 +15251,11 @@ function renderCrewPauseShifts(){
  const shifts=crewPauseRecords().filter(x=>x.serviceDate===state.activeDay&&normalize(x.trabajo)===normalize(crewPauseWork)).sort((a,b)=>a.start.localeCompare(b.start));
  const workers=(state.service.workers||[]).filter(w=>w.included&&w.serviceDate===state.activeDay&&normalize(w.trabajo)===normalize(crewPauseWork));
  host.innerHTML=shifts.length?shifts.map(shift=>{
- const count=(shift.workerIds||[]).filter(id=>workers.some(w=>w.id===id)).length;
+ const assigned=workers.filter(w=>(shift.workerIds||[]).includes(w.id));
+ const count=assigned.length;
+ const counts={};
+ assigned.forEach(w=>{const team=(state.service.teams||[]).find(t=>t.id===w.teamId)?.name||'SIN EQUIPO';counts[team]=(counts[team]||0)+1;});
+ const summary=Object.entries(counts).map(([name,n])=>escapeHtml(name)+': '+n).join(' · ');
  return '<div class="crew-pause-collapsed"><button type="button" class="crew-pause-open" onclick="crewPauseOpenPeople(\''+escapeJsString(shift.id)+'\')"><span><strong>'+escapeHtml(shift.start)+' – '+escapeHtml(shift.end)+'</strong><small>'+count+' personas</small><small class="crew-pause-team-summary">'+summary+'</small></span><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 5 7 7-7 7"/></svg></button><button type="button" class="secondary" '+(state.service.closed?'disabled ':'')+'onclick="crewPauseRemoveShift(\''+escapeJsString(shift.id)+'\')">Eliminar</button></div>';
  }).join(''):'<div class="hint">Todavía no hay turnos de pausa para este tipo de servicio y día.</div>';
  crewPauseCheckAlerts();
