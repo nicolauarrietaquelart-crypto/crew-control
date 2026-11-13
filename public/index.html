@@ -9807,6 +9807,50 @@ html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-s
  }
 }
 </style>
+<style id="crew-shared-heading-mini-orange-v3">
+/* Compact, orange-tinted shared-planning strip; override global chip/button sizing. */
+body #personnelGroups > .crew-linked-work-heading{
+ display:flex!important;align-items:center!important;align-content:center!important;
+ flex-wrap:wrap!important;column-gap:12px!important;row-gap:5px!important;
+ padding:6px 10px!important;margin:5px 0 0!important;min-height:0!important;
+ background:#ffead9!important;border:1px solid #f6bd8e!important;
+ border-radius:8px 8px 0 0!important;box-shadow:none!important;
+}
+body #personnelGroups > .crew-linked-work-heading > span{
+ font-size:12px!important;line-height:16px!important;font-weight:750!important;
+ color:#a84d0d!important;letter-spacing:0!important;
+}
+body #personnelGroups > .crew-linked-work-heading .crew-shared-heading-stats{
+ flex:1 1 500px!important;width:auto!important;min-width:0!important;
+ padding:0!important;margin:0!important;
+}
+body #personnelGroups > .crew-linked-work-heading .staffing-summary{
+ display:flex!important;align-items:center!important;align-content:center!important;
+ flex-wrap:wrap!important;gap:4px!important;min-height:0!important;
+ margin:0!important;padding:0!important;border:0!important;background:none!important;
+}
+body #personnelGroups > .crew-linked-work-heading button.staffing-chip{
+ display:inline-flex!important;align-items:center!important;justify-content:center!important;
+ flex:0 0 auto!important;gap:4px!important;width:auto!important;min-width:0!important;
+ max-width:none!important;height:26px!important;min-height:26px!important;
+ margin:0!important;padding:3px 8px!important;border-radius:15px!important;
+ font-family:inherit!important;font-size:11px!important;line-height:14px!important;
+ font-weight:650!important;letter-spacing:0!important;white-space:nowrap!important;
+ box-shadow:none!important;transform:none!important;
+}
+body #personnelGroups > .crew-linked-work-heading button.staffing-chip > *{
+ font-size:11px!important;line-height:14px!important;font-weight:650!important;
+ margin:0!important;padding:0!important;min-height:0!important;
+}
+body #personnelGroups > .crew-linked-work-heading button.staffing-chip .team-chip-dot{
+ display:inline-block!important;flex:0 0 7px!important;width:7px!important;
+ height:7px!important;min-width:7px!important;min-height:7px!important;border-radius:50%!important;
+}
+@media(max-width:700px){
+ body #personnelGroups > .crew-linked-work-heading{padding:6px 8px!important;gap:5px!important}
+ body #personnelGroups > .crew-linked-work-heading .crew-shared-heading-stats{flex-basis:100%!important}
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
