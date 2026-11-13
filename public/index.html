@@ -7861,6 +7861,34 @@ body:has(#startScreen:not(.hidden))::after{
  background:rgba(10,12,16,.48)!important;
 }
 body:has(#startScreen:not(.hidden)) > *{position:relative;z-index:1}
+/* Lock only the access screen to the viewport; service screens keep normal scrolling. */
+html:has(#startScreen:not(.hidden)),
+body:has(#startScreen:not(.hidden)){
+ height:100%!important;
+ overflow:hidden!important;
+ overscroll-behavior:none;
+}
+body:has(#startScreen:not(.hidden)){
+ height:100vh!important;
+ height:100dvh!important;
+ display:flex!important;
+ flex-direction:column!important;
+}
+body:has(#startScreen:not(.hidden)) main.wrap{
+ flex:1 1 auto!important;
+ min-height:0!important;
+ height:auto!important;
+ max-height:none!important;
+ overflow:hidden!important;
+ padding-top:12px!important;
+ padding-bottom:12px!important;
+}
+@media(max-height:560px){
+ body:has(#startScreen:not(.hidden)) #startScreen.login-card{
+  max-height:calc(100dvh - 90px)!important;
+  overflow-y:auto!important;
+ }
+}
 /* Center the login card in the visible photo area, independently of device width. */
 body:has(#startScreen:not(.hidden)) main.wrap{
  min-height:calc(100vh - 78px);
