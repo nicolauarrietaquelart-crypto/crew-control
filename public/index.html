@@ -10582,6 +10582,22 @@ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data
  }
 }
 </style>
+<style id="crew-desktop-specialty-vertical-alignment-v2">
+@media(min-width:901px){
+ html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row] > td.worker-name.mobile-name,
+ html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row] > td.mobile-role{
+  vertical-align:top!important;
+  padding-top:12px!important;
+ }
+ html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row] > td.mobile-role{
+  text-align:left!important;
+  padding-left:8px!important;
+ }
+ html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row] > td.mobile-role > .role{
+  vertical-align:top!important;
+ }
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -12556,8 +12572,12 @@ async function crewD1Dispatch(method,args){
         'page','pdfRow','hLlam','inicio','fin','pausa','nDieta']){
         if(Object.prototype.hasOwnProperty.call(w,field))merged[field]=w[field];
       }
-      // Only fill missing specialty/role information for legacy entries.
-      if(!merged.especialidad)merged.especialidad=w.especialidad;
+      // The PDF is authoritative for the roster specialty. Earlier imports
+      // accidentally retained stale values (e.g. HAND M instead of FORKLIFTER).
+      // Keep a deliberately changed specialty only when explicitly flagged.
+      if(w.especialidad && !oldWorker.manualSpecialtyOverride){
+        merged.especialidad=w.especialidad;
+      }
       if(merged.isCoordinator===undefined)merged.isCoordinator=w.isCoordinator;
       if(merged.isReserve===undefined)merged.isReserve=w.isReserve;
       // Even an intentionally unassigned worker must remain unassigned.
@@ -14181,6 +14201,21 @@ async function parsePennyWisePdf(file){
           especialidad=personal.slice(categoryMatch.index).trim();
           personal=candidateName;
         }
+      }
+      // Prefer a recognized specialty token located in the actual category
+      // column. PDF.js can return text from adjacent columns in a wrong order.
+      // Do not infer a category from the worker's name or an unrelated column.
+      const specialtyLeft=pageLayout?.bounds?.especialidad?.x;
+      const specialtyRight=pageLayout?.bounds?.especialidad?.right ??
+        pageLayout?.bounds?.hLlam?.x ?? firstTime?.x ?? (width*.62);
+      if(Number.isFinite(specialtyLeft)){
+        const tokens=orderedRowItems
+          .filter(i=>i.x>=specialtyLeft-3&&i.x<specialtyRight)
+          .map(i=>String(i.text||'').trim())
+          .filter(Boolean);
+        const candidate=tokens.join(' ').replace(/\\s+/g,' ').trim();
+        const matched=candidate.match(/\\b(?:CREW\\s+HEAD|FORKLIFT(?:ER)?|HAND\\s+[A-Z]|RUNNER(?:\\s+FURGONETA)?|AUXILIAR|CARGADOR|MONTADOR|CONDUCTOR|PUSHER|LOADER|BACKLINE|CATERING|RIGGER|SEGURIDAD|LUCES|SONIDO|VIDEO|V[IÍ]DEO|SFX)\\b/i);
+        if(matched)especialidad=matched[0].toUpperCase();
       }
       // PDF.js may merge column text or move it across the header boundary.
       if(!especialidad){
