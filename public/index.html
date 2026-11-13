@@ -8363,6 +8363,29 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
 /* Consistent scalable vector symbols in operational controls. */
 .sidebar-link-btn-v129 .icon svg{width:19px!important;height:19px!important;display:block!important;flex-shrink:0}
 .crew-mds-actions .crew-mds-action svg{width:21px!important;height:21px!important;display:block!important;flex-shrink:0}
+
+/* Unified vector close controls across every modal, including iOS Safari/PWA. */
+.modal .modal-close,
+.modal-close,
+[class*="modal"] .modal-close{
+ appearance:none!important;-webkit-appearance:none!important;
+ display:inline-flex!important;align-items:center!important;justify-content:center!important;
+ flex:0 0 36px!important;width:36px!important;height:36px!important;
+ min-width:36px!important;min-height:36px!important;padding:0!important;
+ border:0!important;border-radius:50%!important;
+ background:#f0f0f0!important;color:#111!important;
+ -webkit-text-fill-color:#111!important;line-height:1!important;
+ cursor:pointer;touch-action:manipulation;
+}
+.modal-close svg{
+ display:block!important;width:18px!important;height:18px!important;
+ min-width:18px!important;max-width:18px!important;
+ fill:none!important;stroke:#111!important;stroke-width:2.2!important;
+ pointer-events:none!important;
+}
+.modal-close:hover{background:#e5e5e5!important}
+.modal-close:active{transform:scale(.94)}
+.modal-close:focus-visible{outline:2px solid #f58220!important;outline-offset:2px}
 </style></head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
