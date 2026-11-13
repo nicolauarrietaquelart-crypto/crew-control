@@ -10375,7 +10375,7 @@ html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-s
         </div>
 
           <div id="staffingRows"></div>
-          <button type="button" class="secondary" style="margin-top:12px;width:100%" onclick="randomlyAssignHandsToTeams()">Asignar hands aleatoriamente</button>
+          <button type="button" class="secondary" style="margin-top:12px;width:100%" onclick="randomlyAssignHandsToTeams()">Equipos Aleatorios</button>
         </div>
 
         <div class="modal-actions">
@@ -15243,28 +15243,38 @@ function randomlyAssignHandsToTeams(){
   if(!state.service||state.service.closed||!state.staffingWork)return;
   const work=state.staffingWork;
   if(document.getElementById('staffingNoTeams')?.checked){alert('Este tipo de servicio está configurado sin equipos.');return;}
-  const isProtected=name=>/\\b(CREW[\\s_-]*HEAD|FORK[\\s_-]*LIFT(?:ER)?|FORKLIFTER|CARRETILLERO)\\b/.test(normalize(name));
-  const teams=(state.service.teams||[]).filter(t=>!isProtected(t.name));
-  const hands=(state.service.workers||[]).filter(w=>w.included&&w.serviceDate===state.activeDay&&normalize(w.trabajo)===normalize(work)&&!isProtected(w.especialidad)&&!isProtected(w.categoria)&&!isProtected(w.role)&&!isProtected(w.teamName));
-  if(!teams.length){alert('Primero crea los equipos a los que asignar los hands.');return;}
-  if(!hands.length){alert('No hay hands disponibles en este tipo de servicio.');return;}
-  if(!confirm('¿Asignar aleatoriamente '+hands.length+' hands entre '+teams.length+' equipos? Se sustituirán sus asignaciones actuales. Crew Head y Forklifter no se modificarán.'))return;
-  // Barajado Fisher-Yates y reparto equilibrado; nunca modifica otros tipos ni días.
+  const protectedRole=value=>/\\b(CREW[\\s_-]*HEAD|FORK[\\s_-]*LIFT(?:ER)?|FORKLIFTER|CARRETILLERO)\\b/.test(normalize(value));
+  const hands=(state.service.workers||[]).filter(w=>w.included&&w.serviceDate===state.activeDay&&normalize(w.trabajo)===normalize(work)&&!protectedRole(w.especialidad)&&!protectedRole(w.categoria)&&!protectedRole(w.role));
+  const targets=Object.entries(state.staffingDraft||{}).map(([teamId,count])=>({team:state.service.teams.find(t=>t.id===teamId),count:Math.max(0,Math.floor(Number(count)||0))})).filter(x=>x.team&&x.count>0&&!protectedRole(x.team.name));
+  if(!targets.length){alert('Primero indica cuántas personas necesitas en cada equipo de la planificación.');return;}
+  if(!hands.length){alert('No hay hands para asignar en este tipo de servicio.');return;}
+  const total=targets.reduce((n,x)=>n+x.count,0);
+  if(!confirm('¿Repartir aleatoriamente los hands según los objetivos de planificación ('+total+' plazas)? Se mantendrán intactos Crew Head y Forklifter.'))return;
+  // La planificación indica el número TOTAL de personas por equipo, incluidas las protegidas.
+  const slots=[];
+  targets.forEach(({team,count})=>{
+    const protectedAssigned=state.service.workers.filter(w=>w.included&&w.serviceDate===state.activeDay&&normalize(w.trabajo)===normalize(work)&&w.teamId===team.id&&!hands.includes(w)).length;
+    for(let i=0;i<Math.max(0,count-protectedAssigned);i++)slots.push(team);
+  });
   const shuffled=[...hands];
   for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
+  for(let i=slots.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[slots[i],slots[j]]=[slots[j],slots[i]];}
   const updates=[];
   shuffled.forEach((w,i)=>{
-    const team=teams[i%teams.length];
-    if(w.teamId===team.id)return;
-    w.teamId=team.id;
-    w.scenarioId=team.scenarioId||'';
-    updates.push({workerId:w.id,teamId:team.id});
+    const team=slots[i]||null;
+    const teamId=team?.id||'';
+    if(w.teamId===teamId)return;
+    w.teamId=teamId;
+    w.scenarioId=team?.scenarioId||'';
+    updates.push({workerId:w.id,teamId});
+    refreshWorkerRow(w.id);
   });
   if(updates.length)saveWorkerUpdates(updates);
   renderStaffingRows();
   updateGroupSummary(work);
   renderOperationalAlerts();
-  setSaveState(updates.length+' asignaciones aleatorias aplicadas','saving');
+  if(hands.length<slots.length)alert('Faltan '+(slots.length-hands.length)+' hands para cubrir los objetivos. Se han asignado todos los disponibles.');
+  else if(hands.length>slots.length)alert('Objetivos cubiertos. '+(hands.length-slots.length)+' hands quedan sin asignar porque superan las plazas planificadas.');
 }
 
 function saveStaffingPlan(){
