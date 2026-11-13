@@ -10559,6 +10559,29 @@ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data
  }
 }
 </style>
+<style id="crew-desktop-specialty-header-alignment-v1">
+/* Desktop only: specialty header and specialty badges share the exact left inset. */
+@media(min-width:901px){
+ html body #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(4){
+  text-align:left!important;
+  padding:0!important;
+ }
+ html body #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(4) > .sort-btn{
+  display:flex!important;align-items:center!important;justify-content:flex-start!important;
+  width:100%!important;min-width:0!important;box-sizing:border-box!important;
+  text-align:left!important;padding:7px 8px!important;margin:0!important;
+ }
+ html body #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td.mobile-role{
+  text-align:left!important;padding-left:8px!important;padding-right:4px!important;
+  box-sizing:border-box!important;
+ }
+ html body #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td.mobile-role > .role{
+  display:inline-block!important;width:auto!important;max-width:100%!important;
+  margin:0!important;text-align:left!important;
+  vertical-align:middle!important;
+ }
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
