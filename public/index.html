@@ -10384,6 +10384,45 @@ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data
  }
 }
 </style>
+<style id="crew-mobile-service-toolbar-one-row-v1">
+@media(max-width:700px){
+ html body #appScreen .service-top{
+  display:grid!important;grid-template-columns:clamp(92px,29vw,132px) minmax(0,1fr)!important;
+  align-items:center!important;gap:7px!important;padding:7px 8px!important;
+  margin-bottom:8px!important;min-width:0!important;
+ }
+ html body #appScreen .service-top>.service-code{
+  display:block!important;min-width:0!important;width:100%!important;margin:0!important;
+ }
+ html body #appScreen .service-top>.service-code>span:first-child,
+ html body #appScreen .service-top>.service-code>.compact-code-btn{display:none!important;}
+ html body #appScreen .service-top #serviceCodeBadge{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  width:100%!important;min-width:0!important;max-width:100%!important;
+  min-height:38px!important;margin:0!important;padding:7px 5px!important;
+  box-sizing:border-box!important;font-size:clamp(14px,4vw,18px)!important;
+  letter-spacing:.025em!important;white-space:nowrap!important;
+  overflow:hidden!important;cursor:pointer!important;touch-action:manipulation!important;
+ }
+ html body #appScreen .service-top>.service-actions{
+  display:grid!important;grid-template-columns:minmax(0,1fr) 38px 38px!important;
+  width:100%!important;min-width:0!important;margin:0!important;padding:0!important;
+  gap:6px!important;align-items:center!important;
+ }
+ html body #appScreen .service-top>.service-actions #saveState{
+  grid-column:1!important;min-width:0!important;max-width:100%!important;
+  display:block!important;margin:0!important;padding:0 2px!important;
+  font-size:clamp(9px,2.6vw,12px)!important;line-height:1.2!important;
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+ }
+ html body #appScreen .service-top>.service-actions .icon-btn,
+ html body #appScreen .service-top>.service-actions .close-service-btn{
+  width:38px!important;min-width:38px!important;max-width:38px!important;
+  height:38px!important;min-height:38px!important;margin:0!important;padding:0!important;
+  box-sizing:border-box!important;
+ }
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -10445,7 +10484,7 @@ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data
     <div class="service-top">
       <div class="service-code">
         <span>Servicio</span>
-        <span id="serviceCodeBadge" class="code-pill">000000</span>
+        <span id="serviceCodeBadge" class="code-pill" role="button" tabindex="0" onclick="copyServiceCode()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();copyServiceCode()}" title="Toca para copiar el código" aria-label="Copiar código del servicio">000000</span>
         <button class="secondary icon-btn compact-code-btn" onclick="copyServiceCode()" title="Copiar código"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"></rect><path d="M5 16H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1"></path></svg><span>Copiar</span></button>
       </div>
       <div class="service-actions">
