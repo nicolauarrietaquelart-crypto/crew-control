@@ -12560,10 +12560,8 @@ async function crewD1Dispatch(method,args){
       if(!merged.especialidad)merged.especialidad=w.especialidad;
       if(merged.isCoordinator===undefined)merged.isCoordinator=w.isCoordinator;
       if(merged.isReserve===undefined)merged.isReserve=w.isReserve;
-      // Keep deliberate manual team assignments; assign a default only if unset.
-      if(!merged.teamId){
-        return crewAssignDefaultSpecialtyTeam({...merged,sortOrder:index+1},teams,old.scenarios);
-      }
+      // Even an intentionally unassigned worker must remain unassigned.
+      // Automatic default assignment applies exclusively to NEW workers.
       merged.sortOrder=index+1;
       return merged;
     });
@@ -13907,7 +13905,7 @@ async function downloadServicePdf(){
 async function importPdf(file){
   if(!state.service)return;
   if(state.service.workers.length){
-    const ok=confirm('Este servicio ya tiene personal. ¿Volver a importar el PDF? Se conservarán estados y equipos de las filas que coincidan.');
+    const ok=confirm('Este servicio ya tiene personal. ¿Actualizar el personal con el nuevo PDF? Se conservarán los equipos, estados, fichajes, pausas asignadas, valoraciones, reservas y notas de los trabajadores identificados. Solo se actualizarán sus datos del PDF.');
     if(!ok)return;
   }
 
