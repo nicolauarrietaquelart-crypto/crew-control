@@ -8536,6 +8536,36 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
   display:none!important;width:0!important;min-width:0!important;padding:0!important;border:0!important;
  }
 }
+/* Control view grid repair: the original 11-column colgroup and
+   legacy fixed widths were still reserving invisible columns. */
+@media(min-width:901px){
+ html body.control-mode #personnelGroups details.work-group .table-wrap{
+  overflow-x:auto!important;overflow-y:hidden!important;
+ }
+ html body.control-mode #personnelGroups details.work-group .table-wrap table{
+  display:table!important;
+  width:100%!important;min-width:0!important;max-width:100%!important;
+  table-layout:auto!important;border-collapse:collapse!important;
+ }
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup{
+  display:none!important;
+ }
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(1){width:7%!important}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(2){width:18%!important}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(3){width:27%!important}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(5){width:15%!important}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(8){width:15%!important}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(9){width:18%!important}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td{
+  box-sizing:border-box!important;min-width:0!important;
+ }
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td.mobile-name{
+  white-space:normal!important;overflow-wrap:anywhere!important;
+ }
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td.mobile-team select{
+  max-width:100%!important;min-width:0!important;
+ }
+}
 /* Control view is a desktop-only feature. */
 @media(max-width:900px){
  #controlViewBtn{display:none!important}
