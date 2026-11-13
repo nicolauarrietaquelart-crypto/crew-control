@@ -7937,6 +7937,34 @@ select.status[data-status-worker].status-NO-PRESENTADO{
  }
 }
 </style>
+<style id="crew-compact-status-column-v121">
+/* Desktop: header and row cells share the same colgroup track.
+   Reclaim 74px from the old text-based status selector. */
+@media(min-width:901px){
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table{
+  width:1246px!important;min-width:1246px!important;
+ }
+ body:not(.control-mode) #personnelGroups .work-group .table-wrap table > colgroup > col:nth-child(2){
+  width:76px!important;
+ }
+ #personnelGroups .work-group .table-wrap table > thead > tr > th:nth-child(2),
+ #personnelGroups .work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(2){
+  width:76px!important;min-width:76px!important;max-width:76px!important;
+  text-align:center!important;
+ }
+ body.control-mode #personnelGroups .work-group .table-wrap table > thead > tr > th:nth-child(2),
+ body.control-mode #personnelGroups .work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(2){
+  width:76px!important;min-width:76px!important;max-width:76px!important;
+ }
+ #personnelGroups .work-group .table-wrap table > thead > tr > th:nth-child(2) .sortable-th-content{
+  justify-content:center!important;
+ }
+ #personnelGroups .work-group .table-wrap table > tbody > tr[data-worker-row] > td.mobile-status select.status[data-status-worker]{
+  width:44px!important;min-width:44px!important;max-width:44px!important;
+  margin-inline:auto!important;
+ }
+}
+</style>
 <style id="crew-login-photo-background-v119">
 /* Actual access-page background, not a hidden pseudo-element behind the card. */
 /* Two independent layers allow true crossfade (background-image is not animatable). */
