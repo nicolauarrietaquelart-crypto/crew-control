@@ -11371,6 +11371,15 @@ async function firebaseReplaceWorkersFromPdf(code,parsed){
   }
 
   const result=await callAppsScript('replaceWorkersFromPdf',[code,parsed]);
+  if(result?.service){
+    const imported=result.service;
+    if((imported.workers||[]).some(w=>w.isReserve)){
+      const scenario=(imported.scenarios||[])[0];
+      let reserve=(imported.teams||[]).find(t=>normalize(t.name)==='RESERVAS');
+      if(!reserve&&scenario){reserve={id:'T_RESERVAS_'+Date.now(),scenarioId:scenario.id,name:'RESERVAS',colorName:'GRIS',colorHex:'#BDBDBD',noVest:true,sortOrder:(imported.teams||[]).length+1};imported.teams=[...(imported.teams||[]),reserve];}
+      if(reserve)imported.workers=(imported.workers||[]).map(w=>w.isReserve?{...w,teamId:reserve.id,scenarioId:reserve.scenarioId}:w);
+    }
+  }
   await migrateServiceToFirebase(result.service);
 
   return {
@@ -11492,9 +11501,9 @@ function crewEnsureDefaultStructure(service){
 function crewAssignDefaultSpecialtyTeam(worker,teams,scenarios){
   if(!worker)return worker;
   const category=normalize(worker.especialidad||'');
-  let target='';
-  if(/\bCREW\s*HEAD\b/.test(category))target='CREW HEAD';
-  else if(/\bFORKLIFT(?:ER)?\b/.test(category))target='FORKLIFTER';
+  let target=worker.isReserve?'RESERVAS':'';
+  if(!target&&/\bCREW\s*HEAD\b/.test(category))target='CREW HEAD';
+  else if(!target&&/\bFORKLIFT(?:ER)?\b/.test(category))target='FORKLIFTER';
   if(!target)return worker;
   const current=(teams||[]).find(t=>String(t.id)===String(worker.teamId||''));
   if(current&&normalize(current.name)===target)return worker;
@@ -11515,6 +11524,10 @@ async function crewD1Dispatch(method,args){
     for(const w of previous){const k=key(w);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(w)}
     let matched=0,added=0,scheduleChanged=0,pauseChanged=0,dietChanged=0,coordinatorChanged=0,movedToReserve=0;
     const changedNames=[];
+    if((parsed.workers||[]).some(w=>w.isReserve)&&!(old.teams||[]).some(t=>normalize(t.name)==='RESERVAS')){
+      const scenario=(old.scenarios||[])[0];
+      if(scenario)old.teams=[...(old.teams||[]),{id:'T_RESERVAS_'+Date.now(),scenarioId:scenario.id,name:'RESERVAS',colorName:'GRIS',colorHex:'#BDBDBD',noVest:true,sortOrder:(old.teams||[]).length+1}];
+    }
     const workers=(parsed.workers||[]).map((w,index)=>{
       const oldWorker=(buckets.get(key(w))||[]).shift();
       if(!oldWorker){added++;return crewAssignDefaultSpecialtyTeam({...w,id:w.id||crypto.randomUUID(),sortOrder:index+1,status:'PENDIENTE',included:true},old.teams,old.scenarios)}
@@ -15164,17 +15177,16 @@ function toggleStaffingNoTeamsUI(){
 
 
 function crewVestIcon(color){
-  const safe=/^#[0-9a-fA-F]{3,8}$/.test(color)?color:'#BDBDBD';
-  // Minimal high-visibility safety vest: no sleeves, clean reflective details.
-  return '<svg class="crew-vest-icon" viewBox="0 0 40 44" width="28" height="31" role="img" aria-label="Chaleco de color" xmlns="http://www.w3.org/2000/svg">'+
-    '<path d="M10 3 16 1h8l6 2 8 11-7 5-3-5v27H12V14l-3 5-7-5 8-11Z" fill="'+safe+'" stroke="#252525" stroke-opacity=".25" stroke-width="1.3" stroke-linejoin="round"/>'+
-    '<path d="M16 1 20 10 24 1" fill="#fff" fill-opacity=".92"/>'+
-    '<path d="M20 10v31" stroke="#fff" stroke-opacity=".9" stroke-width="1.8"/>'+
-    '<path d="M12.5 22h15M12.5 29h15" stroke="#fff" stroke-opacity=".95" stroke-width="3.2"/>'+
-    '<path d="M12.5 22h15M12.5 29h15" stroke="#252525" stroke-opacity=".12" stroke-width=".6"/>'+
-    '<path d="M10 3 16 1 20 10 24 1 30 3" fill="none" stroke="#252525" stroke-opacity=".25" stroke-width="1.2" stroke-linejoin="round"/>'+
-    '</svg>';
+ const safe=/^#[0-9a-fA-F]{3,8}$/.test(color)?color:'#BDBDBD';
+ return '<svg class="crew-vest-icon" viewBox="0 0 48 54" width="31" height="35" role="img" aria-label="Chaleco reflectante" xmlns="http://www.w3.org/2000/svg">'+
+ '<path d="M11 4 19 1h10l8 3 8 12-9 6-3-5v34H15V17l-3 5-9-6Z" fill="'+safe+'" stroke="#333" stroke-opacity=".4" stroke-width="1.5" stroke-linejoin="round"/>'+
+ '<path d="M19 1 24 13 29 1M24 13v38" fill="none" stroke="#333" stroke-opacity=".5" stroke-width="1.5"/>'+
+ '<path d="M15 25h18M15 34h18" stroke="#444" stroke-opacity=".45" stroke-width="8"/>'+
+ '<path d="M15 25h18M15 34h18" stroke="#fff" stroke-width="5.5"/>'+
+ '<path d="M17 40h5v6h-5zm9 0h5v6h-5z" fill="#222" fill-opacity=".18"/>'+
+ '</svg>';
 }
+
 function renderStaffingRows(){
   const rows=state.service.workers.filter(w=>
     w.serviceDate===state.activeDay &&
@@ -15244,7 +15256,7 @@ function randomlyAssignHandsToTeams(){
   const work=state.staffingWork;
   if(document.getElementById('staffingNoTeams')?.checked){alert('Este tipo de servicio está configurado sin equipos.');return;}
   const protectedRole=value=>/\\b(CREW[\\s_-]*HEAD|FORK[\\s_-]*LIFT(?:ER)?|FORKLIFTER|CARRETILLERO)\\b/.test(normalize(value));
-  const hands=(state.service.workers||[]).filter(w=>w.included&&w.serviceDate===state.activeDay&&normalize(w.trabajo)===normalize(work)&&!protectedRole(w.especialidad)&&!protectedRole(w.categoria)&&!protectedRole(w.role)&&!w.isReserve);
+  const hands=(state.service.workers||[]).filter(w=>w.included&&w.status!=='NO PRESENTADO'&&w.serviceDate===state.activeDay&&normalize(w.trabajo)===normalize(work)&&!protectedRole(w.especialidad)&&!protectedRole(w.categoria)&&!protectedRole(w.role)&&!w.isReserve);
   // Restaurar equipos exclusivos a roles protegidos, incluso si una ejecución anterior los movió.
   const protectedUpdates=[];
   (state.service.workers||[]).filter(w=>w.included&&w.serviceDate===state.activeDay&&normalize(w.trabajo)===normalize(work)&&protectedRole(w.especialidad)).forEach(w=>{
@@ -15256,12 +15268,12 @@ function randomlyAssignHandsToTeams(){
     refreshWorkerRow(w.id);
   });
   // Reservas: equipo propio, fuera de las plazas ordinarias del reparto.
-  let reserveTeam=(state.service.teams||[]).find(t=>normalize(t.name)==='RESERVA'||normalize(t.name)==='RESERVAS');
+  let reserveTeam=(state.service.teams||[]).find(t=>normalize(t.name)==='RESERVAS');
   const reserveWorkers=(state.service.workers||[]).filter(w=>w.included&&w.isReserve&&w.serviceDate===state.activeDay&&normalize(w.trabajo)===normalize(work));
   if(reserveWorkers.length&&!reserveTeam){
     const scenario=state.service.scenarios[0];
     if(!scenario){alert('Primero crea un escenario para el equipo Reserva.');return;}
-    reserveTeam={id:'T_RESERVA_'+Date.now(),scenarioId:scenario.id,name:'RESERVA',colorName:'GRIS',colorHex:'#BDBDBD',noVest:true,sortOrder:state.service.teams.length+1};
+    reserveTeam={id:'T_RESERVA_'+Date.now(),scenarioId:scenario.id,name:'RESERVAS',colorName:'GRIS',colorHex:'#BDBDBD',noVest:true,sortOrder:state.service.teams.length+1};
     state.service.teams.push(reserveTeam);
     renderScenarios();updateTeamSelects();scheduleStructureSave();
   }
