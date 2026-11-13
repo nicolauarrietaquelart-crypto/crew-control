@@ -9128,6 +9128,16 @@ html body.control-mode #personnelGroups details.work-group .table-wrap table>col
 html body.control-mode #personnelGroups details.work-group .table-wrap table>colgroup>col:nth-child(8){width:18%!important}
 }
 </style>
+
+<style id="crew-no-teams-true-center-20261113">
+/* Center SIN EQUIPOS inside the actual team column in both views. */
+html body #personnelGroups details.work-group .table-wrap table>tbody>tr[data-worker-row]>td.mobile-team:has(.no-teams-chip){text-align:center!important}
+html body #personnelGroups details.work-group .table-wrap table>tbody>tr[data-worker-row]>td.mobile-team .no-teams-chip{
+ display:table!important;width:max-content!important;max-width:100%!important;
+ margin-inline:auto!important;text-align:center!important;
+ float:none!important;position:static!important;transform:none!important;
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
