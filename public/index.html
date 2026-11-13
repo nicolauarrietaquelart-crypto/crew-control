@@ -9914,6 +9914,26 @@ body #personnelGroups > .crew-linked-work-heading button.staffing-chip .team-chi
  }
 }
 </style>
+<style id="crew-control-fluid-table-width-20261113">
+/* Expand Control to the available screen width; preserve a readable minimum
+   only when the viewport is too narrow, with horizontal scrolling. */
+@media(min-width:901px){
+ html body.control-mode #personnelGroups details.work-group .table-wrap{
+   width:100%!important;max-width:100%!important;min-width:0!important;
+   box-sizing:border-box!important;overflow-x:auto!important;
+ }
+ html body.control-mode #personnelGroups details.work-group .table-wrap table{
+   width:100%!important;min-width:900px!important;max-width:none!important;
+   table-layout:fixed!important;box-sizing:border-box!important;
+ }
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(1){width:1.333%!important}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(2){width:8.667%!important}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(3){width:26.111%!important}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(5){width:13.333%!important}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(8){width:13.333%!important}
+ html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(9){width:20.556%!important}
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
