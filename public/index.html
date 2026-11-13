@@ -9339,6 +9339,29 @@ html body #personnelGroups details.work-group .table-wrap table tbody tr[data-wo
 }
 }
 </style>
+
+<style id="crew-selection-remove-cell-seams-20261113">
+@media(min-width:901px){
+/* Eliminate vertical seams from borders, shadows and cell-level paints. */
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected{
+ background-image:linear-gradient(90deg,rgba(245,130,32,.26) 0%,rgba(245,130,32,.12) 48%,rgba(245,130,32,0) 100%)!important;
+ background-repeat:no-repeat!important;background-size:100% 100%!important;
+}
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected>td{
+ background:transparent!important;background-image:none!important;
+ border-left:0!important;border-right:0!important;
+ outline:0!important;filter:none!important;
+ box-shadow:none!important;clip-path:none!important;
+}
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected>td:first-child{
+ box-shadow:inset 4px 0 0 #f58220!important;
+}
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected>td::before,
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected>td::after{
+ background-image:none!important;
+}
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
