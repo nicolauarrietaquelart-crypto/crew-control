@@ -8913,6 +8913,46 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
  }
 }
 </style>
+<style id="crew-rating-selection-polish-20261113">
+@media(min-width:901px){
+ /* Give vest and rating their own readable tracks, without overlapping headings. */
+ body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(9){width:14%!important}
+ body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(10){width:8%!important}
+ body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(11){width:7%!important}
+ #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(10),
+ #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(11){
+  white-space:normal!important;overflow-wrap:normal!important;
+  font-size:11px!important;line-height:1.25!important;
+  padding:10px 5px!important;text-align:center!important;
+ }
+ #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td.mobile-vest,
+ #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td.mobile-rating{
+  text-align:center!important;vertical-align:middle!important;
+  padding:8px 4px!important;overflow:visible!important;
+ }
+ #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td.mobile-rating > *{
+  max-width:100%!important;box-sizing:border-box!important;
+  margin-inline:auto!important;
+ }
+ #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td.mobile-vest .vest{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  max-width:100%!important;white-space:normal!important;
+ }
+ /* Selection must be a single continuous highlight rather than isolated tinted cells. */
+ #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row].worker-row-selected{
+  background:linear-gradient(90deg,rgba(245,130,32,.22) 0%,rgba(245,130,32,.10) 45%,rgba(245,130,32,.025) 100%)!important;
+  box-shadow:inset 5px 0 0 #f58220!important;
+ }
+ #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row].worker-row-selected > td{
+  background:transparent!important;background-image:none!important;
+  border-top-color:rgba(245,130,32,.12)!important;
+  border-bottom-color:rgba(245,130,32,.12)!important;
+ }
+ #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row].worker-row-selected > td:first-child{
+  border-left:5px solid #f58220!important;
+ }
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
