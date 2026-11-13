@@ -10041,6 +10041,37 @@ body #personnelGroups > .crew-linked-work-heading .staffing-summary button.staff
  }
 }
 </style>
+<style id="crew-mobile-fullwidth-actions-and-worker-name-v4">
+@media(max-width:900px){
+ /* The action group is a child of the toolbar grid: span BOTH toolbar columns. */
+ html body #mobileOperationalDrawerV11234 .personnel-sidebar-toolbar-v121 > .sidebar-link-actions-v129{
+  grid-column:1 / -1!important;grid-row:auto!important;
+  justify-self:stretch!important;align-self:stretch!important;
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  width:100%!important;max-width:none!important;min-width:0!important;
+  gap:10px!important;margin:10px 0 0!important;padding:0!important;
+ }
+ html body #mobileOperationalDrawerV11234 .personnel-sidebar-toolbar-v121 > .sidebar-link-actions-v129 > button{
+  width:100%!important;min-width:0!important;max-width:none!important;min-height:54px!important;
+ }
+}
+@media(max-width:700px){
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody > tr[data-worker-row]{
+  display:grid!important;grid-template-columns:100px minmax(0,1fr)!important;
+  column-gap:6px!important;justify-content:stretch!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody > tr[data-worker-row] > td.mobile-name,
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody > tr[data-worker-row] > td.mobile-role{
+  grid-column:2!important;justify-self:stretch!important;
+  width:100%!important;max-width:none!important;min-width:0!important;
+  padding-left:0!important;padding-right:0!important;margin:0!important;text-align:left!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody > tr[data-worker-row] > td.mobile-name .worker-open{
+  display:block!important;width:100%!important;max-width:none!important;
+  text-align:left!important;white-space:normal!important;overflow-wrap:break-word!important;
+ }
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
