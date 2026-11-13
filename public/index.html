@@ -14410,9 +14410,9 @@ function renderPersonnel(light=false){
       </summary>
       ${staffing.html}
       ${workTeamFilterHtml(trabajo,includedRows)}
-      <div class="table-wrap">
-        <table>
-          <colgroup><col><col><col><col><col><col><col><col><col><col><col></colgroup>
+      <div class="table-wrap" style="display:block;width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:auto;overscroll-behavior-x:contain">
+        <table style="display:table;table-layout:fixed;width:1600px;min-width:1600px;max-width:1600px;flex-shrink:0;transform:none">
+          <colgroup><col style="width:48px;min-width:48px;max-width:48px"><col style="width:145px;min-width:145px;max-width:145px"><col style="width:230px;min-width:230px;max-width:230px"><col style="width:200px;min-width:200px;max-width:200px"><col style="width:155px;min-width:155px;max-width:155px"><col style="width:70px;min-width:70px;max-width:70px"><col style="width:70px;min-width:70px;max-width:70px"><col style="width:155px;min-width:155px;max-width:155px"><col style="width:240px;min-width:240px;max-width:240px"><col style="width:145px;min-width:145px;max-width:145px"><col style="width:142px;min-width:142px;max-width:142px"></colgroup>
           <thead><tr>
             <th></th>
             <th class="sortable-th">${sortHeaderHtml(trabajo,'estado','Estado')}</th>
