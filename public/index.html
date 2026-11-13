@@ -7903,6 +7903,67 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
  display:none!important;
  visibility:hidden!important;
 }
+
+/* Mobile-native behavior: stable hidden chips, smooth controls and touch feedback. */
+@media(max-width:900px){
+ #hiddenWorkTypesBar.hidden-work-types-bar-v11227.show{
+  display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;
+  overflow-y:hidden!important;max-width:100%!important;
+  scroll-snap-type:x proximity;overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;
+  padding:9px 11px!important;gap:8px!important;
+ }
+ #hiddenWorkTypesBar::-webkit-scrollbar{display:none}
+ #hiddenWorkTypesBar .hidden-work-label-v11227{
+  flex:0 0 auto;position:sticky;left:0;z-index:2;
+  padding:8px 7px 8px 0;background:rgba(247,249,251,.96);
+ }
+ #hiddenWorkTypesBar .hidden-work-chip-v11227{
+  flex:0 0 auto;max-width:65vw!important;min-height:35px!important;
+  padding:7px 12px!important;white-space:nowrap;
+  font-size:11px!important;scroll-snap-align:start;
+  transition:transform .22s ease,background .22s ease,opacity .22s ease!important;
+ }
+ #personnelGroups > details.work-group{
+  transition:box-shadow .25s ease,background-color .25s ease!important;
+ }
+ #personnelGroups > details.work-group > summary,
+ #crewMobileDayShiftV11256 button,
+ #operationalWorkFilters button,
+ #appScreen .service-actions button,
+ #appScreen button.primary,
+ #appScreen button.secondary{
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  transition:background-color .22s ease,color .22s ease,
+   border-color .22s ease,box-shadow .22s ease,transform .22s cubic-bezier(.22,.8,.25,1)!important;
+ }
+ #appScreen button:active,
+ #crewMobileDayShiftV11256 button:active,
+ #operationalWorkFilters button:active{
+  transform:scale(.965);
+ }
+ #personnelGroups > details.work-group[open] > summary{
+  transition:background-color .23s ease!important;
+ }
+ #personnelGroups > details.work-group[open] > summary + *{
+  animation:crewMobileContentIn .22s cubic-bezier(.22,.8,.25,1);
+ }
+ #appScreen .card, #appScreen .service-top{
+  transition:box-shadow .25s ease,background-color .25s ease!important;
+ }
+}
+@keyframes crewMobileContentIn{
+ from{opacity:.45;transform:translateY(-6px)}
+ to{opacity:1;transform:translateY(0)}
+}
+@media(prefers-reduced-motion:reduce){
+ #appScreen button,#appScreen .card,
+ #personnelGroups > details.work-group,
+ #hiddenWorkTypesBar .hidden-work-chip-v11227{
+  transition:none!important;animation:none!important;
+ }
+}
 </style></head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -12190,35 +12251,71 @@ function persistWorkDisplayPrefs(){
   scheduleMetaSave();
 }
 
-function hideWorkType(work){
+let crewWorkVisibilityBusy=false;
+const crewWorkReduceMotion=()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+async function crewAnimateWorkVisibility(element,frames,duration){
+ if(!element||crewWorkReduceMotion()||typeof element.animate!=='function')return;
+ try{
+  const animation=element.animate(frames,{duration,easing:'cubic-bezier(.22,.8,.25,1)'});
+  await animation.finished;
+ }catch(error){ /* Element may be replaced during a service refresh. */ }
+}
+async function hideWorkType(work){
+ if(!state.service||crewWorkVisibilityBusy||isWorkTypeHidden(work))return;
+ crewWorkVisibilityBusy=true;
+ try{
+  const group=[...document.querySelectorAll('#personnelGroups > details.work-group')]
+    .find(el=>normalize(el.dataset.workGroup||'')===normalize(work));
+  if(group){
+   group.style.pointerEvents='none';
+   await crewAnimateWorkVisibility(group,[
+    {opacity:1,transform:'translateY(0) scale(1)',maxHeight:group.offsetHeight+'px',marginBottom:getComputedStyle(group).marginBottom},
+    {opacity:0,transform:'translateY(-12px) scale(.985)',maxHeight:'0px',marginBottom:'0px'}
+   ],240);
+  }
+  // Update model exactly once, then redraw all derived menus and filters.
   if(!state.service)return;
-
-  const hidden=Array.isArray(state.service.hiddenWorkTypes)
-    ? state.service.hiddenWorkTypes
-    : [];
-
+  const hidden=Array.isArray(state.service.hiddenWorkTypes)?state.service.hiddenWorkTypes:[];
   if(!hidden.some(x=>normalize(x)===normalize(work)))hidden.push(work);
   state.service.hiddenWorkTypes=hidden;
-
   if(normalize(state.operationalWorkFilter)===normalize(work)){
-    state.operationalWorkFilter='ALL';
-    state.operationalTimeFilter='ALL';
+   state.operationalWorkFilter='ALL';
+   state.operationalTimeFilter='ALL';
   }
-
+  if(typeof crewMobileWorkV11259!=='undefined'&&normalize(crewMobileWorkV11259)===normalize(work)){
+   crewMobileWorkV11259='ALL';
+   crewMobileShiftV11256='ALL';
+  }
   persistWorkDisplayPrefs();
   renderPersonnel(true);
   renderOperationalWorkFilters();
+ }finally{crewWorkVisibilityBusy=false}
 }
-
-function restoreWorkType(work){
+async function restoreWorkType(work){
+ if(!state.service||crewWorkVisibilityBusy||!isWorkTypeHidden(work))return;
+ crewWorkVisibilityBusy=true;
+ try{
+  const chip=[...document.querySelectorAll('#hiddenWorkTypesBar .hidden-work-chip-v11227')]
+    .find(el=>normalize(el.dataset.hiddenWork||'')===normalize(work));
+  if(chip){
+   chip.style.pointerEvents='none';
+   await crewAnimateWorkVisibility(chip,[
+    {opacity:1,transform:'scale(1)'},{opacity:0,transform:'scale(.88)'}
+   ],150);
+  }
   if(!state.service)return;
-
   state.service.hiddenWorkTypes=(state.service.hiddenWorkTypes||[])
-    .filter(x=>normalize(x)!==normalize(work));
-
+   .filter(x=>normalize(x)!==normalize(work));
   persistWorkDisplayPrefs();
   renderPersonnel(true);
   renderOperationalWorkFilters();
+  const group=[...document.querySelectorAll('#personnelGroups > details.work-group')]
+   .find(el=>normalize(el.dataset.workGroup||'')===normalize(work));
+  await crewAnimateWorkVisibility(group,[
+   {opacity:0,transform:'translateY(12px) scale(.985)'},
+   {opacity:1,transform:'translateY(0) scale(1)'}
+  ],250);
+ }finally{crewWorkVisibilityBusy=false}
 }
 
 function renderHiddenWorkTypesBar(){
@@ -12244,7 +12341,8 @@ function renderHiddenWorkTypesBar(){
     ${hidden.map(work=>`
       <button type="button"
         class="hidden-work-chip-v11227"
-        onclick="restoreWorkType('${escapeJsString(work)}')">
+        data-hidden-work="${escapeAttr(work)}"
+        onclick="event.preventDefault();event.stopPropagation();restoreWorkType('${escapeJsString(work)}')">
         + ${escapeHtml(work)}
       </button>
     `).join('')}
