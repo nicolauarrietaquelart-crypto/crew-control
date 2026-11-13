@@ -9600,23 +9600,23 @@ html body #personnelGroups .work-group > .table-wrap > table td:nth-child(3){ove
 }
 </style>
 <style id="crew-no-condensation-scroll-fix">
-/* Anchos reales y fijos: Personal 110px, sincronizado con el colgroup generado. Scroll horizontal sin condensar. */
+/* Anchos sincronizados con el colgroup HTML; scroll sin compresión. */
 @media(min-width:701px){
 html body #personnelGroups details.work-group > .table-wrap{width:100%!important;max-width:100%!important;min-width:0!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:auto!important}
-html body #personnelGroups details.work-group > .table-wrap > table{table-layout:fixed!important;width:1120px!important;min-width:1120px!important;max-width:1120px!important;transform:none!important}
-html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(1){width:48px!important;min-width:48px!important;max-width:48px!important}
-html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(2){width:120px!important;min-width:120px!important;max-width:120px!important}
+html body #personnelGroups details.work-group > .table-wrap > table{table-layout:fixed!important;width:947px!important;min-width:947px!important;max-width:947px!important;transform:none!important}
+html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(1){width:20px!important;min-width:20px!important;max-width:20px!important}
+html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(2){width:80px!important;min-width:80px!important;max-width:80px!important}
 html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(3){width:110px!important;min-width:110px!important;max-width:110px!important}
 html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(4){width:100px!important;min-width:100px!important;max-width:100px!important}
 html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(5){width:145px!important;min-width:145px!important;max-width:145px!important}
 html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(6){width:65px!important;min-width:65px!important;max-width:65px!important}
 html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(7){width:65px!important;min-width:65px!important;max-width:65px!important}
 html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(8){width:110px!important;min-width:110px!important;max-width:110px!important}
-html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(9){width:190px!important;min-width:190px!important;max-width:190px!important}
-html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(10){width:90px!important;min-width:90px!important;max-width:90px!important}
+html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(9){width:110px!important;min-width:110px!important;max-width:110px!important}
+html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(10){width:65px!important;min-width:65px!important;max-width:65px!important}
 html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(11){width:77px!important;min-width:77px!important;max-width:77px!important}
-html body #personnelGroups details.work-group > .table-wrap > table th,html body #personnelGroups details.work-group > .table-wrap > table td{box-sizing:border-box!important;padding-left:5px!important;padding-right:5px!important;overflow:hidden!important}
-html body #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(2),html body #personnelGroups details.work-group > .table-wrap > table > tbody > tr[data-worker-row] > td:nth-child(2){text-align:left!important;padding-left:12px!important}
+html body #personnelGroups details.work-group > .table-wrap > table th,html body #personnelGroups details.work-group > .table-wrap > table td{box-sizing:border-box!important;padding-left:4px!important;padding-right:4px!important;overflow:hidden!important}
+html body #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(2),html body #personnelGroups details.work-group > .table-wrap > table > tbody > tr[data-worker-row] > td:nth-child(2){text-align:left!important;padding-left:4px!important}
 }
 </style></head>
 <body>
@@ -14408,8 +14408,8 @@ function renderPersonnel(light=false){
       ${staffing.html}
       ${workTeamFilterHtml(trabajo,includedRows)}
       <div class="table-wrap" style="display:block;width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:auto;overscroll-behavior-x:contain">
-        <table style="display:table;table-layout:fixed;width:1120px;min-width:1120px;max-width:1120px;flex-shrink:0;transform:none">
-          <colgroup><col style="width:48px;min-width:48px;max-width:48px"><col style="width:120px;min-width:120px;max-width:120px"><col style="width:110px;min-width:110px;max-width:110px"><col style="width:100px;min-width:100px;max-width:100px"><col style="width:145px;min-width:145px;max-width:145px"><col style="width:65px;min-width:65px;max-width:65px"><col style="width:65px;min-width:65px;max-width:65px"><col style="width:110px;min-width:110px;max-width:110px"><col style="width:190px;min-width:190px;max-width:190px"><col style="width:90px;min-width:90px;max-width:90px"><col style="width:77px;min-width:77px;max-width:77px"></colgroup>
+        <table style="display:table;table-layout:fixed;width:947px;min-width:947px;max-width:947px;flex-shrink:0;transform:none">
+          <colgroup><col style="width:20px;min-width:20px;max-width:20px"><col style="width:80px;min-width:80px;max-width:80px"><col style="width:110px;min-width:110px;max-width:110px"><col style="width:100px;min-width:100px;max-width:100px"><col style="width:145px;min-width:145px;max-width:145px"><col style="width:65px;min-width:65px;max-width:65px"><col style="width:65px;min-width:65px;max-width:65px"><col style="width:110px;min-width:110px;max-width:110px"><col style="width:110px;min-width:110px;max-width:110px"><col style="width:65px;min-width:65px;max-width:65px"><col style="width:77px;min-width:77px;max-width:77px"></colgroup>
           <thead><tr>
             <th></th>
             <th class="sortable-th">${sortHeaderHtml(trabajo,'estado','Estado')}</th>
