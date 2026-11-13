@@ -9244,6 +9244,34 @@ html body:not(.control-mode) #personnelGroups details.work-group .table-wrap td.
 }
 }
 </style>
+
+<style id="crew-gradient-phone-rating-20261113">
+@media(min-width:901px){
+/* A single uninterrupted selection gradient across every cell, including team/vest/rating. */
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected{
+ background:linear-gradient(90deg,rgba(245,130,32,.30),rgba(245,130,32,.13) 46%,rgba(245,130,32,0) 100%)!important;
+ box-shadow:inset 5px 0 0 #f58220!important;
+}
+html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row].worker-row-selected>td:nth-child(n){
+ background:transparent!important;background-image:none!important;background-color:transparent!important;
+ box-shadow:none!important;
+}
+/* Header and content use the same left edge for mobile and rating. */
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table>thead>tr>th:nth-child(8),
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table>tbody>tr[data-worker-row]>td:nth-child(8),
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table>thead>tr>th:nth-child(11),
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table>tbody>tr[data-worker-row]>td:nth-child(11){
+ padding-left:5px!important;padding-right:3px!important;text-align:left!important;
+}
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap td.mobile-rating>*{
+ margin-left:0!important;margin-right:auto!important;
+}
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap td.mobile-phone .crew-phone-desktop-v11264{
+ display:inline-flex!important;max-width:100%!important;box-sizing:border-box!important;
+ margin-left:0!important;margin-right:auto!important;
+}
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
