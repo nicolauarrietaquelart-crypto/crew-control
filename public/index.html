@@ -15475,7 +15475,7 @@ function renderStaffingRows(){
   // Un trabajador puede tener varias franjas/tipos: contarlo una sola vez por equipo.
   const uniqueRows=new Map();
   rows.forEach(w=>{
-    const phone=String(w.movil||'').replace(/\\D/g,'');
+    const phone=String(w.movil||'').replace(/\D/g,'');
     const identity=phone.length>=9?'TEL:'+phone:'ID:'+String(w.id);
     const key=identity+'|'+String(w.teamId||'');
     const prior=uniqueRows.get(key);
