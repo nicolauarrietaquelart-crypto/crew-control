@@ -125,3 +125,16 @@
   #crewPauseShiftList .crew-pause-open{flex:1 1 100%}
   #crewPauseShiftList .crew-pause-return-shortcut{flex:1}
 }
+
+
+#crewPauseReturnModal .crew-return-contacts{display:flex;align-items:center;gap:5px;flex:0 0 auto}
+#crewPauseReturnModal .crew-return-contacts a{width:33px;height:33px;display:grid;place-items:center;color:#202020;background:#f6f6f6;border:1px solid #dedede;border-radius:8px;text-decoration:none;transition:background .15s,border-color .15s}
+#crewPauseReturnModal .crew-return-contacts a:hover{background:#fff1e7;border-color:#ff7a14}
+#crewPauseReturnModal .crew-return-contacts a:focus-visible{outline:2px solid #ff7a14;outline-offset:2px}
+@media(max-width:700px){
+ #crewPauseReturnModal .crew-return-right{gap:5px}
+ #crewPauseReturnModal .crew-return-contacts{gap:3px}
+ #crewPauseReturnModal .crew-return-contacts a{width:30px;height:32px}
+ #crewPauseReturnModal .crew-return-person{flex-wrap:wrap}
+ #crewPauseReturnModal .crew-return-right{margin-left:auto}
+}
