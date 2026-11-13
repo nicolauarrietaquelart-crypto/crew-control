@@ -9580,11 +9580,22 @@ html body #personnelGroups details.work-group .table-wrap > table > colgroup > c
 #personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(11){width:128px!important}
 </style>
 <style id="crew-tight-personal-specialty-20261113">
-/* Reducir el hueco entre Personal y Especialidad sin comprimir la tabla. */
-#personnelGroups .work-group > .table-wrap > table{width:1325px!important;min-width:1325px!important;max-width:1325px!important}
-#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(3){width:80px!important}
-#personnelGroups .work-group > .table-wrap > table td:nth-child(3){overflow:visible!important}
-#personnelGroups .work-group > .table-wrap > table td:nth-child(3) .worker-open{white-space:normal!important;overflow-wrap:break-word!important}
+/* Un único ancho coherente: suma exacta de las 11 columnas, sin redistribución automática. */
+#personnelGroups .work-group > .table-wrap > table {
+ table-layout:fixed!important;width:1280px!important;min-width:1280px!important;max-width:1280px!important;
+}
+#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(1){width:42px!important}
+#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(2){width:125px!important}
+#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(3){width:170px!important}
+#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(4){width:175px!important}
+#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(5){width:135px!important}
+#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(6){width:65px!important}
+#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(7){width:65px!important}
+#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(8){width:145px!important}
+#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(9){width:180px!important}
+#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(10){width:95px!important}
+#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(11){width:83px!important}
+#personnelGroups .work-group > .table-wrap > table td:nth-child(3){overflow-wrap:anywhere!important}
 </style>
 </head>
 <body>
