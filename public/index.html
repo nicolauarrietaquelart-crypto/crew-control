@@ -9599,6 +9599,20 @@ html body #personnelGroups .work-group > .table-wrap > table th,html body #perso
 html body #personnelGroups .work-group > .table-wrap > table td:nth-child(3){overflow-wrap:anywhere!important}
 }
 </style>
+<style id="crew-restore-mobile-worker-cards">
+/* El diseño compacto de escritorio nunca debe convertir las tarjetas móviles en tabla. */
+@media(max-width:700px){
+html body #personnelGroups details.work-group > .table-wrap{overflow:visible!important;width:100%!important;max-width:100%!important}
+html body #personnelGroups details.work-group > .table-wrap > table{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;table-layout:auto!important}
+html body #personnelGroups details.work-group > .table-wrap > table > colgroup{display:none!important}
+html body #personnelGroups details.work-group > .table-wrap > table > thead{display:none!important}
+html body #personnelGroups details.work-group > .table-wrap > table > tbody{display:block!important;width:100%!important}
+html body #personnelGroups details.work-group > .table-wrap > table > tbody > tr[data-worker-row]{display:grid!important;width:100%!important;max-width:100%!important;grid-template-columns:minmax(110px,38%) minmax(0,62%)!important;gap:6px!important;box-sizing:border-box!important}
+html body #personnelGroups details.work-group > .table-wrap > table > tbody > tr[data-worker-row] > td{display:block!important;width:auto!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important}
+html body #personnelGroups details.work-group > .table-wrap > table > tbody > tr.shift-divider-row{display:block!important;width:100%!important}
+html body #personnelGroups details.work-group > .table-wrap > table > tbody > tr.shift-divider-row > td{display:block!important;width:100%!important}
+}
+</style>
 <style id="crew-no-condensation-scroll-fix">
 /* Anchos sincronizados con el colgroup HTML; scroll sin compresión. */
 @media(min-width:701px){
