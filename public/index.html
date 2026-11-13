@@ -9580,22 +9580,24 @@ html body #personnelGroups details.work-group .table-wrap > table > colgroup > c
 #personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(11){width:128px!important}
 </style>
 <style id="crew-tight-personal-specialty-20261113">
-/* Un único ancho coherente: suma exacta de las 11 columnas, sin redistribución automática. */
-#personnelGroups .work-group > .table-wrap > table {
- table-layout:fixed!important;width:1280px!important;min-width:1280px!important;max-width:1280px!important;
+/* Columnas compactas con anchuras fijas y desplazamiento horizontal real. */
+@media(min-width:701px){
+html body #personnelGroups .work-group > .table-wrap{overflow-x:auto!important;max-width:100%!important}
+html body #personnelGroups .work-group > .table-wrap > table{table-layout:fixed!important;width:1132px!important;min-width:1132px!important;max-width:1132px!important}
+html body #personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(1){width:42px!important;min-width:42px!important;max-width:42px!important}
+html body #personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(2){width:110px!important;min-width:110px!important;max-width:110px!important}
+html body #personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(3){width:150px!important;min-width:150px!important;max-width:150px!important}
+html body #personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(4){width:145px!important;min-width:145px!important;max-width:145px!important}
+html body #personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(5){width:125px!important;min-width:125px!important;max-width:125px!important}
+html body #personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(6){width:55px!important;min-width:55px!important;max-width:55px!important}
+html body #personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(7){width:55px!important;min-width:55px!important;max-width:55px!important}
+html body #personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(8){width:125px!important;min-width:125px!important;max-width:125px!important}
+html body #personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(9){width:155px!important;min-width:155px!important;max-width:155px!important}
+html body #personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(10){width:90px!important;min-width:90px!important;max-width:90px!important}
+html body #personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(11){width:80px!important;min-width:80px!important;max-width:80px!important}
+html body #personnelGroups .work-group > .table-wrap > table th,html body #personnelGroups .work-group > .table-wrap > table td{padding-left:5px!important;padding-right:5px!important}
+html body #personnelGroups .work-group > .table-wrap > table td:nth-child(3){overflow-wrap:anywhere!important}
 }
-#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(1){width:42px!important}
-#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(2){width:125px!important}
-#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(3){width:170px!important}
-#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(4){width:175px!important}
-#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(5){width:135px!important}
-#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(6){width:65px!important}
-#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(7){width:65px!important}
-#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(8){width:145px!important}
-#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(9){width:180px!important}
-#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(10){width:95px!important}
-#personnelGroups .work-group > .table-wrap > table > colgroup > col:nth-child(11){width:83px!important}
-#personnelGroups .work-group > .table-wrap > table td:nth-child(3){overflow-wrap:anywhere!important}
 </style>
 <style id="crew-no-condensation-scroll-fix">
 /* El ancho del contenido es independiente del viewport; solo se desplaza la tabla. */
