@@ -8784,6 +8784,53 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
  #controlViewBtn{display:none!important}
 }
 </style>
+<style id="crew-table-alignment-20261113">
+/* Keep header and row tracks identical and anchor status to the left. */
+@media(min-width:901px){
+ #personnelGroups details.work-group .table-wrap table{
+  width:100%!important;max-width:100%!important;
+  border-collapse:collapse!important;
+ }
+ #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(2),
+ #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(2){
+  text-align:left!important;padding-left:6px!important;padding-right:4px!important;
+ }
+ #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(2) .sort-btn{
+  text-align:left!important;padding-left:6px!important;
+ }
+ #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(2) select.status{
+  display:block!important;width:48px!important;min-width:48px!important;
+  max-width:48px!important;height:44px!important;margin:0!important;
+  padding:0!important;border-radius:12px!important;
+ }
+ #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(10),
+ #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(10){
+  text-align:center!important;vertical-align:middle!important;
+  padding-left:4px!important;padding-right:4px!important;
+ }
+ #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(11),
+ #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(11){
+  text-align:center!important;vertical-align:middle!important;
+  padding-left:4px!important;padding-right:4px!important;
+ }
+ #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(10) .sort-btn,
+ #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(11) .sort-btn{
+  text-align:center!important;padding-left:2px!important;padding-right:2px!important;
+ }
+ #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(10) .ops-chip{
+  max-width:100%!important;box-sizing:border-box!important;
+  white-space:nowrap!important;font-size:10px!important;
+ }
+ body.control-mode #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(2),
+ body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(2){
+  width:64px!important;min-width:64px!important;max-width:64px!important;
+  text-align:left!important;padding-left:2px!important;
+ }
+ body.control-mode #personnelGroups details.work-group .table-wrap table > tbody > tr[data-worker-row] > td:nth-child(2) select.status{
+  width:46px!important;min-width:46px!important;max-width:46px!important;
+ }
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
