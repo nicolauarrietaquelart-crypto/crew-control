@@ -8953,6 +8953,27 @@ body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
  }
 }
 </style>
+<style id="crew-table-edge-team-control-fix-20261113">
+@media(min-width:901px){
+/* Exactly 100%: avoid an extra 2% overflow on the right of the rating column. */
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(9){width:15%!important}
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(10){width:7%!important}
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(11){width:5%!important}
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap table{width:100%!important;box-sizing:border-box!important}
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap{padding-right:0!important}
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap td.mobile-rating,
+html body:not(.control-mode) #personnelGroups details.work-group .table-wrap th:last-child{padding-right:2px!important}
+/* Compact control: the team dropdown must not enlarge the entire column. */
+html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(3){width:44%!important}
+html body.control-mode #personnelGroups details.work-group .table-wrap table > colgroup > col:nth-child(9){width:18%!important}
+html body.control-mode #personnelGroups details.work-group .table-wrap td.mobile-team{overflow:hidden!important;padding:4px 6px!important}
+html body.control-mode #personnelGroups details.work-group .table-wrap td.mobile-team select{
+display:block!important;width:100%!important;max-width:190px!important;min-width:0!important;
+box-sizing:border-box!important;white-space:nowrap!important;text-overflow:ellipsis!important;
+margin-left:0!important;margin-right:auto!important;
+}
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
