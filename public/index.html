@@ -12886,7 +12886,7 @@ function crewConnectionRestored(){
   if(hadIssue&&state.service?.code){
     const pending=Object.keys(crewPendingJournal(state.service.code)).length;
     if(pending)setSaveState(pending+' cambios pendientes de sincronizar','saving');
-    else if(!state.workerSaveInFlight)setSaveState('Conectado con D1','saved');
+    else if(!state.workerSaveInFlight&&!crewHeldNotice(state.service.code))setSaveState('Conectado con D1','saved');
   }
 }
 const crewApi=async(code,method='GET',payload)=> {
