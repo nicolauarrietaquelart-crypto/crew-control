@@ -18,8 +18,10 @@ function helpers(){
     ';return {crewUniqueWorkerIds,crewPruneWorkerReferences}'
   )({randomUUID});
 }
-function fakeDispatch(){
-  const source=section("  if(method==='saveWorkerChanges'){","  if(method==='addManualWorker'){");
+function fakeDispatch({loseFirstReceipt=false,corruptReceipt=false}={}){
+  const source=section('function crewCanonicalWorkerPhone','const crewPersist=')+
+    section('function crewPendingIdentityMatches','// Reconcile durable edits')+
+    'return async function(method,args){'+section("  if(method==='saveWorkerChanges'){","  if(method==='addManualWorker'){")+'}';
   let revision=0;
   let saved={
     closed:false,_syncRevision:'R0',
@@ -37,11 +39,14 @@ function fakeDispatch(){
     }
     saved=clone(body.service);
     saved._syncRevision='R'+(++revision);
-    return {revision:saved._syncRevision};
+    if(loseFirstReceipt&&revision===1)throw new Error('Conexión interrumpida después de guardar');
+    const service=clone(saved);
+    if(corruptReceipt)service.workers[0].status='PENDIENTE';
+    return {ok:true,revision:saved._syncRevision,service};
   };
   const dispatch=new Function('crewApi','code',
     'let crewSaveQueue=Promise.resolve();let crewLastLocalWrite=0;'+
-    'return async function(method,args){'+source+'}'
+    source
   )(api,'123456');
   const identity={personal:'Alex',serviceDate:'2026-11-14',
     trabajo:'LOAD IN',movil:'600123456',inicio:'09:00',fin:'17:00'};
@@ -114,19 +119,37 @@ test('a mismatched identity cannot modify another worker',async()=>{
   assert.equal(x.saved.workers[0].status,'PENDIENTE');
 });
 
-test('the next click uses the last confirmed version, even with no pending write',()=>{
-  const code=section('function crewRebasePendingJournal','function crewCacheRoster');
-  const journal={};
-  const workers=[{id:'W1',_fieldTimes:{}}];
-  const state={service:{code:'123456',workers}};
-  const rebase=new Function('crewPendingJournal','crewWriteLocal','state','CREW_PENDING_PREFIX',
-    code+';return crewRebasePendingJournal'
-  )(()=>journal,()=>true,state,'test:');
-  rebase('123456',{W1:{status:1}});
-  assert.equal(workers[0]._fieldTimes.status,1);
-  journal.W1={workerId:'W1',status:'NO PRESENTADO',_baseFieldTimes:{status:0}};
-  rebase('123456',{W1:{status:2}});
-  assert.equal(journal.W1._baseFieldTimes.status,2);
+test('an international phone with the same last nine digits cannot match a different row',async()=>{
+  const x=fakeDispatch();
+  await assert.rejects(x.dispatch('saveWorkerChanges',['123456',[{
+    workerId:'W1',status:'PRESENTE',_workerIdentity:{...x.identity,movil:'+39 600123456'},
+    _fieldTimes:{status:1},_baseFieldTimes:{status:0}
+  }]]),/Identidad del trabajador/);
+  await x.dispatch('saveWorkerChanges',['123456',[{
+    workerId:'W1',status:'PRESENTE',_workerIdentity:{...x.identity,movil:'0034 600123456'},
+    _fieldTimes:{status:2},_baseFieldTimes:{status:0}
+  }]]);
+  assert.equal(x.saved.workers[0].status,'PRESENTE');
+});
+
+test('retrying a write after losing its response keeps the first confirmed arrival',async()=>{
+  const x=fakeDispatch({loseFirstReceipt:true});
+  const edit={workerId:'W1',status:'PRESENTE',arrivalAt:'09:04',_workerIdentity:x.identity,
+    _fieldTimes:{status:100,arrivalAt:100},_baseFieldTimes:{status:0,arrivalAt:0}};
+  await assert.rejects(x.dispatch('saveWorkerChanges',['123456',[edit]]),/interrumpida/);
+  const resumed=await x.dispatch('saveWorkerChanges',['123456',[edit]]);
+  assert.deepEqual(resumed.confirmedVersions.W1,{status:1,arrivalAt:1});
+  const otherDevice=await x.dispatch('saveWorkerChanges',['123456',[{...edit,arrivalAt:'09:06'}]]);
+  assert.deepEqual(otherDevice.confirmedVersions.W1,{status:1,arrivalAt:1});
+  assert.equal(x.saved.workers[0].arrivalAt,'09:04');
+});
+
+test('a successful HTTP response with the wrong attendance is not an acknowledgement',async()=>{
+  const x=fakeDispatch({corruptReceipt:true});
+  await assert.rejects(x.dispatch('saveWorkerChanges',['123456',[{
+    workerId:'W1',status:'PRESENTE',_workerIdentity:x.identity,
+    _fieldTimes:{status:100},_baseFieldTimes:{status:0}
+  }]]),/no confirmó los valores/);
 });
 
 test('return-from-break attendance is represented by durable events',()=>{
@@ -148,7 +171,6 @@ test('return-from-break attendance is represented by durable events',()=>{
 test('D1 rejects duplicate worker IDs before committing a service snapshot',()=>{
   assert.match(workerApi,/uniqueWorkerIds\.has\(id\)/);
   assert.match(workerApi,/ID de trabajador vacío o duplicado/);
-  assert.match(html,/crewRebasePendingJournal\(serviceCode,result\.confirmedVersions\)/);
 });
 
 test('all browser and Worker scripts have valid JavaScript syntax',()=>{
@@ -177,7 +199,10 @@ test('offline mismatch preflight preserves rejected edits and keeps valid edits 
   const read=(prefix,code)=>structuredClone(stored.get(prefix+code)||{});
   const write=(prefix,code,value)=>{stored.set(prefix+code,structuredClone(value));return true;};
   const setup=new Function('crewReadLocal','crewWriteLocal','crewApi','CREW_PENDING_PREFIX','state','setSaveState','crewMergeUpdate',
-    'const crewPendingJournal=code=>crewReadLocal(CREW_PENDING_PREFIX,code);'+source+';return {crewHoldMismatchedPending,crewHeldJournal,crewPendingIdentityMatches}'
+    'const crewPendingJournal=code=>crewReadLocal(CREW_PENDING_PREFIX,code);'+
+    section('function crewCanonicalWorkerPhone','const crewPersist=')+
+    section('function crewCurrentWorkerJournal','function crewJournalUpdates')+
+    source+';return {crewHoldMismatchedPending,crewHeldJournal,crewPendingIdentityMatches}'
   );
   const result=setup(read,write,async()=>({service:remote}),'pending:',state,()=>{},
     (old,update)=>({...old,...update}));
@@ -198,7 +223,8 @@ function recoveryFixture({pending={},held={},workers=[],failPrefix}={}){
     if(prefix===failPrefix)return false;
     stored.set(prefix+code,structuredClone(value));return true;
   };
-  const source=section("const CREW_HELD_PREFIX='crew-held-worker-updates-v1:';","function crewPendingJournal(code){")+
+  const source=section('function crewCanonicalWorkerPhone','const crewPersist=')+
+    section("const CREW_HELD_PREFIX='crew-held-worker-updates-v1:';","function crewPendingJournal(code){")+
     section('function crewMergeUpdate','function crewJournalUpdates');
   const reconcile=new Function('crewReadLocal','crewWriteLocal','CREW_PENDING_PREFIX','state',
     'const crewPendingJournal=code=>crewReadLocal(CREW_PENDING_PREFIX,code);'+source+
@@ -279,4 +305,93 @@ test('recovery waits for writes in flight and never changes another service queu
   x.state.workerSaveInFlight=false;x.state.service.code='654321';
   x.run();assert.deepEqual(x.state.pendingWorkerUpdates,{});
   assert.equal(x.pending().NEW.status,'PRESENTE');
+});
+
+test('a PDF time correction keeps the pending edit on the same uniquely identified row',()=>{
+  const updated={...recoveryWorker,id:'OLD',inicio:'08:30'};
+  const x=recoveryFixture({pending:{OLD:recoveryEdit},workers:[updated]});
+  x.run();
+  assert.equal(x.pending().OLD._workerIdentity.inicio,'08:30');
+  assert.equal(x.pending().OLD.status,'PRESENTE');
+  assert.deepEqual(x.held(),{});
+  const ambiguous=recoveryFixture({pending:{OLD:recoveryEdit},workers:[updated,{...updated,id:'OTHER',inicio:'09:00'}]});
+  ambiguous.run();
+  assert.deepEqual(ambiguous.pending(),{});
+  assert.deepEqual(ambiguous.held().OLD,recoveryEdit);
+});
+
+test('a receipt preserves a second click made while offline storage is unavailable',()=>{
+  const source=section('function crewMergeUpdate','function crewCacheRoster');
+  const identity={...recoveryIdentity};
+  const existing={id:'OLD',...identity,status:'NO PRESENTADO',_fieldTimes:{}};
+  const second={...recoveryEdit,status:'NO PRESENTADO',_fieldTimes:{status:101}};
+  const state={service:{code:'123456',workers:[existing]},pendingWorkerUpdates:{OLD:second}};
+  const ack=new Function('state','crewPendingJournal','crewWriteLocal','CREW_PENDING_PREFIX','crewPendingIdentityMatches','crewSnapshotIsOlder',
+    source+';return crewAckJournal')(state,()=>({}),()=>false,'pending:',(a,b)=>a?.personal===b?.personal,()=>false);
+  const firstReceipt={ok:true,confirmedVersions:{OLD:{status:1}},service:{workers:[{...existing,status:'PRESENTE'}]}};
+  assert.throws(()=>ack('123456',[recoveryEdit],{ok:true,confirmedVersions:{}}),/no confirmó todos/);
+  ack('123456',[recoveryEdit],firstReceipt);
+  assert.equal(state.pendingWorkerUpdates.OLD.status,'NO PRESENTADO');
+  assert.equal(state.pendingWorkerUpdates.OLD._baseFieldTimes.status,1);
+  assert.equal(existing._fieldTimes.status,1);
+  assert.equal(existing.status,'NO PRESENTADO');
+  ack('123456',[structuredClone(state.pendingWorkerUpdates.OLD)],{ok:true,confirmedVersions:{OLD:{status:2}}});
+  assert.deepEqual(state.pendingWorkerUpdates,{});
+  assert.equal(existing._fieldTimes.status,2);
+});
+
+test('a pre-write polling snapshot is rejected after a newer write acknowledgement',async()=>{
+  let releasePoll;
+  const oldPoll=new Promise(resolve=>{releasePoll=resolve;});
+  const current={code:'123456',_syncSequence:7,workers:[{id:'W1',status:'PRESENTE'}]};
+  const json=service=>({ok:true,json:async()=>({ok:true,service})});
+  const responses=[oldPoll,Promise.resolve(json(current))];
+  const api=new Function('fetch','crewDeviceId','crewConnectionRestored','crewConnectionFailed',
+    section('const crewSnapshotSequences','let crewSaveQueue=')+';return crewApi')(
+    ()=>responses.shift(),'test',()=>{},()=>{}
+  );
+  const poll=api('123456');
+  await api('123456','PUT',{service:current});
+  releasePoll(json({...current,_syncSequence:6,workers:[{id:'W1',status:'PENDIENTE'}]}));
+  await assert.rejects(poll,{status:425});
+});
+
+test('PDF reimport preserves confirmed attendance and refuses an unmatched check-in',async()=>{
+  const source=section('function crewUniqueWorkerIds','const crewSaveLatest=');
+  const attendance={...recoveryWorker,code:'123456',status:'PRESENTE',arrivalAt:'08:04',_fieldTimes:{status:3,arrivalAt:2}};
+  let cloud={code:'123456',_syncRevision:'R1',workers:[attendance]};
+  const api=async(code,method='GET',body)=>{
+    if(method==='GET')return {service:structuredClone(cloud)};
+    cloud={...body.service,_syncRevision:'R2'};
+    return {ok:true,revision:'R2',service:cloud};
+  };
+  const persist=new Function('crewApi','crypto','normalize',
+    'let crewSaveQueue=Promise.resolve(),crewLastLocalWrite=0;'+source+';return crewPersist')(
+    api,{randomUUID},s=>String(s||'').trim().toUpperCase());
+  const parsed={...attendance,id:'FROM_PDF',personal:'Chris corregido',status:'PENDIENTE',arrivalAt:'',_fieldTimes:{}};
+  const saved=await persist({code:'123456',workers:[parsed]},'roster');
+  assert.equal(saved.workers[0].id,'NEW');
+  assert.equal(saved.workers[0].status,'PRESENTE');
+  assert.equal(saved.workers[0].arrivalAt,'08:04');
+  assert.deepEqual(saved.workers[0]._fieldTimes,{status:3,arrivalAt:2});
+  await assert.rejects(persist({code:'123456',workers:[{...parsed,personal:'Pau',movil:'600333333'}]},'roster'),/PDF sin aplicar/);
+  assert.equal(cloud.workers[0].status,'PRESENTE');
+});
+
+test('creating a scenario cannot replace pending attendance in the current view',()=>{
+  const worker={id:'W1',status:'PRESENTE'};
+  const state={service:{code:'123456',workers:[worker],teams:[],scenarios:[]}};
+  const backend={run:{
+    withSuccessHandler(handler){this.done=handler;return this;},
+    withFailureHandler(){return this;},
+    addScenario(){this.done({code:'123456',workers:[{id:'W1',status:'PENDIENTE'}],teams:[],scenarios:[{id:'S1'}]});}
+  }};
+  const noop=()=>{};
+  const add=new Function('state','backend','crewSnapshotIsOlder','renderScenarios','updateTeamSelects','renderPersonnel','setSaveState',
+    section('function addScenario(){','function renameScenario')+';return addScenario')(
+    state,backend,()=>false,noop,noop,noop,noop);
+  add();
+  assert.equal(state.service.workers[0],worker);
+  assert.equal(state.service.workers[0].status,'PRESENTE');
+  assert.equal(state.service.scenarios[0].id,'S1');
 });

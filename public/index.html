@@ -11129,7 +11129,7 @@ if (/iPad/i.test(navigator.userAgent) ||
         <button class="secondary icon-btn compact-code-btn" onclick="copyServiceCode()" title="Copiar código"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"></rect><path d="M5 16H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1"></path></svg><span>Copiar</span></button>
       </div>
       <div class="service-actions">
-        <span id="saveState" class="save-state saved">Guardado</span>
+        <span id="saveState" class="save-state saved" role="status">Guardado</span>
 
         <button id="closeServiceBtn" class="close-service-btn icon-btn" onclick="requestCloseService()" title="Cerrar servicio">
           <svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg><span>Cerrar</span>
@@ -12926,11 +12926,17 @@ function crewConnectionRestored(){
     else if(!state.workerSaveInFlight&&!crewHeldNotice(state.service.code))setSaveState('Conectado con D1','saved');
   }
 }
+const crewSnapshotSequences=new Map();
+function crewSnapshotIsOlder(code,service){
+  return Number(service?._syncSequence||0)<(crewSnapshotSequences.get(code)||0);
+}
 const crewApi=async(code,method='GET',payload)=> {
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),8000);
   try{
     const response=await fetch('/api/services/'+encodeURIComponent(code)+'?format=snapshot',{
       method,headers:{'content-type':'application/json','x-service-code':code,'x-device-id':crewDeviceId},
-      cache:'no-store',signal:AbortSignal.timeout(8000),
+      cache:'no-store',signal:controller.signal,
       ...(payload===undefined?{}:{body:JSON.stringify(payload)})
     });
     let data;
@@ -12941,12 +12947,23 @@ const crewApi=async(code,method='GET',payload)=> {
       if(response.status!==409)crewConnectionFailed(error);
       throw error;
     }
+    if(data.service){
+      const older=crewSnapshotIsOlder(code,data.service);
+      if(older&&method==='GET'){
+        const error=new Error('Se ha recibido una versión anterior del servicio.');
+        error.status=425;
+        throw error;
+      }
+      // A late write receipt still confirms its own operation. It cannot
+      // move the latest known service revision backwards.
+      if(!older)crewSnapshotSequences.set(code,Number(data.service._syncSequence||0));
+    }
     crewConnectionRestored();
     return data;
   }catch(error){
     if(error.status===undefined)crewConnectionFailed(error);
     throw error;
-  }
+  }finally{clearTimeout(timeout);}
 };
 let crewSaveQueue=Promise.resolve();
 let crewLastLocalWrite=0;
@@ -12999,11 +13016,22 @@ function crewPruneWorkerReferences(snapshot,ambiguousIds=new Set()){
 function crewWorkerIdentityEqual(a,b){
   const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .trim().toUpperCase().replace(/\s+/g,' ');
-  const phone=v=>String(v||'').replace(/\D/g,'').slice(-9);
+  const phone=crewCanonicalWorkerPhone;
   return norm(a.personal)&&norm(a.personal)===norm(b.personal)&&
     norm(a.serviceDate)===norm(b.serviceDate)&&
     norm(a.trabajo)===norm(b.trabajo)&&
     (!phone(a.movil)||!phone(b.movil)||phone(a.movil)===phone(b.movil));
+}
+function crewCanonicalWorkerPhone(value){
+  return String(value||'').replace(/\D/g,'').replace(/^00(?=\d{10,15}$)/,'').replace(/^34(?=\d{9}$)/,'');
+}
+function crewHasAttendance(worker){
+  return ['PRESENTE','NO PRESENTADO','CONTACTADO'].includes(worker.status)||Boolean(worker.arrivalAt);
+}
+function crewArrivalAlreadyRecorded(worker,change){
+  // Two devices marking the same arrival keep the first confirmed time.
+  return worker.status==='PRESENTE'&&change.status==='PRESENTE'&&Boolean(worker.arrivalAt)&&
+    Number(change._baseFieldTimes?.status??Infinity)<Number(worker._fieldTimes?.status||0);
 }
 const crewPersist=(service,mode='general')=>{
   if(!service?.code)return Promise.reject(new Error('Servicio no seleccionado'));
@@ -13013,6 +13041,7 @@ const crewPersist=(service,mode='general')=>{
     for(let attempt=0;attempt<5;attempt++){
       const remote=(await crewApi(code)).service;
       if(!remote)throw new Error('No se ha encontrado el servicio');
+      if(remote.closed)throw new Error('El servicio está cerrado');
       let workers=remote.workers||[];
       let remoteDuplicateIds=new Set();
       if(mode==='roster'){
@@ -13033,13 +13062,18 @@ const crewPersist=(service,mode='general')=>{
           return id;
         };
         workers=(service.workers||[]).map(imported=>{
-          const matches=remoteRows.filter(w=>!claimed.has(w)&&crewWorkerIdentityEqual(w,imported));
+          const available=remoteRows.filter(w=>!claimed.has(w));
+          const matches=available.filter(w=>crewWorkerIdentityEqual(w,imported));
           const sameShift=w=>String(w.inicio||'')===String(imported.inicio||'')&&
             String(w.fin||'')===String(imported.fin||'');
-          const candidates=matches.length>1?matches.filter(sameShift):matches;
-          const idCounts=new Map();
-          remoteRows.forEach(w=>idCounts.set(String(w.id),(idCounts.get(String(w.id))||0)+1));
-          const exact=candidates.filter(w=>String(w.id||'')===String(imported.id||'')&&idCounts.get(String(w.id))===1);
+          const phone=crewCanonicalWorkerPhone(imported.movil);
+          // A spelling correction is safe only when the phone and full shift
+          // identify a single existing row. Never match it by PDF row order.
+          const renamed=matches.length===0&&phone.length>=9&&imported.serviceDate&&imported.trabajo&&imported.inicio&&imported.fin?
+            available.filter(w=>w.serviceDate===imported.serviceDate&&normalize(w.trabajo)===normalize(imported.trabajo)&&
+              crewCanonicalWorkerPhone(w.movil)===phone&&sameShift(w)):[];
+          const candidates=matches.length>1?matches.filter(sameShift):matches.length?matches:renamed;
+          const exact=matches.length?candidates.filter(w=>String(w.id||'')===String(imported.id||'')&&remoteCounts.get(String(w.id))===1):[];
           // Do not copy a different row's attendance if same-name matches are ambiguous.
           const current=exact.length===1?exact[0]:candidates.length===1?candidates[0]:null;
           if(current)claimed.add(current);
@@ -13058,6 +13092,11 @@ const crewPersist=(service,mode='general')=>{
           }
           return {...merged,id};
         });
+        const unmatched=remoteRows.filter(w=>w.included!==false&&!claimed.has(w)&&crewHasAttendance(w));
+        if(unmatched.length){
+          const names=unmatched.slice(0,4).map(w=>w.personal).join(', ');
+          throw new Error('PDF sin aplicar: '+unmatched.length+' registro(s) con fichaje no se pueden identificar con seguridad ('+names+'). Revisa que aparezcan en el PDF o exclúyelos del servicio si los quieres retirar.');
+        }
         // Extra defense against future importers that supply malformed IDs.
         const unique=crewUniqueWorkerIds(workers);
         workers=unique.workers;
@@ -13085,7 +13124,7 @@ const crewPersist=(service,mode='general')=>{
         // Do not advance state.service revision until the full authoritative
         // server snapshot has actually been reloaded by crewCheckRemoteChanges.
         crewLastLocalWrite=Date.now();
-        return {...next,_syncRevision:result.revision};
+        return result.service||{...next,_syncRevision:result.revision};
       }catch(error){
         if(error.status!==409||attempt===4)throw error;
       }
@@ -13095,17 +13134,17 @@ const crewPersist=(service,mode='general')=>{
   crewSaveQueue=task.catch(()=>{});
   return task;
 };
-const crewSaveLatest=(code,update)=>{
+const crewSaveLatest=(code,update,{allowClosed=false}={})=>{
   const task=crewSaveQueue.then(async()=>{
     for(let attempt=0;attempt<5;attempt++){
       const remote=(await crewApi(code)).service;
       if(!remote)throw new Error('Servicio no encontrado');
-      if(remote.closed)throw new Error('El servicio está cerrado');
+      if(remote.closed&&!allowClosed)throw new Error('El servicio está cerrado');
       const next=update(remote);
       try{
         const result=await crewApi(code,'PUT',{service:next,revision:String(remote._syncRevision||'')});
         crewLastLocalWrite=Date.now();
-        return {...next,_syncRevision:result.revision};
+        return result.service||{...next,_syncRevision:result.revision};
       }catch(error){
         if(error.status!==409||attempt===4)throw error;
       }
@@ -13174,7 +13213,7 @@ async function crewCheckRemoteChanges(){
     state.activeDay=active;
     renderPersonnel();
     applyClosedState();
-    if(Object.keys(crewPendingJournal(code)).length||crewPausePending(code).length){
+    if(Object.keys(crewCurrentWorkerJournal(code)).length||crewPausePending(code).length){
       crewPendingNotice();
       setSaveState('Cambios locales pendientes · sin confirmar','saving');
     }else{
@@ -13258,8 +13297,8 @@ async function crewD1Dispatch(method,args){
 
     const normalName=value=>normalize(value).replace(/[^A-Z0-9 ]/g,'').replace(/\s+/g,' ').trim();
     const normalPhone=value=>{
-      const digits=String(value||'').replace(/\D/g,'');
-      return digits.length>=9?digits.slice(-9):'';
+      const digits=crewCanonicalWorkerPhone(value);
+      return digits.length>=9?digits:'';
     };
     const sameDate=(a,b)=>String(a.serviceDate||'')===String(b.serviceDate||'');
     const sameWork=(a,b)=>normalize(a.trabajo)===normalize(b.trabajo);
@@ -13362,12 +13401,11 @@ async function crewD1Dispatch(method,args){
     const created=await res.json();if(!res.ok)throw new Error(created.error||'Error al duplicar');
     const original=state.service||{};
     const copy={...original,code:newCode,closed:false,workers:[],incidents:[],requirements:[],blocks:[],pdfName:'',scenarios:(original.scenarios||[]).map(x=>({...x})),teams:(original.teams||[]).map(x=>({...x}))};
-    await crewPersist(copy);return copy;
+    return crewPersist(copy);
   }
   if(method==='addScenario'){
     const name=String(args[1]||'ESCENARIO').trim(),id='S_'+crypto.randomUUID();
     const scenario={id,name,sortOrder:(state.service?.scenarios||[]).length+1};
-    const teams=[...(state.service?.teams||[]),...crewDefaultTeams(id)];
     const next=await crewSaveLatest(code,remote=>({
       ...remote,scenarios:[...(remote.scenarios||[]),scenario],
       teams:[...(remote.teams||[]),...crewDefaultTeams(id)]
@@ -13419,20 +13457,10 @@ async function crewD1Dispatch(method,args){
     if(!changes.length)return {ok:true,confirmedVersions:{}};
     const byId=new Map(changes.map(change=>[String(change.workerId),change]));
     if(byId.size!==changes.length)throw new Error('ID de trabajador duplicado en el lote. Guardado bloqueado.');
-    const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-      .trim().toUpperCase().replace(/\s+/g,' ');
     const validate=service=>{
       for(const change of changes){
         const candidates=(service.workers||[]).filter(w=>String(w.id)===String(change.workerId));
-        const identity=change._workerIdentity;
-        if(candidates.length!==1||!identity||!norm(identity.personal)||
-          norm(candidates[0].personal)!==norm(identity.personal)||
-          norm(candidates[0].serviceDate)!==norm(identity.serviceDate)||
-          norm(candidates[0].trabajo)!==norm(identity.trabajo)||
-          (identity.movil&&candidates[0].movil&&
-           String(identity.movil).replace(/\D/g,'').slice(-9)!==String(candidates[0].movil).replace(/\D/g,'').slice(-9))||
-          (identity.inicio!==undefined&&String(identity.inicio||'')!==String(candidates[0].inicio||''))||
-          (identity.fin!==undefined&&String(identity.fin||'')!==String(candidates[0].fin||''))){
+        if(candidates.length!==1||!crewPendingIdentityMatches(candidates[0],change._workerIdentity)){
           throw new Error('Identidad del trabajador no coincide: guardado bloqueado para evitar marcar a otra persona.');
         }
       }
@@ -13442,8 +13470,10 @@ async function crewD1Dispatch(method,args){
       const workers=(service.workers||[]).map(w=>{
         const change=byId.get(String(w.id));if(!change)return w;
         const times={...(w._fieldTimes||{})},fields={},confirmed={};
-        for(const [key,value] of Object.entries(change)){
+        const keepArrival=crewArrivalAlreadyRecorded(w,change);
+        for(const [key,wanted] of Object.entries(change)){
           if(['workerId','_fieldTimes','_baseFieldTimes','_workerIdentity','id'].includes(key))continue;
+          const value=key==='arrivalAt'&&keepArrival?w.arrivalAt:wanted;
           const current=Number(times[key]||0);
           const hasBase=Object.prototype.hasOwnProperty.call(change._baseFieldTimes||{},key);
           const base=Number(change._baseFieldTimes?.[key]||0);
@@ -13476,8 +13506,22 @@ async function crewD1Dispatch(method,args){
         const {next,confirmedVersions}=applyChanges(remote);
         try{
           const saved=await crewApi(code,'PUT',{service:next,revision:String(remote._syncRevision||'')});
+          if(!saved?.ok||!saved.revision||saved.service?._syncRevision!==saved.revision){
+            throw new Error('El servidor no devolvió la revisión del fichaje guardado.');
+          }
+          const stored=new Map((saved.service.workers||[]).map(w=>[String(w.id),w]));
+          for(const worker of next.workers){
+            const versions=confirmedVersions[String(worker.id)];
+            if(!versions)continue;
+            const verified=stored.get(String(worker.id));
+            if(!verified||Object.entries(versions).some(([field,version])=>
+              Number(verified._fieldTimes?.[field]||0)!==version||
+              JSON.stringify(verified[field])!==JSON.stringify(worker[field]))){
+              throw new Error('El servidor no confirmó los valores del fichaje guardado.');
+            }
+          }
           crewLastLocalWrite=Date.now();
-          return {ok:true,revision:saved.revision,confirmedVersions};
+          return {ok:true,revision:saved.revision,confirmedVersions,service:saved.service};
         }catch(error){
           if(error.status!==409||attempt===4)throw error;
         }
@@ -13496,21 +13540,11 @@ async function crewD1Dispatch(method,args){
   }
   if(method==='closeService'||method==='reopenService'){
     const closed=method==='closeService';
-    // Store the state in the authoritative D1 snapshot, not only in the SQL metadata row.
-    // Wait for queued edits before closing to avoid a stale snapshot reopening the service.
-    await crewSaveQueue;
-    const current=await crewApi(code);
-    const remote=current.service;
-    if(!remote)throw new Error('No se ha encontrado el servicio');
-    const closedAt=closed?new Date().toISOString():'';
-    const next={...remote,closed,closedAt,_syncRevision:remote._syncRevision};
-    const result=await crewApi(code,'PUT',{service:next,revision:String(remote._syncRevision||'')});
-    if(state.service?.code===code){
-      state.service.closed=closed;
-      state.service.closedAt=closedAt;
-      state.service._syncRevision=result.revision;
-    }
-    return {ok:true,service:next,closedAt};
+    const service=await crewSaveLatest(code,remote=>{
+      if(closed&&remote.closed)return remote;
+      return {...remote,closed,closedAt:closed?new Date().toISOString():''};
+    },{allowClosed:true});
+    return {ok:true,service,closedAt:service.closedAt};
   }
   if(method==='saveTeamRequirements'){
     const [code,serviceDate,trabajo,requirements,noTeams]=args;
@@ -14188,6 +14222,12 @@ function showPdfStatusHtml(message,type='ok'){
 }
 
 function openServiceData(service){
+  if(crewSnapshotIsOlder(service.code,service)&&state.service?.code===service.code){
+    // A deferred callback, such as a PDF upload finishing, must not replace
+    // worker rows after a newer save has already been confirmed.
+    void crewCheckRemoteChanges();
+    return;
+  }
   clearStartScreenState();
   document.body.classList.add('control-sidebar-open');
   updateControlSidebarTop();
@@ -14198,6 +14238,7 @@ function openServiceData(service){
   if(state.service?.code!==service.code){
     crewMobileShiftV11256='ALL';
     crewMobileWorkV11259='ALL';
+    state.pendingWorkerUpdates={};
   }
   state.service=crewPauseMerge(crewRestoreLocalEdits(service),crewPausePending(service.code));
   const duplicates=crewDuplicateWorkerIds(state.service);
@@ -14208,7 +14249,6 @@ function openServiceData(service){
   crewDevices=[];crewPresenceLastCode='';
   void crewPresenceHeartbeat();
   crewConnectionRestored();
-  state.pendingWorkerUpdates={};
   const locallyPending=crewLoadPendingIntoState();
   state.service.workOrder=Array.isArray(state.service.workOrder)?state.service.workOrder.map(String):[];
   state.service.hiddenWorkTypes=Array.isArray(state.service.hiddenWorkTypes)?state.service.hiddenWorkTypes.map(String):[];
@@ -14265,9 +14305,7 @@ function openServiceData(service){
     setSaveState('Cambios locales pendientes · sin confirmar','saving');
     crewRetryLocalUpdates();
     void crewPauseSync();
-  }else{
-    setSaveState('Sincronizado','saved');
-  }
+  }else setSaveState('Sincronizado','saved');
   crewCacheRoster();
   // Audit isn't needed for first paint. Schedule after core personnel render.
   const openedServiceCode=String(service.code);
@@ -14296,7 +14334,13 @@ async function closeService(){
     clearTimeout(state.structureTimer);
     state.metaTimer=null;
     state.structureTimer=null;
+    await crewWorkerFlushPromise;
     if(!navigator.onLine){
+      const pending=crewCurrentWorkerJournal(code);
+      if(Object.keys(pending).length&&!crewWriteLocal(CREW_PENDING_PREFIX,code,pending)){
+        alert('El navegador no ha podido guardar los fichajes en este dispositivo. Mantén abierto el servicio hasta recuperar la conexión.');
+        return;
+      }
       crewPendingNotice();
       // The local journal must remain intact for replay on reconnect.
       finalizeCloseServiceView();
@@ -14320,20 +14364,18 @@ async function closeService(){
     }
     // Finish in-flight worker writes before starting the last retry.
     await crewSaveQueue;
-    crewLoadPendingIntoState();
-    const batch=Object.values(crewPendingJournal(code));
+    const batch=Object.values(crewCurrentWorkerJournal(code));
     if(batch.length){
       // Use the same per-field timestamp conflict merge as normal saving.
-      await dispatchBackend('saveWorkerChanges',[code,batch]);
-      crewAckJournal(code,batch);
-      state.pendingWorkerUpdates={};
+      const result=await dispatchBackend('saveWorkerChanges',[code,batch]);
+      crewAckJournal(code,batch,result);
     }
     if(crewPausePending(code).length){
       await crewPauseSync();
       if(crewPausePending(code).length)throw new Error('Turnos de pausa pendientes de sincronizar');
     }
     await crewSaveQueue;
-    if(Object.keys(crewPendingJournal(code)).length||crewPausePending(code).length){
+    if(Object.keys(crewCurrentWorkerJournal(code)).length||crewPausePending(code).length){
       throw new Error('Quedan cambios pendientes de sincronización');
     }
     crewCacheRoster();
@@ -14409,21 +14451,22 @@ function scheduleMetaSave(){
 
 function scheduleStructureSave(){
   if(!state.service||state.service.closed)return;
+  const code=state.service.code;
   clearTimeout(state.structureTimer);
   setSaveState('Guardando escenarios…','saving');
 
   state.structureTimer=setTimeout(()=>{
+    state.structureTimer=null;
+    if(state.service?.code!==code)return;
     backend.run
       .withSuccessHandler(service=>{
-        const active=state.activeDay;
-        if(state.service?.code!==service.code)return;
-        state.service=crewPauseMerge(crewRestoreLocalEdits(service),crewPausePending(service.code));
-        state.activeDay=active;
+        if(state.service?.code!==code||crewSnapshotIsOlder(code,service))return;
+        // The operation only saved teams. The polling path owns roster refreshes.
         renderScenarios();updateTeamSelects();renderPersonnel();
         setSaveState('Guardado','saved');
       })
       .withFailureHandler(err=>{console.error(err);setSaveState('Error al guardar','error')})
-      .saveScenariosAndTeams(state.service.code,state.service.scenarios,state.service.teams);
+      .saveScenariosAndTeams(code,state.service.scenarios,state.service.teams);
   },500);
 }
 
@@ -14601,7 +14644,7 @@ function crewPendingIdentityMatches(worker,identity){
   if(!worker||!identity)return false;
   const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .trim().toUpperCase().replace(/\s+/g,' ');
-  const phone=v=>String(v||'').replace(/\D/g,'').slice(-9);
+  const phone=crewCanonicalWorkerPhone;
   return Boolean(norm(identity.personal))&&
     norm(worker.personal)===norm(identity.personal)&&
     norm(worker.serviceDate)===norm(identity.serviceDate)&&
@@ -14614,7 +14657,7 @@ function crewPendingIdentityMatches(worker,identity){
 // An ID can change after a PDF repair; never use row order or name alone.
 function crewReconcileWorkerJournal(code,remote){
   if(!code||!remote||state.workerSaveInFlight)return 0;
-  const pending=crewPendingJournal(code),held=crewHeldJournal(code);
+  const pending=crewCurrentWorkerJournal(code),held=crewHeldJournal(code);
   const next={},remaining={};
   const meta=new Set(['workerId','_fieldTimes','_baseFieldTimes','_workerIdentity']);
   const fields=update=>Object.keys(update).filter(k=>!meta.has(k));
@@ -14628,9 +14671,18 @@ function crewReconcileWorkerJournal(code,remote){
     const identity=update._workerIdentity;
     const sameId=(remote.workers||[]).filter(w=>String(w.id)===String(update.workerId));
     let worker=sameId.length===1&&crewPendingIdentityMatches(sameId[0],identity)?sameId[0]:null;
+    if(!worker&&sameId.length===1&&identity?.inicio&&identity?.fin&&identity?.serviceDate&&identity?.trabajo){
+      const {inicio,fin,...personAndDay}=identity;
+      const phone=crewCanonicalWorkerPhone(identity.movil);
+      const matches=phone.length>=9?(remote.workers||[]).filter(w=>
+        crewPendingIdentityMatches(w,personAndDay)&&crewCanonicalWorkerPhone(w.movil)===phone):[];
+      // A legitimate PDF correction to the times can retain the same worker ID.
+      // With multiple shifts for this person, retain the strict time check.
+      if(matches.length===1&&matches[0]===sameId[0])worker=sameId[0];
+    }
     if(!worker){
       // Cross-ID recovery requires a complete shift and matching telephone.
-      const phone=v=>String(v||'').replace(/\D/g,'').replace(/^(?:0034|34)(?=\d{9}$)/,'');
+      const phone=crewCanonicalWorkerPhone;
       const complete=identity&&identity.serviceDate&&identity.trabajo&&identity.inicio&&identity.fin&&phone(identity.movil).length>=9;
       const matches=complete?(remote.workers||[]).filter(w=>
         crewPendingIdentityMatches(w,identity)&&phone(w.movil)===phone(identity.movil)):[];
@@ -14640,13 +14692,15 @@ function crewReconcileWorkerJournal(code,remote){
     // Preserve concurrent changes for review instead of poisoning the batch.
     const conflict=fields(update).some(field=>{
       if(JSON.stringify(worker[field])===JSON.stringify(update[field]))return false;
+      if(field==='arrivalAt'&&crewArrivalAlreadyRecorded(worker,update))return false;
       const current=Number(worker._fieldTimes?.[field]||0);
       return Object.prototype.hasOwnProperty.call(update._baseFieldTimes||{},field)?
         Number(update._baseFieldTimes[field]||0)!==current:
         Number(update._fieldTimes?.[field]||0)<current;
     });
     if(conflict){keep(key,update);continue;}
-    const id=String(worker.id),candidate={...update,workerId:id};
+    const id=String(worker.id),candidate={...update,workerId:id,
+      _workerIdentity:{...identity,inicio:worker.inicio,fin:worker.fin}};
     if(next[id]&&fields(candidate).some(field=>
       Object.prototype.hasOwnProperty.call(next[id],field)&&
       JSON.stringify(next[id][field])!==JSON.stringify(candidate[field]))){
@@ -14675,8 +14729,17 @@ async function crewHoldMismatchedPending(code){
 }
 function crewHeldNotice(code){
   const held=crewHeldCount(code);
-  if(held)setSaveState(held+' cambio(s) pendientes de revisión · fichajes protegidos','error');
+  if(held)setSaveState(crewHeldMessage(code),'error');
   return held;
+}
+function crewHeldMessage(code){
+  const held=Object.values(crewHeldJournal(code));
+  const attendance=held.find(change=>change.status&&change._workerIdentity?.personal);
+  if(!attendance)return held.length+' cambio(s) pendientes de revisión';
+  const name=attendance._workerIdentity.personal;
+  const wanted=attendance.status==='PENDIENTE'?'NO CONTACTADO':attendance.status;
+  return 'Fichaje sin aplicar · '+name+' · '+wanted+
+    (held.length>1?' · '+(held.length-1)+' más':'')+' · revisa el estado y vuelve a marcarlo';
 }
 function crewPendingJournal(code){
   const stored=crewReadLocal(CREW_PENDING_PREFIX,code);
@@ -14700,6 +14763,16 @@ function crewMergeUpdate(old,update){
   merged._baseFieldTimes=bases;
   return merged;
 }
+function crewCurrentWorkerJournal(code){
+  const journal=crewPendingJournal(code);
+  if(state.service?.code!==code)return journal;
+  for(const [id,update] of Object.entries(state.pendingWorkerUpdates||{})){
+    // The in-memory copy also contains edits made while storage was unavailable.
+    // Its field base may already have been advanced by a successful receipt.
+    journal[id]=journal[id]?crewMergeUpdate(update,journal[id]):update;
+  }
+  return journal;
+}
 function crewJournalUpdates(code,updates){
   const journal=crewPendingJournal(code);
   updates.forEach(update=>{
@@ -14709,11 +14782,37 @@ function crewJournalUpdates(code,updates){
   });
   return crewWriteLocal(CREW_PENDING_PREFIX,code,journal);
 }
-function crewAckJournal(code,batch){
-  const journal=crewPendingJournal(code);
+function crewValidateWorkerReceipt(batch,result){
+  if(!result?.ok||!result.confirmedVersions||batch.some(sent=>Object.keys(sent).some(field=>
+    field!=='workerId'&&!field.startsWith('_')&&
+    !Number.isSafeInteger(result.confirmedVersions[sent.workerId]?.[field])))){
+    throw new Error('El servidor no confirmó todos los campos del fichaje. Se conserva el cambio pendiente.');
+  }
+}
+function crewAckJournal(code,batch,result){
+  crewValidateWorkerReceipt(batch,result);
+  const journal=crewCurrentWorkerJournal(code);
+  const active=state.service?.code===code;
+  const latestReceipt=result.service&&!crewSnapshotIsOlder(code,result.service);
+  const confirmedWorkers=new Map((result.service?.workers||[]).map(w=>[String(w.id),w]));
   for(const sent of batch){
     const id=String(sent.workerId),current=journal[id];
-    if(!current)continue;
+    const versions=result.confirmedVersions[id]||{};
+    const worker=active?(state.service.workers||[]).find(w=>String(w.id)===id):null;
+    if(worker&&crewPendingIdentityMatches(worker,sent._workerIdentity)){
+      // Update only confirmed metadata. A newer click is already visible on the row.
+      const baseline={...(worker._fieldTimes||{})};
+      for(const [field,version] of Object.entries(versions)){
+        baseline[field]=Math.max(Number(baseline[field]||0),version);
+        const savedWorker=confirmedWorkers.get(id);
+        const newerClick=Number(current?._fieldTimes?.[field]||0)>Number(sent._fieldTimes?.[field]||0);
+        if(latestReceipt&&savedWorker&&!newerClick&&baseline[field]===version&&
+          ['status','arrivalAt'].includes(field))worker[field]=savedWorker[field];
+      }
+      worker._fieldTimes=baseline;
+    }
+    if(!current||!crewPendingIdentityMatches(current._workerIdentity,sent._workerIdentity))continue;
+    const ownPending=active?state.pendingWorkerUpdates[id]:null;
     const times={...(current._fieldTimes||{})};
     const bases={...(current._baseFieldTimes||{})};
     for(const [key,value] of Object.entries(sent)){
@@ -14721,35 +14820,21 @@ function crewAckJournal(code,batch){
       if(Number(sent._fieldTimes?.[key]||0)===Number(times[key]||0)&&
          JSON.stringify(current[key])===JSON.stringify(value)){
         delete current[key];delete times[key];delete bases[key];
+      }else if(Number(times[key]||0)>Number(sent._fieldTimes?.[key]||0)&&
+          ownPending?._fieldTimes?.[key]===times[key]&&
+          Number(bases[key]||0)===Number(sent._baseFieldTimes?.[key]||0)&&
+          Number.isSafeInteger(versions[key])){
+        // Rebase a newer click made in this tab while this write was running.
+        // A change from another tab/device must still pass the usual conflict check.
+        bases[key]=versions[key];
       }
     }
     if(Object.keys(current).every(k=>['workerId','_fieldTimes','_baseFieldTimes','_workerIdentity'].includes(k)))delete journal[id];
     else {current._fieldTimes=times;current._baseFieldTimes=bases;}
   }
+  if(active)state.pendingWorkerUpdates=journal;
   crewWriteLocal(CREW_PENDING_PREFIX,code,journal);
   return journal;
-}
-// A newer local click made during an in-flight write starts from the
-// version that was actually acknowledged, not the stale pre-flight version.
-function crewRebasePendingJournal(code,confirmedVersions){
-  const journal=crewPendingJournal(code);
-  for(const [id,versions] of Object.entries(confirmedVersions||{})){
-    // Always advance the local confirmed baseline, even without another
-    // pending click. Otherwise the next click falsely conflicts with itself.
-    const worker=state.service?.code===code?
-      (state.service.workers||[]).find(w=>String(w.id)===id):null;
-    if(worker)worker._fieldTimes={...(worker._fieldTimes||{}),...versions};
-    const pending=journal[id];
-    if(!pending)continue;
-    const bases={...(pending._baseFieldTimes||{})};
-    for(const field of Object.keys(versions||{})){
-      if(Object.prototype.hasOwnProperty.call(pending,field)){
-        bases[field]=Number(versions[field]||0);
-      }
-    }
-    pending._baseFieldTimes=bases;
-  }
-  crewWriteLocal(CREW_PENDING_PREFIX,code,journal);
 }
 function crewCacheRoster(){
   const service=state.service;
@@ -14780,52 +14865,42 @@ function crewCanEditWorkerIds(ids){
 }
 function crewRestoreLocalEdits(service){
   if(!service?.code)return service;
-  const journal=crewPendingJournal(service.code);
+  const journal=crewCurrentWorkerJournal(service.code);
+  if(crewWorkerBatchInFlight?.code===service.code){
+    for(const sent of crewWorkerBatchInFlight.batch){
+      const id=String(sent.workerId);
+      journal[id]=journal[id]?crewMergeUpdate(sent,journal[id]):sent;
+    }
+  }
   const edits=Object.values(journal);
   if(!edits.length)return service;
   const byId=new Map(edits.map(change=>[String(change.workerId),change]));
   const duplicates=new Set(crewDuplicateWorkerIds(service));
-  const norm=v=>String(v||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ');
   const workers=(service.workers||[]).map(worker=>{
     if(duplicates.has(String(worker.id)))return worker;
     const change=byId.get(String(worker.id));
     if(!change)return worker;
-    const {workerId,_fieldTimes,_baseFieldTimes,_workerIdentity,...candidate}=change;
-    if(!_workerIdentity||norm(worker.personal)!==norm(_workerIdentity.personal)||
-      norm(worker.serviceDate)!==norm(_workerIdentity.serviceDate)||
-      norm(worker.trabajo)!==norm(_workerIdentity.trabajo)||
-      (_workerIdentity.movil&&worker.movil&&
-        String(_workerIdentity.movil).replace(/\D/g,'').slice(-9)!==String(worker.movil).replace(/\D/g,'').slice(-9))||
-      (_workerIdentity.inicio!==undefined&&String(_workerIdentity.inicio||'')!==String(worker.inicio||''))||
-      (_workerIdentity.fin!==undefined&&String(_workerIdentity.fin||'')!==String(worker.fin||'')))return worker;
-    const fields={};
-    for(const [key,value] of Object.entries(candidate)){
-      // A local edit that has not been acknowledged must stay visible.
-      // Its version is validated against the authoritative D1 state at save time.
-      fields[key]=value;
-    }
-    return {...worker,...fields};
+    const {id,workerId,_fieldTimes,_baseFieldTimes,_workerIdentity,...candidate}=change;
+    if(!crewPendingIdentityMatches(worker,_workerIdentity))return worker;
+    // Show the pending edit until the authoritative D1 write resolves it.
+    return {...worker,...candidate};
   });
   return {...service,workers};
 }
 function crewLoadPendingIntoState(){
   if(!state.service?.code)return 0;
-  const journal=crewPendingJournal(state.service.code);
-  for(const update of Object.values(journal)){
-    if(!update?.workerId)continue;
-    const id=String(update.workerId);
-    state.pendingWorkerUpdates[id]=crewMergeUpdate(state.pendingWorkerUpdates[id]||{workerId:id},update);
-  }
+  const journal=crewCurrentWorkerJournal(state.service.code);
+  state.pendingWorkerUpdates=journal;
   return Object.keys(journal).length;
 }
 function crewPendingNotice(){
-  const count=state.service?.code?Object.keys(crewPendingJournal(state.service.code)).length:0;
-  if(count)setSaveState(count+' cambios guardados localmente · pendientes de sincronizar','saving');
+  const count=state.service?.code?Object.keys(crewCurrentWorkerJournal(state.service.code)).length:0;
+  if(count)setSaveState(count+' cambio(s) pendientes de sincronizar','saving');
   else if(state.service?.code)crewHeldNotice(state.service.code);
   return count;
 }
 function crewRetryLocalUpdates(){
-  if(!state.service?.code||state.service.closed||state.workerSaveInFlight)return;
+  if(!state.service?.code||state.service.closed||state.workerSaveInFlight||crewExitInProgress)return;
   const count=crewLoadPendingIntoState();
   if(count&&navigator.onLine)flushPendingWorkerSaves();
   else if(count)crewPendingNotice();
@@ -14834,11 +14909,17 @@ window.setInterval(crewRetryLocalUpdates,3000);
 window.addEventListener('pagehide',()=>{if(state.service?.code)crewCacheRoster();});
 window.addEventListener('online',()=>{crewRetryLocalUpdates();void crewPauseSync();});
 
+let crewWorkerEditStamp=0;
 function saveWorkerUpdates(updates){
   if(!state.service||state.service.closed||!updates.length)return;
   if(!crewCanEditWorkerIds(updates.map(update=>update?.workerId)))return;
 
-  const editedAt=Date.now();
+  for(const pending of Object.values(crewCurrentWorkerJournal(state.service.code))){
+    for(const stamp of Object.values(pending._fieldTimes||{})){
+      if(Number.isSafeInteger(stamp))crewWorkerEditStamp=Math.max(crewWorkerEditStamp,stamp);
+    }
+  }
+  const editedAt=crewWorkerEditStamp=Math.max(Date.now(),crewWorkerEditStamp+1);
   const stamped=updates.filter(update=>update?.workerId).map(update=>{
     const person=(state.service.workers||[]).find(w=>String(w.id)===String(update.workerId));
     if(!person)throw new Error('Trabajador no encontrado para guardar cambios');
@@ -14867,12 +14948,16 @@ function saveWorkerUpdates(updates){
   state.workerSaveTimer=setTimeout(()=>flushPendingWorkerSaves(),120);
 }
 
+let crewWorkerFlushPromise=null;
+let crewWorkerBatchInFlight=null;
 function flushPendingWorkerSaves(callback){
   if(typeof callback==='function'){
     state.workerSaveCallbacks.push(callback);
   }
 
-  if(state.workerSaveInFlight)return;
+  if(state.workerSaveInFlight||crewExitInProgress)return;
+
+  crewLoadPendingIntoState();
 
   const batch=Object.values(state.pendingWorkerUpdates);
 
@@ -14894,22 +14979,18 @@ function flushPendingWorkerSaves(callback){
   // Entries stay on disk during the request; remove only after a 200 from D1.
   state.pendingWorkerUpdates={};
   state.workerSaveInFlight=true;
+  crewWorkerBatchInFlight={code:serviceCode,batch};
   clearTimeout(state.workerSaveTimer);
 
-  backend.run
-    .withSuccessHandler(result=>{
+  const write=dispatchBackend('saveWorkerChanges',[serviceCode,batch])
+    .then(result=>{crewValidateWorkerReceipt(batch,result);return result;})
+    .then(result=>{
       state.workerSaveInFlight=false;
-      if(!result?.ok||!result?.confirmedVersions){
-        throw new Error('D1 no confirmó los campos del fichaje; guardado local pendiente');
-      }
-      crewAckJournal(serviceCode,batch);
-      crewRebasePendingJournal(serviceCode,result.confirmedVersions);
-      if(state.service?.code===serviceCode)crewCacheRoster();
-      // Rebuild from the durable journal: in-memory edits from this browser
-      // may carry the pre-ACK base version and otherwise conflict on retry.
-      state.pendingWorkerUpdates={};
-      crewLoadPendingIntoState();
-      if(Object.keys(state.pendingWorkerUpdates).length){
+      crewWorkerBatchInFlight=null;
+      const remaining=crewAckJournal(serviceCode,batch,result);
+      if(state.service?.code!==serviceCode)return;
+      crewCacheRoster();
+      if(Object.keys(remaining).length){
         crewPendingNotice();
         flushPendingWorkerSaves();
         return;
@@ -14926,9 +15007,11 @@ function flushPendingWorkerSaves(callback){
         crewLastLocalWrite=0;
         void crewCheckRemoteChanges();
       }
-    })
-    .withFailureHandler(err=>{
+    },err=>{
       console.error(err);
+      state.workerSaveInFlight=false;
+      crewWorkerBatchInFlight=null;
+      if(state.service?.code!==serviceCode)return;
 
       // Reincorporamos el lote para no perder cambios locales.
       batch.forEach(update=>{
@@ -14936,29 +15019,31 @@ function flushPendingWorkerSaves(callback){
         state.pendingWorkerUpdates[id]=crewMergeUpdate(update,state.pendingWorkerUpdates[id]||{workerId:id});
       });
 
-      state.workerSaveInFlight=false;
-      crewPendingNotice();
-      setSaveState(!navigator.onLine?'Sin conexión · cambios guardados localmente':'Error al sincronizar · cambios guardados localmente','error');
-      crewConnectionFailed(err);
+      setSaveState(!navigator.onLine?'Sin conexión · fichajes pendientes':'Error al sincronizar · fichajes pendientes','error');
       state.workerSaveCallbacks=[];
       // Stale IDs must not poison every future sync attempt.
-      if(navigator.onLine&&/Identidad del trabajador no coincide|ID de trabajador duplicado en el lote|Conflicto de edición/.test(String(err?.message||''))){
+      const conflict=/Identidad del trabajador no coincide|ID de trabajador duplicado en el lote|Conflicto de edición/.test(String(err?.message||''));
+      if(navigator.onLine&&conflict){
         void crewHoldMismatchedPending(serviceCode).then(count=>{
-          if(count){
+          if(count&&state.service?.code===serviceCode){
             crewHeldNotice(serviceCode);
             crewLastLocalWrite=0;
             void crewCheckRemoteChanges();
             if(Object.keys(state.pendingWorkerUpdates).length)flushPendingWorkerSaves();
           }
         }).catch(error=>console.warn('Revisión segura de fichajes:',error));
-      }
+      }else crewConnectionFailed(err);
       // Keep pending edits until a successful retry; do not discard them.
       if(navigator.onLine) setTimeout(()=>{
         if(state.service?.code===serviceCode&&!state.workerSaveInFlight&&
           Object.keys(state.pendingWorkerUpdates||{}).length)flushPendingWorkerSaves();
       },3000);
-    })
-    .saveWorkerChanges(serviceCode,batch);
+    }).catch(error=>{
+      // A UI error after a confirmed write must not enqueue the old marks again.
+      console.error('Actualización de la vista tras sincronizar:',error);
+    });
+  crewWorkerFlushPromise=write;
+  void write.finally(()=>{if(crewWorkerFlushPromise===write)crewWorkerFlushPromise=null;});
 }
 
 function runWorkerSaveCallbacks(){
@@ -14970,7 +15055,16 @@ function runWorkerSaveCallbacks(){
 
 function setSaveState(text,cls){
   const el=document.getElementById('saveState');
-  el.textContent=text;el.className='save-state '+cls;
+  const code=state.service?.code;
+  if(code&&cls==='saved'){
+    if(state.workerSaveInFlight||Object.keys(crewCurrentWorkerJournal(code)).length||crewPausePending(code).length){
+      text='Cambios pendientes de sincronizar';cls='saving';
+    }else if(crewHeldCount(code)){
+      text=crewHeldMessage(code);cls='error';
+    }
+  }
+  if(el.textContent!==text)el.textContent=text;
+  el.className='save-state '+cls;
 }
 
 /* ESCENARIOS */
@@ -15258,17 +15352,24 @@ function hexToRgb(hex){
 
 function addScenario(){
   if(!state.service)return;
+  const code=state.service.code;
   const next=state.service.scenarios.length+1;
   setSaveState('Creando escenario…','saving');
 
   backend.run
     .withSuccessHandler(service=>{
-      state.service=service;
+      if(state.service?.code!==code)return;
+      if(crewSnapshotIsOlder(code,service)){
+        void crewCheckRemoteChanges();
+        return;
+      }
+      state.service.scenarios=service.scenarios;
+      state.service.teams=service.teams;
       renderScenarios();updateTeamSelects();renderPersonnel();
       setSaveState('Guardado','saved');
     })
     .withFailureHandler(err=>{alert(errorMessage(err));setSaveState('Error','error')})
-    .addScenario(state.service.code,'ESCENARIO '+next);
+    .addScenario(code,'ESCENARIO '+next);
 }
 
 function renameScenario(id,value){
@@ -15369,6 +15470,7 @@ async function downloadServicePdf(){
 /* PDF */
 async function importPdf(file){
   if(!state.service)return;
+  const code=state.service.code;
   if(state.service.workers.length){
     const ok=confirm('Este servicio ya tiene personal. ¿Actualizar el personal con el nuevo PDF? Se conservarán los equipos, estados, fichajes, pausas asignadas, valoraciones, reservas y notas de los trabajadores identificados. Solo se actualizarán sus datos del PDF.');
     if(!ok)return;
@@ -15380,6 +15482,7 @@ async function importPdf(file){
   try{
     await ensurePdfJs();
     const parsed=await parsePennyWisePdf(file);
+    if(state.service?.code!==code)return;
     if(!parsed.workers.length)throw new Error('No se ha encontrado personal con nombre en el PDF.');
     parsed.meta.pdfName=file.name;
 
@@ -15389,20 +15492,24 @@ async function importPdf(file){
       .withSuccessHandler(async result=>{
         const service=result.service;
         const s=result.summary||{};
-        let pdfStorageError='';
-        try{
-          const upload=await fetch('/api/services/'+encodeURIComponent(service.code)+'/pdf',{method:'PUT',headers:{'x-service-code':service.code,'x-pdf-filename':encodeURIComponent(file.name)},body:file});
-          if(!upload.ok)throw new Error((await upload.json()).error||'Error al guardar PDF');
-          updatePdfPlacementUI();
-        }catch(error){console.warn('No se pudo guardar el PDF original:',error);pdfStorageError=error.message;}
+        if(state.service?.code!==code)return;
         if(!Array.isArray(service?.workers)||service.workers.length!==parsed.workers.length){
           showPdfStatus('La importación no ha devuelto todos los trabajadores. No se mostrará como completada; vuelve a abrir el servicio para comprobar los datos.','error');
           return;
         }
+        // Apply the roster before uploading the original document. The upload
+        // can take long enough for a new attendance mark to be confirmed.
         openServiceData(service);
+        let pdfStorageError='';
+        try{
+          const upload=await fetch('/api/services/'+encodeURIComponent(service.code)+'/pdf',{method:'PUT',headers:{'x-service-code':service.code,'x-pdf-filename':encodeURIComponent(file.name)},body:file});
+          if(!upload.ok)throw new Error((await upload.json()).error||'Error al guardar PDF');
+        }catch(error){console.warn('No se pudo guardar el PDF original:',error);pdfStorageError=error.message;}
+        if(state.service?.code!==code)return;
+        updatePdfPlacementUI();
         // Always show the imported day and clear any filters from a previous service.
-        if(service.workers.length&&!workersForActiveDay().length){
-          state.activeDay=service.workers[0].serviceDate||'SIN FECHA';
+        if(state.service.workers.length&&!workersForActiveDay().length){
+          state.activeDay=state.service.workers[0].serviceDate||'SIN FECHA';
           renderPersonnel();
         }
         const changedNames=(s.changedNames||[]).length
@@ -15423,8 +15530,8 @@ async function importPdf(file){
         if(pdfStorageError)showPdfStatus('Personal importado, pero el PDF original no se ha guardado: '+pdfStorageError,'error');
         else showPdfStatusHtml(details,'ok');
       })
-      .withFailureHandler(err=>showPdfStatus(errorMessage(err),'error'))
-      .replaceWorkersFromPdf(state.service.code,parsed);
+      .withFailureHandler(err=>{if(state.service?.code===code)showPdfStatus(errorMessage(err),'error')})
+      .replaceWorkersFromPdf(code,parsed);
 
   }catch(err){
     console.error(err);showPdfStatus(errorMessage(err),'error');
@@ -17764,6 +17871,7 @@ async function crewPauseSync(){
       for(let attempt=0;attempt<5;attempt++){
         const remote=(await crewApi(code)).service;
         if(!remote)throw Error('Servicio no encontrado');
+        if(remote.closed)throw Error('El servicio está cerrado');
         const next=crewPauseMerge(remote,events);
         try{
           const result=await crewApi(code,'PUT',{service:next,revision:String(remote._syncRevision||'')});
@@ -20405,10 +20513,11 @@ function performCloseService(){
 
   backend.run
     .withSuccessHandler(result=>{
-      state.service.closed=true;
-      state.service.closedAt=result.closedAt||new Date().toISOString();
-      state.service.finalPdfId='';
-      state.service.finalPdfUrl='';
+      if(state.service?.code!==code)return;
+      // The Excel must reflect the roster confirmed by the closing write,
+      // including attendance just saved by other devices.
+      state.service={...result.service,finalPdfId:'',finalPdfUrl:''};
+      crewCacheRoster();
       applyClosedState();
       renderPersonnel();
       renderIncidents();

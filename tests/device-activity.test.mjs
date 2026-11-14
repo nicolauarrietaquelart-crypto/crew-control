@@ -54,10 +54,14 @@ print(json.dumps(out))
   let snapshot={workers:[{id:'W1',personal:'Chris',status:'PENDIENTE'}]};
   let response=await call('PUT',{service:snapshot,revision:''});assert.equal(response.status,200);
   snapshot=(await response.json()).service;
+  assert.equal(snapshot._syncSequence,1);
   const revision=snapshot._syncRevision;
   snapshot.workers[0].status='PRESENTE';
+  snapshot.workers[0].arrivalAt='09:12';
+  snapshot.workers[0]._fieldTimes={status:1,arrivalAt:1};
   response=await call('PUT',{service:snapshot,revision});assert.equal(response.status,200);
   snapshot=(await response.json()).service;
+  assert.equal(snapshot._syncSequence,2);
   response=await call('PUT',{service:{...snapshot,workers:[{id:'W1',personal:'Chris',status:'NO PRESENTADO'}]},revision});
   assert.equal(response.status,409);
   let history=await (await call('GET',null,'device_111','123456','activity')).json();
@@ -65,12 +69,67 @@ print(json.dumps(out))
   assert.ok(history.events.some(e=>e.changes.some(c=>c.before==='PENDIENTE'&&c.after==='PRESENTE')));
   assert.equal((await (await call('GET',null,'device_222','123456','activity')).json()).events.length,0);
   assert.equal((await (await call('GET',null,'device_111','654321','activity')).json()).events.length,0);
+  for(const oldWorker of [
+   {id:'W1',personal:'Chris',status:'PENDIENTE',teamId:'LIGHTS'},
+   {...snapshot.workers[0],arrivalAt:'',teamId:'LIGHTS'}
+  ]){
+   const rollback=await call('PUT',{service:{...snapshot,workers:[oldWorker]},revision:snapshot._syncRevision});
+   assert.equal(rollback.status,422,'a fresh service revision does not authorize stale attendance');
+  }
+  assert.equal((await (await call('GET')).json()).service._syncSequence,2);
   response=await call('PUT',{service:snapshot,revision:snapshot._syncRevision});
   assert.equal(response.status,200);snapshot=(await response.json()).service;
+  assert.equal(snapshot._syncSequence,3);
   assert.equal((await (await call('GET',null,'device_111','123456','activity')).json()).events.length,2,'no-op saves do not create fake changes');
+  const teamEdit={...snapshot,workers:[{...snapshot.workers[0],teamId:'LIGHTS'}],_syncSequence:500};
+  response=await call('PUT',{service:teamEdit,revision:snapshot._syncRevision},'device_222');
+  assert.equal(response.status,200);snapshot=(await response.json()).service;
+  assert.equal(snapshot._syncSequence,4,'the server owns revision ordering');
+  assert.equal(snapshot.workers[0].status,'PRESENTE');
+  assert.equal(snapshot.workers[0].arrivalAt,'09:12');
   snapshot.workers[0].status='CONTACTADO';
+  snapshot.workers[0].arrivalAt='';
+  snapshot.workers[0]._fieldTimes={status:2,arrivalAt:2};
   response=await call('PUT',{service:snapshot,revision:snapshot._syncRevision},'');
   assert.equal(response.status,200,'older clients without a device header still save');
+  // Exercise the browser writer against the real Worker and SQLite, with
+  // two independent queues competing to save different workers at once.
+  const section=(a,b)=>html.slice(html.indexOf(a),html.indexOf(b,html.indexOf(a)));
+  const source=section('function crewCanonicalWorkerPhone','const crewPersist=')+
+    section('function crewPendingIdentityMatches','// Reconcile durable edits')+
+    'return async function(method,args){'+section("  if(method==='saveWorkerChanges'){","  if(method==='addManualWorker'){")+'}';
+  const code='654321';
+  const roster=['Pau','Alex'].map((personal,i)=>({id:'W'+i,personal,serviceDate:'2026-11-14',
+   trabajo:'LOAD IN',movil:'60012345'+i,inicio:'09:00',fin:'17:00',status:'PENDIENTE',arrivalAt:''}));
+  assert.equal((await call('PUT',{service:{workers:roster},revision:''},'',code)).status,200);
+  let conflicts=0;
+  let firstWrites=0,releaseFirstWrites;
+  const firstWriteBarrier=new Promise(resolve=>{releaseFirstWrites=resolve;});
+  function client(device){
+   const api=async(_,method='GET',payload)=>{
+    if(method==='PUT'&&firstWrites<2){
+     if(++firstWrites===2)releaseFirstWrites();
+     await firstWriteBarrier;
+    }
+    const res=await call(method,payload,device,code);
+    const data=await res.json();
+    if(!res.ok){
+     if(res.status===409)conflicts++;
+     throw Object.assign(new Error(data.error),{status:res.status});
+    }
+    return data;
+   };
+   return new Function('crewApi','code','let crewSaveQueue=Promise.resolve(),crewLastLocalWrite=0;'+source)(api,code);
+  }
+  const mac=client('device_mac'),tablet=client('device_tablet');
+  await Promise.all([mac,tablet].map((dispatch,i)=>dispatch('saveWorkerChanges',[code,[{
+   workerId:roster[i].id,_workerIdentity:roster[i],status:'PRESENTE',arrivalAt:'09:0'+i,
+   _fieldTimes:{status:123,arrivalAt:123},_baseFieldTimes:{status:0,arrivalAt:0}
+  }]])));
+  const concurrent=(await (await call('GET',null,'',code)).json()).service;
+  assert.ok(conflicts>0,'competing requests must exercise a retry');
+  assert.equal(concurrent._syncSequence,3);
+  assert.deepEqual(concurrent.workers.map(row=>[row.status,row.arrivalAt]),[['PRESENTE','09:00'],['PRESENTE','09:01']]);
   const denied=await worker.fetch(new Request('https://example.test/api/services/123456?format=activity&deviceId=device_111',{headers:{'x-service-code':'654321'}}),{DB});
   assert.equal(denied.status,403);
  }finally{rmSync(dir,{recursive:true,force:true});}

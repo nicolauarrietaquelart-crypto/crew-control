@@ -2,6 +2,29 @@ const json=(data,status=200,extra={})=>new Response(JSON.stringify(data),{status
 const err=(message,status=400)=>json({ok:false,error:message},status);
 async function body(request){const value=await request.json();if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Invalid JSON object');return value}
 const str=(v,max=500)=>String(v??'').slice(0,max);
+const snapshotConflict=()=>err('Otro dispositivo ha modificado este servicio. Actualiza para sincronizar antes de guardar.',409);
+
+// A valid service revision is necessary, but a full snapshot can still carry
+// an older copy of a row. Check attendance versions before any D1 write.
+function attendanceVersionsAreValid(before,after){
+ const workers=new Map();
+ for(const worker of before.workers||[]){
+  const id=String(worker.id||'').trim();
+  workers.set(id,workers.has(id)?null:worker);
+ }
+ for(const worker of after.workers){
+  const old=workers.get(String(worker.id||'').trim());
+  if(!old)continue;
+  for(const field of ['status','arrivalAt']){
+   const previousVersion=Number(old._fieldTimes?.[field]||0);
+   const nextVersion=Number(worker._fieldTimes?.[field]||0);
+   const changed=worker[field]!==old[field];
+   if(!Number.isSafeInteger(nextVersion)||nextVersion!==previousVersion+Number(changed))return false;
+  }
+ }
+ return true;
+}
+
 // Record only differences accepted by the snapshot compare-and-swap.
 export function deviceChanges(before,after){
  const changes=[];
@@ -108,14 +131,20 @@ export default {
        if(!id||uniqueWorkerIds.has(id))return err('ID de trabajador vacío o duplicado. Guardado bloqueado para proteger los fichajes.',422);
        uniqueWorkerIds.add(id);
       }
-      if(JSON.stringify(snapshot).length>2000000)return err('Service too large',413);
       const expected=String(input.revision||'');
+      const oldRow=await env.DB.prepare('SELECT snapshot FROM service_snapshots WHERE service_id=?').bind(service.id).first();
+      const previous=oldRow?.snapshot?JSON.parse(oldRow.snapshot):{};
+      if(String(previous._syncRevision||'')!==expected)return snapshotConflict();
+      if(!attendanceVersionsAreValid(previous,snapshot)){
+        return err('El servicio contiene fichajes de una versión anterior. Recarga el servicio antes de volver a guardar.',422);
+      }
       const revision=crypto.randomUUID();
       snapshot.code=service.code;
       snapshot._syncRevision=revision;
+      snapshot._syncSequence=Number(previous._syncSequence||0)+1;
       const serialized=JSON.stringify(snapshot);
-      const oldRow=await env.DB.prepare('SELECT snapshot FROM service_snapshots WHERE service_id=?').bind(service.id).first();
-      const changes=deviceChanges(oldRow?.snapshot?JSON.parse(oldRow.snapshot):{},snapshot);
+      if(serialized.length>2000000)return err('Service too large',413);
+      const changes=deviceChanges(previous,snapshot);
       const deviceId=str(request.headers.get('x-device-id'),100);
       const statements=[];
       if(!expected){
@@ -132,7 +161,7 @@ export default {
       // D1 batch is transactional: no history for failed writes, no lost audit
       // event between a committed snapshot and a separate logging request.
       const results=await env.DB.batch(statements);
-      if(!results.slice(0,writeCount).some(result=>result.meta?.changes))return err('Otro dispositivo ha modificado este servicio. Actualiza para sincronizar antes de guardar.',409);
+      if(!results.slice(0,writeCount).some(result=>result.meta?.changes))return snapshotConflict();
       return json({ok:true,service:snapshot,revision});
     }
     if(!section&&m==='GET'){
