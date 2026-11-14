@@ -10915,7 +10915,7 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
   box-sizing:border-box!important;
  }
  html body #personnelGroups details.work-group > .table-wrap > table{
-  display:table!important;width:1520px!important;min-width:1520px!important;
+  display:table!important;width:1495px!important;min-width:1495px!important;
   max-width:none!important;table-layout:fixed!important;
   margin:0!important;transform:none!important;
  }
@@ -10926,7 +10926,7 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
  html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(5){width:170px!important}
  html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(6){width:75px!important}
  html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(7){width:75px!important}
- html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(8){width:165px!important}
+ html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(8){width:140px!important;min-width:140px!important;max-width:140px!important}
  html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(9){width:225px!important}
  html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(10){width:165px!important}
  html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(11){width:105px!important}
@@ -21497,6 +21497,30 @@ document.addEventListener('keydown',event=>{
  html body #personnelGroups details.work-group > .table-wrap::-webkit-scrollbar-track{background:#e8e8e8!important}
  html body #personnelGroups details.work-group > .table-wrap::-webkit-scrollbar-thumb{
   background:#858585!important;border-radius:8px!important
+ }
+}
+</style>
+<style>
+@media(min-width:701px){
+ html body #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(8),
+ html body #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(9),
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody > tr[data-worker-row] > td.mobile-phone,
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody > tr[data-worker-row] > td.mobile-team{
+  padding-inline:5px!important;
+  text-align:left!important;
+  vertical-align:middle!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(8) > .sort-btn,
+ html body #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(9) > .sort-btn,
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody > tr[data-worker-row] > td.mobile-team > select[data-team-worker],
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody > tr[data-worker-row] > td.mobile-phone > .crew-phone-desktop-v11264{
+  margin-inline:0!important;
+  justify-content:flex-start!important;
+  text-align:left!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(8) > .sort-btn,
+ html body #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(9) > .sort-btn{
+  padding-inline-start:0!important;
  }
 }
 </style>
