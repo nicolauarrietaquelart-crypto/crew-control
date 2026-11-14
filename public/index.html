@@ -12842,6 +12842,14 @@ const crewPersist=service=>{
       const workers=(service.workers||[]).map(worker=>{
         const serverWorker=remoteWorkers.get(String(worker.id));
         if(!serverWorker)return worker;
+        // Never carry stale attendance or personal fields across identities,
+        // even if a refreshed roster reused the same internal ID.
+        const canonical=v=>String(v||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ');
+        if(canonical(worker.personal)!==canonical(serverWorker.personal)||
+          canonical(worker.serviceDate)!==canonical(serverWorker.serviceDate)||
+          canonical(worker.trabajo)!==canonical(serverWorker.trabajo)){
+          return serverWorker;
+        }
         // General structure/meta saves must never undo attendance committed
         // from desktop, iPad or mobile. Attendance changes use the worker patch API.
         const merged={...worker,_fieldTimes:{...(serverWorker._fieldTimes||{})}};
