@@ -14504,7 +14504,9 @@ function crewRestoreLocalEdits(service){
       norm(worker.serviceDate)!==norm(_workerIdentity.serviceDate)||
       norm(worker.trabajo)!==norm(_workerIdentity.trabajo)||
       (_workerIdentity.movil&&worker.movil&&
-        String(_workerIdentity.movil).replace(/\D/g,'').slice(-9)!==String(worker.movil).replace(/\D/g,'').slice(-9)))return worker;
+        String(_workerIdentity.movil).replace(/\D/g,'').slice(-9)!==String(worker.movil).replace(/\D/g,'').slice(-9))||
+      (_workerIdentity.inicio!==undefined&&String(_workerIdentity.inicio||'')!==String(worker.inicio||''))||
+      (_workerIdentity.fin!==undefined&&String(_workerIdentity.fin||'')!==String(worker.fin||'')))return worker;
     const fields={};
     for(const [key,value] of Object.entries(candidate)){
       // A local edit that has not been acknowledged must stay visible.
