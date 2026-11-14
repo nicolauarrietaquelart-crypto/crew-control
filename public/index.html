@@ -13977,9 +13977,11 @@ function openServiceData(service){
   updateTeamSelects();
   renderPersonnel();
   applyClosedState();
-  if(locallyPending){
+  if(locallyPending||crewPausePending(service.code).length){
     crewPendingNotice();
+    setSaveState('Cambios locales pendientes · sin confirmar','saving');
     crewRetryLocalUpdates();
+    void crewPauseSync();
   }else{
     setSaveState('Sincronizado','saved');
   }
@@ -14441,7 +14443,11 @@ function flushPendingWorkerSaves(callback){
         flushPendingWorkerSaves();
         return;
       }
-      setSaveState('Sincronizado con D1','saved');
+      if(crewPausePending(serviceCode).length){
+        setSaveState('Pausas pendientes de sincronizar','saving');
+      }else{
+        setSaveState('Sincronizado con D1','saved');
+      }
       runWorkerSaveCallbacks();
       // Read the authoritative D1 snapshot after every confirmed batch.
       // This pulls changes made on desktop into tablet/phone (and vice versa).
@@ -17259,7 +17265,12 @@ async function crewPauseSync(){
       state.service._pauseVersions=next._pauseVersions;
       state.service.pauseShifts=crewPauseMerge(next,crewPausePending(code)).pauseShifts;
       if(!document.getElementById('crewPauseShiftsModal')?.classList.contains('hidden'))renderCrewPauseShifts();
-      setSaveState('Turnos de pausa sincronizados','saved');
+      if(Object.keys(crewPendingJournal(code)).length||
+        crewPausePending(code).length){
+        setSaveState('Cambios locales pendientes · sin confirmar','saving');
+      }else{
+        setSaveState('Turnos de pausa sincronizados','saved');
+      }
     }
   }catch(error){
     console.error('Pausas pendientes:',error);
