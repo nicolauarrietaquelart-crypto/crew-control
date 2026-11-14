@@ -119,7 +119,7 @@
     const now=Date.now();
     if(now-lastAutoCheck<1000)return;
     lastAutoCheck=now;
-    let changed=false;
+    const events=[];
     crewPauseRecords().forEach(shift=>{
       const end=shiftEndDate(shift);
       if(!end||now<end.getTime())return;
@@ -128,12 +128,12 @@
         const id=String(w.id),status=getStatus(shift,id);
         if(status==='PENDIENTE'||status==='CONTACTADO'){
           shift.returnStatuses[id]='NO PRESENTADO';
-          changed=true;
+          events.push({kind:'return',id:shift.id,workerId:id,status:'NO PRESENTADO'});
         }
       });
     });
-    if(changed){
-      crewPauseSave();
+    if(events.length){
+      events.forEach(event=>crewPauseSave(event));
       if(activeShiftId&&!$('crewPauseReturnModal').classList.contains('hidden'))renderReturn();
     }
   }
@@ -170,7 +170,7 @@
     if(!shift.returnStatuses||typeof shift.returnStatuses!=='object'||Array.isArray(shift.returnStatuses))shift.returnStatuses={};
     if(status==='PENDIENTE')delete shift.returnStatuses[String(workerId)];
     else shift.returnStatuses[String(workerId)]=status;
-    crewPauseSave();  // D1 snapshot: turno concreto; no se modifica w.status.
+    crewPauseSave({kind:'return',id:shift.id,workerId:String(workerId),status});  // Persist only this return status in D1.
     renderReturn();
     renderCrewPauseShifts();
   }
