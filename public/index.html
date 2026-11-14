@@ -21622,5 +21622,32 @@ document.addEventListener('keydown',event=>{
 }
 </style>
 
+<style>
+@media(min-width:701px){
+ html body #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(9),
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-team{
+  padding-inline:5px!important;text-align:center!important;vertical-align:middle!important;
+ }
+}
+@media(max-width:700px){
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(9),
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-team{
+  padding-inline:5px!important;text-align:center!important;vertical-align:middle!important;
+ }
+}
+html body #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(9) > .sort-btn{
+ width:100%!important;margin:0!important;padding-inline:0!important;justify-content:center!important;text-align:center!important;
+}
+@media(min-width:701px){
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-team > select[data-team-worker]{
+  display:block!important;margin-left:auto!important;margin-right:auto!important;
+ }
+}
+@media(max-width:700px){
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-team > select[data-team-worker]{
+  display:block!important;margin-left:auto!important;margin-right:auto!important;
+ }
+}
+</style>
 </body>
 </html>
