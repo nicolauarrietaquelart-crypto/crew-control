@@ -10936,22 +10936,6 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
   white-space:nowrap!important;word-break:normal!important;overflow-wrap:normal!important;
   display:inline-flex!important;width:auto!important;max-width:100%!important;
  }
- html body #personnelGroups details.work-group > .crew-table-horizontal-control{
-  display:flex!important;gap:12px!important;align-items:center!important;
-  padding:9px 12px!important;margin:0!important;
-  background:#f6f6f6!important;border-top:1px solid #e3e3e3!important;
- }
- html body #personnelGroups details.work-group > .crew-table-horizontal-control span{
-  flex:0 0 auto!important;font-size:11px!important;color:#555!important;font-weight:700!important;
- }
- html body #personnelGroups details.work-group > .crew-table-horizontal-control input[type=range]{
-  display:block!important;flex:1 1 auto!important;width:100%!important;min-width:0!important;
-  height:22px!important;accent-color:#f58220!important;cursor:ew-resize!important;
-  touch-action:pan-x!important;
- }
-}
-@media(max-width:700px){
- #personnelGroups details.work-group > .crew-table-horizontal-control{display:none!important}
 }
 </style>
 </head>
@@ -16428,12 +16412,6 @@ function renderPersonnel(light=false){
           </tbody>
         </table>
       </div>
-      <div class="crew-table-horizontal-control" aria-label="Desplazamiento horizontal de tabla">
-        <span>Deslizar tabla</span>
-        <input type="range" min="0" max="1000" value="0" step="1"
-          aria-label="Desplazar tabla a izquierda o derecha"
-          oninput="crewSlideTable(this)">
-      </div>
     </details>`;
     })();
     groupTemplate.innerHTML=markup;
@@ -16522,13 +16500,6 @@ function renderPersonnel(light=false){
 
 
 
-
-function crewSlideTable(input){
-  const tableWrap=input?.closest('details.work-group')?.querySelector('.table-wrap');
-  if(!tableWrap)return;
-  const max=Math.max(0,tableWrap.scrollWidth-tableWrap.clientWidth);
-  tableWrap.scrollLeft=(Number(input.value)||0)/1000*max;
-}
 
 function rememberWorkGroupToggle(details,trabajo){
   if(!details)return;
@@ -20868,6 +20839,21 @@ document.addEventListener('keydown',event=>{
 .crew-device-info small{font-size:11px;color:#666;line-height:1.4}
 .crew-device-empty{font-size:13px;color:#777}
 .crew-devices-note{border-top:1px solid #eee;padding-top:12px;line-height:1.5}
+</style>
+<style id="crew-native-horizontal-scrollbar-20261114">
+/* Keep native horizontal scrolling in desktop/iPad, without a duplicate slider. */
+@media(min-width:701px){
+ html body #personnelGroups details.work-group > .table-wrap{
+  display:block!important;overflow-x:auto!important;overflow-y:hidden!important;
+  scrollbar-width:auto!important;scrollbar-color:#858585 #e8e8e8!important;
+  -webkit-overflow-scrolling:touch!important;overscroll-behavior-x:contain!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap::-webkit-scrollbar{height:12px!important}
+ html body #personnelGroups details.work-group > .table-wrap::-webkit-scrollbar-track{background:#e8e8e8!important}
+ html body #personnelGroups details.work-group > .table-wrap::-webkit-scrollbar-thumb{
+  background:#858585!important;border-radius:8px!important
+ }
+}
 </style>
 </body>
 </html>
