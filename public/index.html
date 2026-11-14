@@ -13105,8 +13105,11 @@ async function crewD1Dispatch(method,args){
     const name=String(args[1]||'ESCENARIO').trim(),id='S_'+crypto.randomUUID();
     const scenario={id,name,sortOrder:(state.service?.scenarios||[]).length+1};
     const teams=[...(state.service?.teams||[]),...crewDefaultTeams(id)];
-    const next={...state.service,scenarios:[...(state.service?.scenarios||[]),scenario],teams};
-    await crewPersist(next);return next;
+    const next=await crewSaveLatest(code,remote=>({
+      ...remote,scenarios:[...(remote.scenarios||[]),scenario],
+      teams:[...(remote.teams||[]),...crewDefaultTeams(id)]
+    }));
+    return next;
   }
   if(method==='getWorkerHistory'){
     const worker=(state.service?.workers||[]).find(w=>String(w.id)===String(args[1]));
@@ -13129,12 +13132,15 @@ async function crewD1Dispatch(method,args){
     return createdService;
   }
   if(method==='saveServiceMeta'){
-    const next={...state.service,...args[1]};
-    await crewPersist(next);return {ok:true};
+    // Never submit stale worker, attendance, pause or incident data with metadata.
+    const meta=args[1]||{};
+    await crewSaveLatest(code,remote=>({...remote,...meta}));
+    return {ok:true};
   }
   if(method==='saveScenariosAndTeams'){
-    const next={...state.service,scenarios:args[1]||[],teams:args[2]||[]};
-    await crewPersist(next);return next;
+    // A structure save changes only the structure, not the worker roster.
+    const scenarios=args[1]||[],teams=args[2]||[];
+    return crewSaveLatest(code,remote=>({...remote,scenarios,teams}));
   }
   if(method==='saveWorkerChanges'){
     const changes=(args[1]||[]).filter(x=>x&&x.workerId);
@@ -13190,7 +13196,10 @@ async function crewD1Dispatch(method,args){
   if(method==='addManualWorker'){
     const data=args[1]||{},id=crypto.randomUUID();
     const worker={id,...data,status:'PENDIENTE',blockId:'MANUAL_'+id,blockLabel:(data.trabajo||'')+' · MANUAL',sortOrder:(state.service?.workers||[]).length+1};
-    await crewPersist({...state.service,workers:[...(state.service?.workers||[]),worker]});return worker;
+    await crewSaveLatest(code,remote=>({...remote,
+      workers:[...(remote.workers||[]),{...worker,sortOrder:(remote.workers||[]).length+1}]
+    }));
+    return worker;
   }
   if(method==='closeService'||method==='reopenService'){
     const closed=method==='closeService';
@@ -13212,18 +13221,28 @@ async function crewD1Dispatch(method,args){
   }
   if(method==='saveTeamRequirements'){
     const [code,serviceDate,trabajo,requirements,noTeams]=args;
-    const rest=(state.service?.requirements||[]).filter(r=>!(r.serviceDate===serviceDate&&r.trabajo===trabajo));
     const saved=noTeams?[{serviceDate,trabajo,teamId:'NO_TEAMS',requiredCount:0}]:(requirements||[]).map(r=>({...r,serviceDate,trabajo}));
-    await crewPersist({...state.service,requirements:[...rest,...saved]});return {ok:true,saved,noTeams};
+    await crewSaveLatest(code,remote=>({
+      ...remote,requirements:[
+        ...(remote.requirements||[]).filter(r=>!(r.serviceDate===serviceDate&&r.trabajo===trabajo)),...saved
+      ]
+    }));
+    return {ok:true,saved,noTeams};
   }
   if(method==='saveIncident'){
     const payload=args[1]||{},id=payload.incidentId||crypto.randomUUID();
-    const existing=(state.service?.incidents||[]).filter(i=>String(i.id)!==String(id));
     const incident={...payload,id,createdAt:new Date().toISOString()};
-    await crewPersist({...state.service,incidents:[...existing,incident]});return incident;
+    await crewSaveLatest(code,remote=>({
+      ...remote,incidents:[...(remote.incidents||[]).filter(i=>String(i.id)!==String(id)),incident]
+    }));
+    return incident;
   }
   if(method==='deleteIncident'){
-    await crewPersist({...state.service,incidents:(state.service?.incidents||[]).filter(i=>String(i.id)!==String(args[1]))});return {ok:true};
+    const id=String(args[1]);
+    await crewSaveLatest(code,remote=>({
+      ...remote,incidents:(remote.incidents||[]).filter(i=>String(i.id)!==id)
+    }));
+    return {ok:true};
   }
   throw new Error('La función '+method+' todavía no está migrada a Cloudflare D1');
 }
@@ -14097,7 +14116,8 @@ function scheduleStructureSave(){
     backend.run
       .withSuccessHandler(service=>{
         const active=state.activeDay;
-        state.service=service;
+        if(state.service?.code!==service.code)return;
+        state.service=crewPauseMerge(crewRestoreLocalEdits(service),crewPausePending(service.code));
         state.activeDay=active;
         renderScenarios();updateTeamSelects();renderPersonnel();
         setSaveState('Guardado','saved');
