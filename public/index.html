@@ -11039,10 +11039,15 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
 #operationalTimePager #operationalTimeFilters{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important;min-width:0!important;width:100%!important;margin:0!important;padding:3px 0!important;scrollbar-width:none!important;overscroll-behavior-x:contain}
 #operationalTimePager #operationalTimeFilters::-webkit-scrollbar{display:none}
 #operationalTimePager .operational-time-chip-v1210{flex:0 0 auto!important}
-#operationalTimePager>button{display:grid!important;place-items:center;width:36px!important;min-width:36px!important;height:40px!important;margin:0!important;padding:0!important;border:0!important;border-radius:12px!important;background:#fff!important;color:#171717!important;box-shadow:none!important;cursor:pointer}
-#operationalTimePager>button:disabled{opacity:.35;cursor:default}
-#operationalTimePager>button:not(:disabled):hover{background:#fff0e2!important}
-#operationalTimePager>button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+#operationalTimePager>button,#operationalWorkPager.operational-work-pager-v11233>button{display:grid!important;place-items:center;width:36px!important;min-width:36px!important;height:40px!important;margin:0!important;padding:0!important;border:0!important;border-radius:12px!important;background:#fff!important;color:#171717!important;box-shadow:none!important;cursor:pointer}
+#operationalTimePager>button:disabled,#operationalWorkPager.operational-work-pager-v11233>button:disabled{opacity:.35;cursor:default}
+#operationalTimePager>button:not(:disabled):hover,#operationalWorkPager.operational-work-pager-v11233>button:not(:disabled):hover{background:#fff0e2!important}
+#operationalTimePager>button svg,#operationalWorkPager.operational-work-pager-v11233>button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+</style><style>
+#operationalWorkPager.operational-work-pager-v11233{display:grid!important;grid-template-columns:36px minmax(0,1fr) 36px;align-items:center;gap:4px}
+#operationalWorkPager #operationalWorkFilters{min-width:0!important;width:100%!important;margin:0!important;padding:3px 0!important;scroll-padding-inline:0!important}
+#operationalWorkPager.operational-work-pager-v11233>button{position:static!important;inset:auto!important;transform:none!important;flex:none!important;opacity:1}
+#operationalWorkPager.operational-work-pager-v11233>button:disabled{opacity:.35!important}
 </style></head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -11211,18 +11216,18 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
               <span id="dayReadinessLabel" class="day-readiness">—</span>
             </div>
 
-            <div class="operational-work-nav-v11232 operational-work-pager-v11233">
+            <div id="operationalWorkPager" class="operational-work-nav-v11232 operational-work-pager-v11233">
               <button id="operationalWorkPrevious" type="button"
                 class="operational-work-next-v11232 operational-work-prev-v11233"
                 onclick="previousOperationalWorkType()"
                 title="Ver tipos de servicio anteriores"
-                aria-label="Ver tipos de servicio anteriores" disabled>‹</button>
+                aria-label="Ver tipos de servicio anteriores" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
               <div id="operationalWorkFilters" class="operational-work-filters-v122" aria-label="Tipos de servicio"></div>
               <button id="operationalWorkNext" type="button"
                 class="operational-work-next-v11232"
                 onclick="nextOperationalWorkType()"
                 title="Ver los siguientes tipos de servicio"
-                aria-label="Ver siguientes tipos de servicio">›</button>
+                aria-label="Ver siguientes tipos de servicio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
             </div>
             <div id="operationalTimePager" class="operational-time-pager">
               <button id="operationalTimePrevious" type="button" aria-label="Ver horas anteriores" title="Ver horas anteriores" onclick="scrollOperationalTimes(-1)" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
