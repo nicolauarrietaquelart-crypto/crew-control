@@ -12769,6 +12769,10 @@ function crewConnectionUI(){
       crewConnectionUI();
     });
   }
+  const title=document.getElementById('crewConnectionTitle');
+  const description=document.getElementById('crewConnectionDescription');
+  if(title)title.textContent=!navigator.onLine?'Sin conexión a Internet':'Problema de sincronización';
+  if(description)description.textContent=!navigator.onLine?'Sin acceso a Internet. Los cambios pendientes permanecen en este dispositivo.':'Hay conexión a Internet, pero el servidor no ha confirmado la operación. Los cambios pendientes siguen guardados localmente.';
   notice.classList.toggle('crew-connection-visible',Boolean(crewConnectionIssue)&&!crewConnectionDismissed);
 }
 function crewConnectionFailed(error){
@@ -12777,14 +12781,20 @@ function crewConnectionFailed(error){
     crewConnectionIssue=String(error?.message||'Sin conexión');
     crewConnectionDismissed=false;
     crewConnectionUI();
-    if(state.service) setSaveState('Sin conexión · sin sincronizar','error');
+    if(state.service) setSaveState(!navigator.onLine?'Sin conexión · cambios pendientes':'Error de sincronización · comprobando servidor','error');
   }
 }
 function crewConnectionRestored(){
+  const hadIssue=Boolean(crewConnectionIssue);
   crewConnectionFailures=0;
   crewConnectionIssue='';
   crewConnectionDismissed=false;
   crewConnectionUI();
+  if(hadIssue&&state.service?.code){
+    const pending=Object.keys(crewPendingJournal(state.service.code)).length;
+    if(pending)setSaveState(pending+' cambios pendientes de sincronizar','saving');
+    else if(!state.workerSaveInFlight)setSaveState('Conectado con D1','saved');
+  }
 }
 const crewApi=async(code,method='GET',payload)=> {
   try{
@@ -12798,7 +12808,7 @@ const crewApi=async(code,method='GET',payload)=> {
     if(!response.ok){
       const error=new Error(data.error||'Error de Cloudflare D1');
       error.status=response.status;
-      if(response.status>=500||response.status===408||response.status===429)crewConnectionFailed(error);
+      if(response.status!==409)crewConnectionFailed(error);
       throw error;
     }
     crewConnectionRestored();
@@ -14267,13 +14277,14 @@ async function crewPresenceHeartbeat(){
       body:JSON.stringify({deviceId:crewDeviceId,label:crewDeviceLabel,pending}),
       cache:'no-store',signal:AbortSignal.timeout(6500)
     });
-    if(!response.ok)throw new Error('Heartbeat error '+response.status);
+    if(!response.ok){const e=new Error('Error de presencia HTTP '+response.status);e.status=response.status;throw e;}
     const body=await response.json();
     if(state.service?.code!==code)return;
     crewPresenceLastCode=code;crewDevices=Array.isArray(body.devices)?body.devices:[];
     crewPresenceServerTime=Number(body.serverTime||0);
     crewPresenceLocalCheck=Date.now();
     crewDevicesRender();
+    crewConnectionRestored();
     // A healthy server response triggers replay of offline edits.
     if(pending)crewRetryLocalUpdates();
   }catch(error){
@@ -14519,7 +14530,7 @@ function flushPendingWorkerSaves(callback){
 
       state.workerSaveInFlight=false;
       crewPendingNotice();
-      setSaveState('Sin conexión · cambios guardados localmente','error');
+      setSaveState(!navigator.onLine?'Sin conexión · cambios guardados localmente':'Error al sincronizar · cambios guardados localmente','error');
       crewConnectionFailed(err);
       state.workerSaveCallbacks=[];
       // Keep pending edits until a successful retry; do not discard them.
