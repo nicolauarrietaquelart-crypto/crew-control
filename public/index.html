@@ -10949,12 +10949,12 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
   }
   .sidebar-operational-v122 #operationalDashboard .dashboard-metric.simple-v127 {
     min-width:0!important;
-    min-height:64px!important;
-    padding:9px 12px!important;
+    min-height:54px!important;
+    padding:7px 11px!important;
     border-radius:15px!important;
   }
   .sidebar-operational-v122 #operationalDashboard .dashboard-metric.simple-v127 strong {
-    font-size:24px!important;
+    font-size:22px!important;
     line-height:1.05!important;
   }
   .sidebar-operational-v122 #operationalDashboard .dashboard-metric.simple-v127 span {
@@ -10965,11 +10965,32 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
 }
 @media screen and (min-width:901px) and (min-height:900px) {
   .sidebar-operational-v122 #operationalDashboard .dashboard-metric.simple-v127 {
-    min-height:72px!important;
-    padding:11px 13px!important;
+    min-height:61px!important;
+    padding:8px 12px!important;
   }
   .sidebar-operational-v122 #operationalDashboard .dashboard-metric.simple-v127 strong {
-    font-size:26px!important;
+    font-size:24px!important;
+  }
+}
+</style>
+<style id="crew-search-collapsed-spacing-desktop">
+@media screen and (min-width:901px) {
+  /* Do not reserve an invisible search input's min-height or flex gap. */
+  html body .personnel-sidebar-toolbar-v121:has(> #crewSearchReveal:not(.is-open)) {
+    row-gap:6px!important;
+  }
+  html body .personnel-sidebar-toolbar-v121 > #crewSearchReveal:not(.is-open) {
+    display:none!important;
+    height:0!important;
+    min-height:0!important;
+    max-height:0!important;
+    padding:0!important;
+    margin:0!important;
+    border:0!important;
+  }
+  html body .personnel-sidebar-toolbar-v121 > #crewSearchReveal.is-open {
+    display:block!important;
+    min-height:0!important;
   }
 }
 </style>
