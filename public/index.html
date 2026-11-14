@@ -21544,5 +21544,24 @@ document.addEventListener('keydown',event=>{
  }
 }
 </style>
+<style id="crew-table-column-alignment">
+@media(min-width:701px){
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table{
+  width:1520px!important;min-width:1520px!important;max-width:none!important;table-layout:fixed!important;
+ }
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(10){
+  width:165px!important;min-width:165px!important;max-width:165px!important;
+ }
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(11){
+  width:130px!important;min-width:130px!important;max-width:130px!important;
+ }
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td:is(.mobile-phone,.mobile-team){
+  text-align:left!important;vertical-align:middle!important;
+ }
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-phone > a.crew-phone-desktop-v11264{
+  display:inline-flex!important;margin:0!important;justify-content:flex-start!important;
+ }
+}
+</style>
 </body>
 </html>
