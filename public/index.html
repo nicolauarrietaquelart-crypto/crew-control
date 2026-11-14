@@ -10574,8 +10574,8 @@ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data
 }
 </style>
 <style id="crew-desktop-specialty-header-alignment-v1">
-/* Desktop only: specialty header and specialty badges share the exact left inset. */
-@media(min-width:901px){
+/* Table layout: specialty header and specialty badges share the exact left inset. */
+@media(min-width:701px){
  html body #personnelGroups details.work-group .table-wrap table > thead > tr > th:nth-child(4){
   text-align:left!important;
   padding:0!important;
@@ -10597,9 +10597,9 @@ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data
 }
 </style>
 <style id="crew-desktop-specialty-vertical-alignment-v2">
-/* Desktop: name and specialty sit on the centerline of the attendance control.
+/* Desktop and tablet: name and specialty sit on the centerline of the attendance control.
    Multi-line names with coordinator/reserve badges remain centered as a block. */
-@media(min-width:901px){
+@media(min-width:701px){
  html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row] > td.worker-name.mobile-name,
  html body #personnelGroups details.work-group .table-wrap table tbody tr[data-worker-row] > td.mobile-role{
   vertical-align:middle!important;
@@ -21549,12 +21549,18 @@ document.addEventListener('keydown',event=>{
  html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table{
   width:1520px!important;min-width:1520px!important;max-width:none!important;table-layout:fixed!important;
  }
- html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(10){
-  width:165px!important;min-width:165px!important;max-width:165px!important;
- }
- html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(11){
-  width:130px!important;min-width:130px!important;max-width:130px!important;
- }
+ /* One set of table tracks for desktop and tablet, independent of the sidebar breakpoint. */
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(1){width:30px!important;min-width:30px!important;max-width:30px!important}
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(2){width:80px!important;min-width:80px!important;max-width:80px!important}
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(3){width:270px!important;min-width:270px!important;max-width:270px!important}
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(4){width:160px!important;min-width:160px!important;max-width:160px!important}
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(5){width:170px!important;min-width:170px!important;max-width:170px!important}
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(6){width:75px!important;min-width:75px!important;max-width:75px!important}
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(7){width:75px!important;min-width:75px!important;max-width:75px!important}
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(8){width:140px!important;min-width:140px!important;max-width:140px!important}
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(9){width:225px!important;min-width:225px!important;max-width:225px!important}
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(10){width:165px!important;min-width:165px!important;max-width:165px!important}
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(11){width:130px!important;min-width:130px!important;max-width:130px!important}
  html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-team{
   text-align:left!important;vertical-align:middle!important;
  }
