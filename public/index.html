@@ -13079,9 +13079,13 @@ const crewSaveLatest=(code,update)=>{
 };
 async function crewCheckRemoteChanges(){
   if(crewRemoteCheckInFlight||document.hidden||!state.service?.code||state.service.closed)return;
-  if(Date.now()-crewLastLocalWrite<500||state.workerSaveInFlight||
+  if(Date.now()-crewLastLocalWrite<500||state.workerSaveInFlight)return;
+  // Keep fetching server updates even if a dialog or text input is open.
+  // Rendering is deferred to avoid destroying an active edit.
+  const deferRender=()=>Boolean(
     document.querySelector('.modal:not(.hidden)')||
-    document.activeElement?.matches('input:not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"]'))return;
+    document.activeElement?.matches('input:not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"]')
+  );
   const code=state.service.code;
   const checkStarted=Date.now();
   const localRevision=state.service._syncRevision;
@@ -13098,6 +13102,9 @@ async function crewCheckRemoteChanges(){
     if(state.workerSaveInFlight||
        crewLastLocalWrite>checkStarted||state.service?._syncRevision!==localRevision)return;
     if(remote._syncRevision===state.service._syncRevision)return;
+    // Do not overwrite a form being edited. The next poll will apply the
+    // remote snapshot as soon as the form loses focus or closes.
+    if(deferRender())return;
     // A PDF reimport may have replaced a worker behind an existing ID.
     // Clear outdated selections rather than applying the next bulk action
     // to another person with that reused ID.
