@@ -12889,7 +12889,7 @@ async function crewCheckRemoteChanges(){
   if(crewRemoteCheckInFlight||document.hidden||!state.service?.code||state.service.closed)return;
   if(Date.now()-crewLastLocalWrite<500||state.workerSaveInFlight||
     document.querySelector('.modal:not(.hidden)')||
-    document.activeElement?.matches('input,textarea,select,[contenteditable="true"]'))return;
+    document.activeElement?.matches('input:not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"]'))return;
   const code=state.service.code;
   const checkStarted=Date.now();
   const localRevision=state.service._syncRevision;
