@@ -13134,14 +13134,28 @@ async function crewD1Dispatch(method,args){
     const changes=(args[1]||[]).filter(x=>x&&x.workerId);
     if(!changes.length)return {ok:true};
     const byId=new Map(changes.map(change=>[String(change.workerId),change]));
+    const normalizeIdentity=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase().replace(/\s+/g,' ');
+    const validate=(service)=>{
+      for(const change of changes){
+        const candidates=(service.workers||[]).filter(w=>String(w.id)===String(change.workerId));
+        const identity=change._workerIdentity;
+        if(candidates.length!==1||!identity||!normalizeIdentity(identity.personal)||
+          normalizeIdentity(candidates[0].personal)!==normalizeIdentity(identity.personal)||
+          normalizeIdentity(candidates[0].serviceDate)!==normalizeIdentity(identity.serviceDate)||
+          normalizeIdentity(candidates[0].trabajo)!==normalizeIdentity(identity.trabajo)||
+          (identity.movil&&candidates[0].movil&&
+           String(identity.movil).replace(/\D/g,'').slice(-9)!==String(candidates[0].movil).replace(/\D/g,'').slice(-9))){
+          throw new Error('Identidad del trabajador no coincide: guardado bloqueado para evitar marcar a otra persona.');
+        }
+      }
+    };
     const applyChanges=service=>({
       ...service,
       workers:(service.workers||[]).map(w=>{
-        const change=byId.get(String(w.id));
-        if(!change)return w;
+        const change=byId.get(String(w.id));if(!change)return w;
         const times={...(w._fieldTimes||{})},fields={};
         for(const [key,value] of Object.entries(change)){
-          if(key==='workerId'||key==='_fieldTimes'||key==='id')continue;
+          if(['workerId','_fieldTimes','_workerIdentity','id'].includes(key))continue;
           const incoming=Number(change._fieldTimes?.[key]||0);
           if(incoming<Number(times[key]||0))continue;
           fields[key]=value;times[key]=Math.max(incoming,Number(times[key]||0));
@@ -13151,10 +13165,10 @@ async function crewD1Dispatch(method,args){
       })
     });
     const task=crewSaveQueue.then(async()=>{
-      // Optimistic concurrency prevents simultaneous clients losing edits.
       for(let attempt=0;attempt<5;attempt++){
         const remote=(await crewApi(code)).service;
-        if(!remote)throw new Error('No se ha encontrado el servicio');
+        if(!remote)throw new Error('Servicio no encontrado');
+        validate(remote);
         try{
           const saved=await crewApi(code,'PUT',{service:applyChanges(remote),revision:String(remote._syncRevision||'')});
           crewLastLocalWrite=Date.now();
@@ -14201,10 +14215,10 @@ function crewPendingJournal(code){
   return stored&&typeof stored==='object'&&!Array.isArray(stored)?stored:{};
 }
 function crewMergeUpdate(old,update){
-  const merged={...old,workerId:String(update.workerId)};
+  const merged={...old,workerId:String(update.workerId),_workerIdentity:update._workerIdentity||old._workerIdentity};
   const times={...(old._fieldTimes||{})};
   for(const [key,value] of Object.entries(update)){
-    if(key==='workerId'||key==='_fieldTimes')continue;
+    if(key==='workerId'||key==='_fieldTimes'||key==='_workerIdentity')continue;
     const next=Number(update._fieldTimes?.[key]||0);
     if(next>=Number(times[key]||0)){merged[key]=value;times[key]=next;}
   }
@@ -14227,13 +14241,13 @@ function crewAckJournal(code,batch){
     if(!current)continue;
     const times={...(current._fieldTimes||{})};
     for(const [key,value] of Object.entries(sent)){
-      if(key==='workerId'||key==='_fieldTimes')continue;
+      if(key==='workerId'||key==='_fieldTimes'||key==='_workerIdentity')continue;
       if(Number(sent._fieldTimes?.[key]||0)===Number(times[key]||0)&&
          JSON.stringify(current[key])===JSON.stringify(value)){
         delete current[key];delete times[key];
       }
     }
-    if(Object.keys(current).every(k=>k==='workerId'||k==='_fieldTimes'))delete journal[id];
+    if(Object.keys(current).every(k=>k==='workerId'||k==='_fieldTimes'||k==='_workerIdentity'))delete journal[id];
     else current._fieldTimes=times;
   }
   crewWriteLocal(CREW_PENDING_PREFIX,code,journal);
@@ -14254,7 +14268,8 @@ function crewRestoreLocalEdits(service){
   const workers=(service.workers||[]).map(worker=>{
     const change=byId.get(String(worker.id));
     if(!change)return worker;
-    const {workerId,_fieldTimes,...candidate}=change;
+    const {workerId,_fieldTimes,_workerIdentity,...candidate}=change;
+    if(!_workerIdentity||String(worker.personal||'').trim().toUpperCase()!==String(_workerIdentity.personal||'').trim().toUpperCase())return worker;
     const fields={};
     for(const [key,value] of Object.entries(candidate)){
       if(Number(_fieldTimes?.[key]||0)>=Number(worker._fieldTimes?.[key]||0))fields[key]=value;
@@ -14293,11 +14308,14 @@ function saveWorkerUpdates(updates){
 
   const editedAt=Date.now();
   const stamped=updates.filter(update=>update?.workerId).map(update=>{
+    const person=(state.service.workers||[]).find(w=>String(w.id)===String(update.workerId));
+    if(!person)throw new Error('Trabajador no encontrado para guardar cambios');
+    const identity={personal:person.personal,serviceDate:person.serviceDate,trabajo:person.trabajo,movil:person.movil};
     const times={...(update._fieldTimes||{})};
     for(const key of Object.keys(update)){
       if(key!=='workerId'&&key!=='_fieldTimes')times[key]=editedAt;
     }
-    return {...update,_fieldTimes:times};
+    return {...update,_fieldTimes:times,_workerIdentity:identity};
   });
   stamped.forEach(update=>{
     const id=String(update.workerId);
