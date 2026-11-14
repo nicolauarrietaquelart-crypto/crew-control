@@ -14608,7 +14608,9 @@ function flushPendingWorkerSaves(callback){
       }
       crewAckJournal(serviceCode,batch);
       crewRebasePendingJournal(serviceCode,result.confirmedVersions);
-      // New changes made during the in-flight request remain in the journal.
+      // Rebuild from the durable journal: in-memory edits from this browser
+      // may carry the pre-ACK base version and otherwise conflict on retry.
+      state.pendingWorkerUpdates={};
       crewLoadPendingIntoState();
       if(Object.keys(state.pendingWorkerUpdates).length){
         crewPendingNotice();
