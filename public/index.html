@@ -13101,7 +13101,8 @@ async function crewCheckRemoteChanges(){
     if(!remote||state.service?.code!==code)return;
     if(state.workerSaveInFlight||
        crewLastLocalWrite>checkStarted||state.service?._syncRevision!==localRevision)return;
-    if(remote._syncRevision===state.service._syncRevision)return;
+    const repaired=crewReconcileWorkerJournal(code,remote);
+    if(!repaired&&remote._syncRevision===state.service._syncRevision){crewPendingNotice();return;}
     // Do not overwrite a form being edited. The next poll will apply the
     // remote snapshot as soon as the form loses focus or closes.
     if(deferRender())return;
@@ -14507,29 +14508,68 @@ function crewPendingIdentityMatches(worker,identity){
     (identity.inicio===undefined||String(identity.inicio||'')===String(worker.inicio||''))&&
     (identity.fin===undefined||String(identity.fin||'')===String(worker.fin||''));
 }
+// Reconcile durable edits against the authoritative roster before retrying.
+// An ID can change after a PDF repair; never use row order or name alone.
+function crewReconcileWorkerJournal(code,remote){
+  if(!code||!remote||state.workerSaveInFlight)return 0;
+  const pending=crewPendingJournal(code),held=crewHeldJournal(code);
+  const next={},remaining={};
+  const meta=new Set(['workerId','_fieldTimes','_baseFieldTimes','_workerIdentity']);
+  const fields=update=>Object.keys(update).filter(k=>!meta.has(k));
+  const entries=[...Object.entries(pending),...Object.entries(held)];
+  const keep=(key,update)=>{
+    // Preserve distinct edits even if a formerly duplicated ID was reused.
+    while(remaining[key]&&JSON.stringify(remaining[key])!==JSON.stringify(update))key+=':held';
+    remaining[key]=update;
+  };
+  for(const [key,update] of entries){
+    const identity=update._workerIdentity;
+    const sameId=(remote.workers||[]).filter(w=>String(w.id)===String(update.workerId));
+    let worker=sameId.length===1&&crewPendingIdentityMatches(sameId[0],identity)?sameId[0]:null;
+    if(!worker){
+      // Cross-ID recovery requires a complete shift and matching telephone.
+      const phone=v=>String(v||'').replace(/\D/g,'').replace(/^(?:0034|34)(?=\d{9}$)/,'');
+      const complete=identity&&identity.serviceDate&&identity.trabajo&&identity.inicio&&identity.fin&&phone(identity.movil).length>=9;
+      const matches=complete?(remote.workers||[]).filter(w=>
+        crewPendingIdentityMatches(w,identity)&&phone(w.movil)===phone(identity.movil)):[];
+      if(matches.length===1&&(remote.workers||[]).filter(w=>String(w.id)===String(matches[0].id)).length===1)worker=matches[0];
+    }
+    if(!worker){keep(key,update);continue;}
+    // Preserve concurrent changes for review instead of poisoning the batch.
+    const conflict=fields(update).some(field=>{
+      if(JSON.stringify(worker[field])===JSON.stringify(update[field]))return false;
+      const current=Number(worker._fieldTimes?.[field]||0);
+      return Object.prototype.hasOwnProperty.call(update._baseFieldTimes||{},field)?
+        Number(update._baseFieldTimes[field]||0)!==current:
+        Number(update._fieldTimes?.[field]||0)<current;
+    });
+    if(conflict){keep(key,update);continue;}
+    const id=String(worker.id),candidate={...update,workerId:id};
+    if(next[id]&&fields(candidate).some(field=>
+      Object.prototype.hasOwnProperty.call(next[id],field)&&
+      JSON.stringify(next[id][field])!==JSON.stringify(candidate[field]))){
+      keep(key,update);continue;
+    }
+    next[id]=crewMergeUpdate(next[id]||{workerId:id},candidate);
+  }
+  if(JSON.stringify(pending)===JSON.stringify(next)&&JSON.stringify(held)===JSON.stringify(remaining))return 0;
+  // Write-ahead backup covers interruption between the two journal writes.
+  const backup={...held};
+  for(const [key,update] of entries){
+    let backupKey=key;
+    while(backup[backupKey]&&JSON.stringify(backup[backupKey])!==JSON.stringify(update))backupKey+=':held';
+    backup[backupKey]=update;
+  }
+  if(!crewWriteLocal(CREW_HELD_PREFIX,code,backup))return 0;
+  if(!crewWriteLocal(CREW_PENDING_PREFIX,code,next))return 0;
+  if(state.service?.code===code||!state.service)state.pendingWorkerUpdates={...next};
+  if(!crewWriteLocal(CREW_HELD_PREFIX,code,remaining))return 0;
+  return entries.length;
+}
 async function crewHoldMismatchedPending(code){
   if(!code)return 0;
   const remote=(await crewApi(code)).service;
-  if(!remote)return 0;
-  const pending=crewPendingJournal(code),invalid={};
-  for(const [id,update] of Object.entries(pending)){
-    const matches=(remote.workers||[]).filter(w=>String(w.id)===String(id));
-    if(matches.length!==1||!crewPendingIdentityMatches(matches[0],update._workerIdentity)){
-      invalid[id]=update;
-    }
-  }
-  if(!Object.keys(invalid).length)return 0;
-  const held={...crewHeldJournal(code)};
-  for(const [id,update] of Object.entries(invalid)){
-    held[id]=held[id]?crewMergeUpdate(held[id],update):update;
-  }
-  // Persist to a separate recovery journal before excluding from retries.
-  if(!crewWriteLocal(CREW_HELD_PREFIX,code,held))return 0;
-  const updated={...pending};
-  for(const id of Object.keys(invalid))delete updated[id];
-  if(!crewWriteLocal(CREW_PENDING_PREFIX,code,updated))return 0;
-  for(const id of Object.keys(invalid))delete state.pendingWorkerUpdates[id];
-  return Object.keys(invalid).length;
+  return crewReconcileWorkerJournal(code,remote);
 }
 function crewHeldNotice(code){
   const held=crewHeldCount(code);
@@ -14799,7 +14839,7 @@ function flushPendingWorkerSaves(callback){
       crewConnectionFailed(err);
       state.workerSaveCallbacks=[];
       // Stale IDs must not poison every future sync attempt.
-      if(navigator.onLine&&/Identidad del trabajador no coincide|ID de trabajador duplicado en el lote/.test(String(err?.message||''))){
+      if(navigator.onLine&&/Identidad del trabajador no coincide|ID de trabajador duplicado en el lote|Conflicto de edición/.test(String(err?.message||''))){
         void crewHoldMismatchedPending(serviceCode).then(count=>{
           if(count){
             crewHeldNotice(serviceCode);

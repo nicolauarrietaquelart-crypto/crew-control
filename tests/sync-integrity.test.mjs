@@ -181,10 +181,102 @@ test('offline mismatch preflight preserves rejected edits and keeps valid edits 
   );
   const result=setup(read,write,async()=>({service:remote}),'pending:',state,()=>{},
     (old,update)=>({...old,...update}));
-  assert.equal(await result.crewHoldMismatchedPending('123456'),1);
+  assert.ok(await result.crewHoldMismatchedPending('123456')>0);
   assert.deepEqual(result.crewHeldJournal('123456').OLD,pending.OLD);
   assert.deepEqual(stored.get('pending:123456'),{W2:pending.W2});
   assert.deepEqual(Object.keys(state.pendingWorkerUpdates),['W2']);
   assert.equal(result.crewPendingIdentityMatches(remote.workers[0],pending.OLD._workerIdentity),false);
   assert.equal(result.crewPendingIdentityMatches(remote.workers[1],pending.W2._workerIdentity),true);
+});
+
+function recoveryFixture({pending={},held={},workers=[],failPrefix}={}){
+  const stored=new Map([['pending:123456',structuredClone(pending)],
+    ['crew-held-worker-updates-v1:123456',structuredClone(held)]]);
+  const state={service:{code:'123456'},pendingWorkerUpdates:structuredClone(pending)};
+  const read=(prefix,code)=>structuredClone(stored.get(prefix+code)||{});
+  const write=(prefix,code,value)=>{
+    if(prefix===failPrefix)return false;
+    stored.set(prefix+code,structuredClone(value));return true;
+  };
+  const source=section("const CREW_HELD_PREFIX='crew-held-worker-updates-v1:';","function crewPendingJournal(code){")+
+    section('function crewMergeUpdate','function crewJournalUpdates');
+  const reconcile=new Function('crewReadLocal','crewWriteLocal','CREW_PENDING_PREFIX','state',
+    'const crewPendingJournal=code=>crewReadLocal(CREW_PENDING_PREFIX,code);'+source+
+    ';return crewReconcileWorkerJournal')(read,write,'pending:',state);
+  return {run:()=>reconcile('123456',{workers}),state,
+    pending:()=>read('pending:','123456'),held:()=>read('crew-held-worker-updates-v1:','123456')};
+}
+const recoveryIdentity={personal:'Chris',movil:'600111111',serviceDate:'2026-11-14',
+  trabajo:'LOAD IN',inicio:'08:00',fin:'16:00'};
+const recoveryEdit={workerId:'OLD',_workerIdentity:recoveryIdentity,status:'PRESENTE',
+  _fieldTimes:{status:100},_baseFieldTimes:{status:0}};
+const recoveryWorker={...recoveryIdentity,id:'NEW',status:'PENDIENTE',_fieldTimes:{status:0}};
+
+test('pending and previously held edits recover to a repaired ID and save to D1',async()=>{
+  for(const journal of ['pending','held']){
+    const x=recoveryFixture({[journal]:{OLD:recoveryEdit},workers:[recoveryWorker]});
+    assert.ok(x.run()>0);
+    assert.equal(x.pending().NEW.workerId,'NEW');
+    assert.deepEqual(x.pending().NEW._baseFieldTimes,{status:0});
+    assert.deepEqual(x.held(),{});
+    assert.equal(x.run(),0,'stable reconciliation must not rewrite storage');
+    // Exercise real writer validation and acknowledgement after recovery.
+    const writer=fakeDispatch();
+    const fixed=recoveryFixture({[journal]:{OLD:{...recoveryEdit,_workerIdentity:writer.identity}},
+      workers:writer.saved.workers});
+    fixed.run();
+    const result=await writer.dispatch('saveWorkerChanges',['123456',Object.values(fixed.pending())]);
+    assert.equal(result.confirmedVersions.W1.status,1);
+    assert.equal(writer.saved.workers[0].status,'PRESENTE');
+  }
+});
+
+test('reused ID cannot redirect an edit; unique full identity selects the right worker',()=>{
+  const x=recoveryFixture({pending:{OLD:recoveryEdit},workers:[
+    {...recoveryWorker,id:'OLD',personal:'Pau',movil:'600222222'},recoveryWorker]});
+  x.run();
+  assert.equal(x.pending().OLD,undefined);
+  assert.equal(x.pending().NEW.status,'PRESENTE');
+});
+
+test('ambiguous, incomplete or different-shift identities remain intact for review',()=>{
+  for(const workers of [
+    [recoveryWorker,{...recoveryWorker,id:'OTHER'}],
+    [{...recoveryWorker,inicio:'10:00'}],
+    [{...recoveryWorker,movil:'600222222'}]
+  ]){
+    const x=recoveryFixture({pending:{OLD:recoveryEdit},workers});
+    x.run();assert.deepEqual(x.pending(),{});assert.deepEqual(x.held().OLD,recoveryEdit);
+  }
+  const edit={...recoveryEdit,_workerIdentity:{...recoveryIdentity,movil:''}};
+  const x=recoveryFixture({pending:{OLD:edit},workers:[recoveryWorker]});
+  x.run();assert.deepEqual(x.held().OLD,edit);
+});
+
+test('conflicting attendance is held without blocking unrelated worker changes',()=>{
+  const other={...recoveryEdit,workerId:'W2',_workerIdentity:{...recoveryIdentity,personal:'Alex'}};
+  const x=recoveryFixture({pending:{OLD:recoveryEdit,W2:other},workers:[
+    {...recoveryWorker,status:'NO PRESENTADO',_fieldTimes:{status:2}},
+    {...recoveryWorker,id:'W2',personal:'Alex'}]});
+  x.run();
+  assert.deepEqual(x.held().OLD,recoveryEdit);
+  assert.deepEqual(Object.keys(x.pending()),['W2']);
+});
+
+test('storage failure does not erase original pending edits or publish a partial queue',()=>{
+  for(const failPrefix of ['pending:','crew-held-worker-updates-v1:']){
+    const x=recoveryFixture({pending:{OLD:recoveryEdit},workers:[recoveryWorker],failPrefix});
+    assert.equal(x.run(),0);
+    assert.deepEqual(x.pending().OLD,recoveryEdit);
+    assert.deepEqual(x.state.pendingWorkerUpdates.OLD,recoveryEdit);
+  }
+});
+
+test('recovery waits for writes in flight and never changes another service queue',()=>{
+  const x=recoveryFixture({held:{OLD:recoveryEdit},workers:[recoveryWorker]});
+  x.state.workerSaveInFlight=true;assert.equal(x.run(),0);
+  assert.deepEqual(x.held().OLD,recoveryEdit);
+  x.state.workerSaveInFlight=false;x.state.service.code='654321';
+  x.run();assert.deepEqual(x.state.pendingWorkerUpdates,{});
+  assert.equal(x.pending().NEW.status,'PRESENTE');
 });
