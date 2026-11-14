@@ -177,7 +177,7 @@ test('offline mismatch preflight preserves rejected edits and keeps valid edits 
   const read=(prefix,code)=>structuredClone(stored.get(prefix+code)||{});
   const write=(prefix,code,value)=>{stored.set(prefix+code,structuredClone(value));return true;};
   const setup=new Function('crewReadLocal','crewWriteLocal','crewApi','CREW_PENDING_PREFIX','state','setSaveState','crewMergeUpdate',
-    source+';return {crewHoldMismatchedPending,crewHeldJournal,crewPendingIdentityMatches}'
+    'const crewPendingJournal=code=>crewReadLocal(CREW_PENDING_PREFIX,code);'+source+';return {crewHoldMismatchedPending,crewHeldJournal,crewPendingIdentityMatches}'
   );
   const result=setup(read,write,async()=>({service:remote}),'pending:',state,()=>{},
     (old,update)=>({...old,...update}));
