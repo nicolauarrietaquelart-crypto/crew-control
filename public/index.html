@@ -21555,11 +21555,18 @@ document.addEventListener('keydown',event=>{
  html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(11){
   width:130px!important;min-width:130px!important;max-width:130px!important;
  }
- html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td:is(.mobile-phone,.mobile-team){
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-team{
   text-align:left!important;vertical-align:middle!important;
  }
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(8),
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-phone{
+  padding-inline:5px!important;text-align:center!important;vertical-align:middle!important;
+ }
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(8) > .sort-btn{
+  width:100%!important;margin:0!important;padding-inline:0!important;justify-content:center!important;text-align:center!important;
+ }
  html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-phone > a.crew-phone-desktop-v11264{
-  display:inline-flex!important;margin:0!important;justify-content:flex-start!important;
+  display:inline-flex!important;margin:0!important;justify-content:center!important;
  }
 }
 </style>
