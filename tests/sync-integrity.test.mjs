@@ -159,3 +159,32 @@ test('all browser and Worker scripts have valid JavaScript syntax',()=>{
   assert.doesNotThrow(()=>new Function(pauseUi));
   assert.doesNotThrow(()=>new Function(workerApi.replace('export default','const app =')));
 });
+
+
+test('offline mismatch preflight preserves rejected edits and keeps valid edits queued',async()=>{
+  const source=section("const CREW_HELD_PREFIX='crew-held-worker-updates-v1:';","function crewPendingJournal(code){");
+  const stored=new Map();
+  const pending={
+    OLD:{workerId:'OLD',status:'PRESENTE',_workerIdentity:{personal:'Chris',serviceDate:'2026-11-14',trabajo:'LOAD IN',movil:'600111111',inicio:'08:00',fin:'16:00'},_fieldTimes:{status:1},_baseFieldTimes:{status:0}},
+    W2:{workerId:'W2',status:'CONTACTADO',_workerIdentity:{personal:'Alex',serviceDate:'2026-11-14',trabajo:'LOAD IN',movil:'600222222',inicio:'08:00',fin:'16:00'},_fieldTimes:{status:2},_baseFieldTimes:{status:0}}
+  };
+  stored.set('pending:123456',structuredClone(pending));
+  const remote={workers:[
+    {id:'OLD',personal:'Pau',serviceDate:'2026-11-14',trabajo:'LOAD IN',movil:'600333333',inicio:'08:00',fin:'16:00'},
+    {id:'W2',personal:'Alex',serviceDate:'2026-11-14',trabajo:'LOAD IN',movil:'600222222',inicio:'08:00',fin:'16:00'}
+  ]};
+  const state={pendingWorkerUpdates:structuredClone(pending)};
+  const read=(prefix,code)=>structuredClone(stored.get(prefix+code)||{});
+  const write=(prefix,code,value)=>{stored.set(prefix+code,structuredClone(value));return true;};
+  const setup=new Function('crewReadLocal','crewWriteLocal','crewApi','CREW_PENDING_PREFIX','state','setSaveState','crewMergeUpdate',
+    source+';return {crewHoldMismatchedPending,crewHeldJournal,crewPendingIdentityMatches}'
+  );
+  const result=setup(read,write,async()=>({service:remote}),'pending:',state,()=>{},
+    (old,update)=>({...old,...update}));
+  assert.equal(await result.crewHoldMismatchedPending('123456'),1);
+  assert.deepEqual(result.crewHeldJournal('123456').OLD,pending.OLD);
+  assert.deepEqual(stored.get('pending:123456'),{W2:pending.W2});
+  assert.deepEqual(Object.keys(state.pendingWorkerUpdates),['W2']);
+  assert.equal(result.crewPendingIdentityMatches(remote.workers[0],pending.OLD._workerIdentity),false);
+  assert.equal(result.crewPendingIdentityMatches(remote.workers[1],pending.W2._workerIdentity),true);
+});
