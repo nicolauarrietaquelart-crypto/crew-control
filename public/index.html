@@ -12811,68 +12811,77 @@ const crewApi=async(code,method='GET',payload)=> {
 let crewSaveQueue=Promise.resolve();
 let crewLastLocalWrite=0;
 let crewRemoteCheckInFlight=false;
-const crewPersist=service=>{
+// General saves must never copy stale worker lists from another browser.
+// Only an explicit PDF roster import may replace the roster.
+const crewPersist=(service,mode='general')=>{
   if(!service?.code)return Promise.reject(new Error('Servicio no seleccionado'));
   crewLastLocalWrite=Date.now();
   const save=async()=>{
     const code=service.code;
-    // Always merge against the authoritative D1 snapshot. A different device
-    // may have recorded attendance since this tab last fetched the roster.
-    for(let attempt=0;attempt<4;attempt++){
-      const response=await crewApi(code);
-      const remote=response.service;
+    for(let attempt=0;attempt<5;attempt++){
+      const remote=(await crewApi(code)).service;
       if(!remote)throw new Error('No se ha encontrado el servicio');
-      const remoteWorkers=new Map((remote.workers||[]).map(w=>[String(w.id),w]));
-      const workers=(service.workers||[]).map(worker=>{
-        const serverWorker=remoteWorkers.get(String(worker.id));
-        if(!serverWorker)return worker;
-        // Never carry stale attendance or personal fields across identities,
-        // even if a refreshed roster reused the same internal ID.
-        const canonical=v=>String(v||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ');
-        if(canonical(worker.personal)!==canonical(serverWorker.personal)||
-          canonical(worker.serviceDate)!==canonical(serverWorker.serviceDate)||
-          canonical(worker.trabajo)!==canonical(serverWorker.trabajo)){
-          return serverWorker;
-        }
-        // General structure/meta saves must never undo attendance committed
-        // from desktop, iPad or mobile. Attendance changes use the worker patch API.
-        const merged={...worker,_fieldTimes:{...(serverWorker._fieldTimes||{})}};
-        for(const key of Object.keys(serverWorker._fieldTimes||{})){
-          if(key in serverWorker)merged[key]=serverWorker[key];
-        }
-        merged.status=serverWorker.status;
-        merged.arrivalAt=serverWorker.arrivalAt;
-        return merged;
-      });
-      // General snapshot writes never overwrite pause plans from another device.
-      // Pause plans use their own event-based merge and local journal below.
-      const next={...remote,...service,workers,pauseShifts:remote.pauseShifts||[],
-        _pauseVersions:remote._pauseVersions||{},_syncRevision:remote._syncRevision};
-      try{
-        const result=await crewApi(code,'PUT',{
-          service:next,revision:String(remote._syncRevision||'')
-        });
-        if(state.service?.code===code){
-          state.service._syncRevision=result.revision;
-          // Merge authoritative attendance into the active local roster as
-          // long as no worker updates are waiting to be sent.
-          if(!state.workerSaveInFlight&&!Object.keys(state.pendingWorkerUpdates||{}).length){
-            const currentWorkers=new Map(workers.map(w=>[String(w.id),w]));
-            (state.service.workers||[]).forEach(w=>{
-              const updated=currentWorkers.get(String(w.id));
-              if(updated){w.status=updated.status;w.arrivalAt=updated.arrivalAt;}
-            });
+      let workers=remote.workers||[];
+      if(mode==='roster'){
+        const currentById=new Map(workers.map(w=>[String(w.id),w]));
+        const factualFields=['personal','movil','serviceDate','trabajo','blockId','blockLabel',
+          'page','pdfRow','hLlam','inicio','fin','pausa','nDieta','especialidad','sortOrder'];
+        const same=v=>String(v||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ');
+        workers=(service.workers||[]).map(imported=>{
+          const current=currentById.get(String(imported.id));
+          if(!current)return imported;
+          if(same(current.personal)!==same(imported.personal)||
+            same(current.serviceDate)!==same(imported.serviceDate)||
+            same(current.trabajo)!==same(imported.trabajo)){
+            throw new Error('Importación detenida: un ID corresponde a otra persona. No se han sobrescrito fichajes.');
           }
+          // Preserve cloud attendance, actual times, ratings and team assignments.
+          const merged={...current};
+          for(const field of factualFields){
+            if(Object.prototype.hasOwnProperty.call(imported,field))merged[field]=imported[field];
+          }
+          return merged;
+        });
+        const seen=new Set();
+        for(const w of workers){
+          if(!w.id||seen.has(String(w.id)))throw new Error('Importación detenida: hay identificadores de trabajadores duplicados.');
+          seen.add(String(w.id));
         }
-        service._syncRevision=result.revision;
+      }
+      const next={...remote,...service,workers,
+        pauseShifts:remote.pauseShifts||[],_pauseVersions:remote._pauseVersions||{},
+        _syncRevision:remote._syncRevision};
+      try{
+        const result=await crewApi(code,'PUT',{service:next,revision:String(remote._syncRevision||'')});
+        // Do not advance state.service revision until the full authoritative
+        // server snapshot has actually been reloaded by crewCheckRemoteChanges.
         crewLastLocalWrite=Date.now();
-        return service;
+        return {...next,_syncRevision:result.revision};
       }catch(error){
-        if(!String(error?.message||'').includes('Otro dispositivo')||attempt===3)throw error;
+        if(error.status!==409||attempt===4)throw error;
       }
     }
   };
   const task=crewSaveQueue.then(save);
+  crewSaveQueue=task.catch(()=>{});
+  return task;
+};
+const crewSaveLatest=(code,update)=>{
+  const task=crewSaveQueue.then(async()=>{
+    for(let attempt=0;attempt<5;attempt++){
+      const remote=(await crewApi(code)).service;
+      if(!remote)throw new Error('Servicio no encontrado');
+      if(remote.closed)throw new Error('El servicio está cerrado');
+      const next=update(remote);
+      try{
+        const result=await crewApi(code,'PUT',{service:next,revision:String(remote._syncRevision||'')});
+        crewLastLocalWrite=Date.now();
+        return {...next,_syncRevision:result.revision};
+      }catch(error){
+        if(error.status!==409||attempt===4)throw error;
+      }
+    }
+  });
   crewSaveQueue=task.catch(()=>{});
   return task;
 };
@@ -12906,7 +12915,12 @@ async function crewCheckRemoteChanges(){
     state.activeDay=active;
     renderPersonnel();
     applyClosedState();
-    setSaveState('Sincronizado','saved');
+    if(Object.keys(crewPendingJournal(code)).length||crewPausePending(code).length){
+      crewPendingNotice();
+      setSaveState('Cambios locales pendientes · sin confirmar','saving');
+    }else{
+      setSaveState('Sincronizado','saved');
+    }
   }catch(error){console.warn('Sincronización:',error)}
   finally{crewRemoteCheckInFlight=false}
 }
@@ -13076,8 +13090,8 @@ async function crewD1Dispatch(method,args){
       serviceName:String(parsed.meta?.reference||'').trim()||old.serviceName||'',
       pdfName:parsed.meta?.pdfName||old.pdfName||'',
       workers,teams,blocks:parsed.blocks||[],code};
-    await crewPersist(next);
-    return {service:next,summary:{matched,added,removed,scheduleChanged,pauseChanged,dietChanged,coordinatorChanged,movedToReserve,changedNames}};
+    const saved=await crewPersist(next,'roster');
+    return {service:saved,summary:{matched,added,removed,scheduleChanged,pauseChanged,dietChanged,coordinatorChanged,movedToReserve,changedNames}};
   }
   if(method==='duplicateServiceSetup'){
     const newCode=String(crypto.getRandomValues(new Uint32Array(1))[0]%1000000).padStart(6,'0');
@@ -17175,7 +17189,8 @@ async function crewPauseSync(){
     const completed=new Set(events.map(e=>e.eventId));
     crewWriteLocal(CREW_PAUSE_QUEUE,code,crewPausePending(code).filter(e=>!completed.has(e.eventId)));
     if(state.service?.code===code){
-      state.service._syncRevision=result.revision;
+      // Only pause data was refreshed: keep the local revision until a full
+      // snapshot GET brings in all remote changes, including attendance.
       state.service._pauseVersions=next._pauseVersions;
       state.service.pauseShifts=crewPauseMerge(next,crewPausePending(code)).pauseShifts;
       if(!document.getElementById('crewPauseShiftsModal')?.classList.contains('hidden'))renderCrewPauseShifts();
