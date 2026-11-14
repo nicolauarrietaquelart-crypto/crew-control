@@ -12764,13 +12764,45 @@ const crewPersist=service=>{
   crewLastLocalWrite=Date.now();
   const save=async()=>{
     const code=service.code;
-    // Read latest local revision at execution time, not at queue insertion time.
-    const revision=String(state.service?._syncRevision||service._syncRevision||'');
-    const result=await crewApi(code,'PUT',{service,revision});
-    if(state.service?.code===code)state.service._syncRevision=result.revision;
-    service._syncRevision=result.revision;
-    crewLastLocalWrite=Date.now();
-    return service;
+    // Always merge against the authoritative D1 snapshot. A different device
+    // may have recorded attendance since this tab last fetched the roster.
+    for(let attempt=0;attempt<4;attempt++){
+      const response=await crewApi(code);
+      const remote=response.service;
+      if(!remote)throw new Error('No se ha encontrado el servicio');
+      const remoteWorkers=new Map((remote.workers||[]).map(w=>[String(w.id),w]));
+      const workers=(service.workers||[]).map(worker=>{
+        const serverWorker=remoteWorkers.get(String(worker.id));
+        if(!serverWorker)return worker;
+        // General structure/meta saves must never undo attendance committed
+        // from desktop, iPad or mobile. Attendance changes use the worker patch API.
+        return {...worker,status:serverWorker.status,
+          arrivalAt:serverWorker.arrivalAt};
+      });
+      const next={...service,workers,_syncRevision:remote._syncRevision};
+      try{
+        const result=await crewApi(code,'PUT',{
+          service:next,revision:String(remote._syncRevision||'')
+        });
+        if(state.service?.code===code){
+          state.service._syncRevision=result.revision;
+          // Merge authoritative attendance into the active local roster as
+          // long as no worker updates are waiting to be sent.
+          if(!state.workerSaveInFlight&&!Object.keys(state.pendingWorkerUpdates||{}).length){
+            const currentWorkers=new Map(workers.map(w=>[String(w.id),w]));
+            (state.service.workers||[]).forEach(w=>{
+              const updated=currentWorkers.get(String(w.id));
+              if(updated){w.status=updated.status;w.arrivalAt=updated.arrivalAt;}
+            });
+          }
+        }
+        service._syncRevision=result.revision;
+        crewLastLocalWrite=Date.now();
+        return service;
+      }catch(error){
+        if(!String(error?.message||'').includes('Otro dispositivo')||attempt===3)throw error;
+      }
+    }
   };
   const task=crewSaveQueue.then(save);
   crewSaveQueue=task.catch(()=>{});
