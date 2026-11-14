@@ -13907,6 +13907,11 @@ function openServiceData(service){
     crewMobileWorkV11259='ALL';
   }
   state.service=crewPauseMerge(crewRestoreLocalEdits(service),crewPausePending(service.code));
+  const duplicates=crewDuplicateWorkerIds(state.service);
+  if(duplicates.length){
+    setTimeout(()=>{if(state.service?.code===service.code)
+      alert('Aviso de integridad: este servicio contiene '+duplicates.length+' ID(s) de trabajador duplicados o vacíos. Se bloquearán los cambios sobre esas filas hasta corregir el PDF, para evitar fichar a otra persona.');},0);
+  }
   crewDevices=[];crewPresenceLastCode='';
   void crewPresenceHeartbeat();
   crewConnectionRestored();
@@ -14285,17 +14290,45 @@ function crewCacheRoster(){
   // Cache only the latest on-screen service for reopening if D1 is unreachable.
   crewWriteLocal(CREW_CACHE_PREFIX,service.code,{savedAt:Date.now(),service});
 }
+// Duplicate IDs must never be used as row identifiers: one click could
+// otherwise update a different worker in another device.
+function crewDuplicateWorkerIds(service){
+  const counts=new Map();
+  for(const person of service?.workers||[]){
+    const id=String(person.id||'');
+    counts.set(id,(counts.get(id)||0)+1);
+  }
+  return [...counts].filter(([id,count])=>!id||count!==1).map(([id])=>id);
+}
+function crewCanEditWorkerIds(ids){
+  if(!state.service)return false;
+  const duplicates=new Set(crewDuplicateWorkerIds(state.service));
+  const invalid=[...new Set(ids.map(String))].filter(id=>duplicates.has(id)||!(state.service.workers||[]).some(w=>String(w.id)===id));
+  if(invalid.length){
+    setSaveState('ERROR: identificador de trabajador duplicado','error');
+    alert('Se ha bloqueado el cambio: hay identificadores de trabajadores duplicados o inexistentes. No se puede saber con seguridad a qué persona corresponde. Revisa la importación del PDF.');
+    return false;
+  }
+  return true;
+}
 function crewRestoreLocalEdits(service){
   if(!service?.code)return service;
   const journal=crewPendingJournal(service.code);
   const edits=Object.values(journal);
   if(!edits.length)return service;
   const byId=new Map(edits.map(change=>[String(change.workerId),change]));
+  const duplicates=new Set(crewDuplicateWorkerIds(service));
+  const norm=v=>String(v||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ');
   const workers=(service.workers||[]).map(worker=>{
+    if(duplicates.has(String(worker.id)))return worker;
     const change=byId.get(String(worker.id));
     if(!change)return worker;
     const {workerId,_fieldTimes,_workerIdentity,...candidate}=change;
-    if(!_workerIdentity||String(worker.personal||'').trim().toUpperCase()!==String(_workerIdentity.personal||'').trim().toUpperCase())return worker;
+    if(!_workerIdentity||norm(worker.personal)!==norm(_workerIdentity.personal)||
+      norm(worker.serviceDate)!==norm(_workerIdentity.serviceDate)||
+      norm(worker.trabajo)!==norm(_workerIdentity.trabajo)||
+      (_workerIdentity.movil&&worker.movil&&
+        String(_workerIdentity.movil).replace(/\D/g,'').slice(-9)!==String(worker.movil).replace(/\D/g,'').slice(-9)))return worker;
     const fields={};
     for(const [key,value] of Object.entries(candidate)){
       if(Number(_fieldTimes?.[key]||0)>=Number(worker._fieldTimes?.[key]||0))fields[key]=value;
@@ -14331,6 +14364,7 @@ window.addEventListener('online',()=>{crewRetryLocalUpdates();void crewPauseSync
 
 function saveWorkerUpdates(updates){
   if(!state.service||state.service.closed||!updates.length)return;
+  if(!crewCanEditWorkerIds(updates.map(update=>update?.workerId)))return;
 
   const editedAt=Date.now();
   const stamped=updates.filter(update=>update?.workerId).map(update=>{
@@ -17085,6 +17119,7 @@ function teamPanelChangeStatus(workerId,status){
 
 function teamMarkAllPresent(){
   const rows=currentTeamPanelRows().filter(w=>w.status!=='PRESENTE');
+  if(!crewCanEditWorkerIds(rows.map(w=>w.id)))return;
   if(!rows.length)return;
 
   const updates=[];
@@ -18244,6 +18279,7 @@ function applyStatusLocally(w,status,update){
 }
 
 function quickSelectedStatus(status){
+  if(!crewCanEditWorkerIds([...state.selected]))return;
   if(!state.selected.size){
     alert('Selecciona al menos una persona.');
     return;
@@ -18274,6 +18310,7 @@ function nowClockValue(){
 }
 
 function setSelectedTimeNow(mode){
+  if(!crewCanEditWorkerIds([...state.selected]))return;
   if(!state.selected.size){
     alert('Selecciona al menos una persona.');
     return;
@@ -18421,6 +18458,7 @@ function setBulkModalNow(inputId){
 
 
 function applyBulk(){
+  if(!crewCanEditWorkerIds([...state.selected]))return;
   if(!state.selected.size){alert('Selecciona al menos una persona.');return}
   const teamValue=document.getElementById('bulkTeam').value;
   const statusValue=document.getElementById('bulkStatus').value;
@@ -18542,6 +18580,7 @@ function clockPlusMinutes(value,minutes){
 }
 
 function changeWorkerTeam(id,teamId){
+  if(!crewCanEditWorkerIds([id]))return;
   const w=state.service.workers.find(x=>x.id===id);if(!w)return;
 
   w.teamId=teamId;
@@ -18556,6 +18595,7 @@ function changeWorkerTeam(id,teamId){
 }
 
 function changeWorkerStatus(id,status){
+  if(!crewCanEditWorkerIds([id])){renderPersonnel();return;}
   const w=state.service.workers.find(x=>x.id===id);if(!w)return;
 
   const update={workerId:id};
@@ -20356,6 +20396,7 @@ function resetActualSchedule(){
 }
 
 function saveWorkerModal(){
+  if(!crewCanEditWorkerIds([state.modalWorkerId]))return;
   const w=state.service.workers.find(x=>x.id===state.modalWorkerId);if(!w||!state.modalDraft)return;
 
   const update={workerId:w.id};
