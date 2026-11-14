@@ -17,6 +17,8 @@ jobs:
         with:
           node-version: '22'
       - run: npm install
+      - name: Verify attendance and synchronization integrity
+        run: npm test
       - name: Apply D1 migrations
         run: npx wrangler d1 migrations apply crew-control-db --remote
         env:
