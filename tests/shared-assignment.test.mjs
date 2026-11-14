@@ -26,3 +26,13 @@ for(const method of ['crewAssignPersonnelFromWork','randomlyAssignHandsToTeams']
   assert.equal(workers[4].teamId,'');
  });
 }
+
+test('an older attendance poll cannot replace a confirmed local mark',()=>{
+ const helper=html.slice(html.indexOf('function crewHasOlderAttendance'),html.indexOf('async function crewCheckRemoteChanges'));
+ const older=new Function('crewPendingIdentityMatches',helper+';return crewHasOlderAttendance')((a,b)=>a.personal===b.personal);
+ const snapshot=(status,version,personal='Chris')=>({workers:[{id:'1',personal,status,_fieldTimes:{status:version,arrivalAt:version}}]});
+ const confirmed=snapshot('PRESENTE',5);
+ assert.equal(older(confirmed,snapshot('PENDIENTE',4)),true);
+ assert.equal(older(confirmed,snapshot('PENDIENTE',6)),false);
+ assert.equal(older(confirmed,snapshot('PENDIENTE',0,'Pau')),false);
+});

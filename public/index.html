@@ -13114,6 +13114,17 @@ const crewSaveLatest=(code,update)=>{
   crewSaveQueue=task.catch(()=>{});
   return task;
 };
+// A polling response can arrive with an older snapshot than a completed write.
+function crewHasOlderAttendance(local,remote){
+  const previous=new Map((local.workers||[]).map(worker=>[String(worker.id),worker]));
+  return (remote.workers||[]).some(worker=>{
+    const old=previous.get(String(worker.id));
+    if(!old||!crewPendingIdentityMatches(worker,old))return false;
+    return ['status','arrivalAt'].some(field=>
+      Number(worker._fieldTimes?.[field]||0)<Number(old._fieldTimes?.[field]||0));
+  });
+}
+
 async function crewCheckRemoteChanges(){
   if(crewRemoteCheckInFlight||document.hidden||!state.service?.code||state.service.closed)return;
   if(Date.now()-crewLastLocalWrite<500||state.workerSaveInFlight)return;
@@ -13138,6 +13149,7 @@ async function crewCheckRemoteChanges(){
     if(!remote||state.service?.code!==code)return;
     if(state.workerSaveInFlight||
        crewLastLocalWrite>checkStarted||state.service?._syncRevision!==localRevision)return;
+    if(crewHasOlderAttendance(state.service,remote))return;
     const repaired=crewReconcileWorkerJournal(code,remote);
     if(!repaired&&remote._syncRevision===state.service._syncRevision){crewPendingNotice();return;}
     // Do not overwrite a form being edited. The next poll will apply the
@@ -14892,6 +14904,7 @@ function flushPendingWorkerSaves(callback){
       }
       crewAckJournal(serviceCode,batch);
       crewRebasePendingJournal(serviceCode,result.confirmedVersions);
+      if(state.service?.code===serviceCode)crewCacheRoster();
       // Rebuild from the durable journal: in-memory edits from this browser
       // may carry the pre-ACK base version and otherwise conflict on retry.
       state.pendingWorkerUpdates={};
@@ -19146,6 +19159,7 @@ function changeWorkerStatus(id,status){
 
   const update={workerId:id};
   applyStatusLocally(w,status,update);
+  saveWorkerUpdates([update]);
 
   // Todo esto ocurre localmente e inmediatamente.
   refreshWorkerRow(id);
@@ -19161,8 +19175,6 @@ function changeWorkerStatus(id,status){
   updateGroupSummary(trabajo);
   renderOperationalAlerts();
 
-  // El servidor guarda después; no bloquea el indicador.
-  saveWorkerUpdates([update]);
 }
 
 function refreshWorkerRow(id){
