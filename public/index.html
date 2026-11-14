@@ -10938,6 +10938,42 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
  }
 }
 </style>
+<style id="crew-desktop-height-responsive-metrics">
+/* Desktop only: use a larger 2x2 metric grid when the viewport has
+   enough vertical room. Short screens keep the existing compact 4x1 grid.
+   Mobile and tablet layouts remain unchanged. */
+@media screen and (min-width: 901px) and (min-height: 850px) {
+  .sidebar-operational-v122 .operational-dashboard {
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:10px!important;
+  }
+  .sidebar-operational-v122 .dashboard-metric.simple-v127 {
+    min-width:0!important;
+    min-height:96px!important;
+    padding:15px 16px!important;
+    border-radius:18px!important;
+  }
+  .sidebar-operational-v122 .dashboard-metric.simple-v127 strong {
+    font-size:30px!important;
+    line-height:1.08!important;
+  }
+  .sidebar-operational-v122 .dashboard-metric.simple-v127 span {
+    font-size:12px!important;
+    line-height:1.2!important;
+    margin-top:7px!important;
+  }
+}
+@media screen and (min-width: 901px) and (min-height: 1050px) {
+  .sidebar-operational-v122 .dashboard-metric.simple-v127 {
+    min-height:112px!important;
+    padding:19px 18px!important;
+  }
+  .sidebar-operational-v122 .dashboard-metric.simple-v127 strong {
+    font-size:34px!important;
+  }
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
