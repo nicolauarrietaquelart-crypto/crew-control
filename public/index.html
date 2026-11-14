@@ -10889,6 +10889,59 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
  }
 }
 </style>
+<style id="crew-ipad-fixed-width-slider-v2">
+@media (min-width:701px){
+ html body #personnelGroups details.work-group{min-width:0!important;max-width:100%!important}
+ html body #personnelGroups details.work-group > .table-wrap{
+  display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;
+  overflow-x:auto!important;overflow-y:hidden!important;
+  -webkit-overflow-scrolling:touch!important;
+  touch-action:pan-x!important;overscroll-behavior-x:contain!important;
+  scrollbar-width:auto!important;position:relative!important;
+  box-sizing:border-box!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table{
+  display:table!important;width:1520px!important;min-width:1520px!important;
+  max-width:none!important;table-layout:fixed!important;
+  margin:0!important;transform:none!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(1){width:30px!important}
+ html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(2){width:80px!important}
+ html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(3){width:270px!important}
+ html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(4){width:160px!important}
+ html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(5){width:170px!important}
+ html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(6){width:75px!important}
+ html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(7){width:75px!important}
+ html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(8){width:165px!important}
+ html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(9){width:225px!important}
+ html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(10){width:165px!important}
+ html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(11){width:105px!important}
+ html body #personnelGroups details.work-group > .table-wrap > table > colgroup > col.crew-flex-spacer-col{
+  display:none!important;width:0!important;max-width:0!important;min-width:0!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table .crew-flex-spacer-cell{display:none!important}
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody > tr[data-worker-row] > td.mobile-vest .vest{
+  white-space:nowrap!important;word-break:normal!important;overflow-wrap:normal!important;
+  display:inline-flex!important;width:auto!important;max-width:100%!important;
+ }
+ html body #personnelGroups details.work-group > .crew-table-horizontal-control{
+  display:flex!important;gap:12px!important;align-items:center!important;
+  padding:9px 12px!important;margin:0!important;
+  background:#f6f6f6!important;border-top:1px solid #e3e3e3!important;
+ }
+ html body #personnelGroups details.work-group > .crew-table-horizontal-control span{
+  flex:0 0 auto!important;font-size:11px!important;color:#555!important;font-weight:700!important;
+ }
+ html body #personnelGroups details.work-group > .crew-table-horizontal-control input[type=range]{
+  display:block!important;flex:1 1 auto!important;width:100%!important;min-width:0!important;
+  height:22px!important;accent-color:#f58220!important;cursor:ew-resize!important;
+  touch-action:pan-x!important;
+ }
+}
+@media(max-width:700px){
+ #personnelGroups details.work-group > .crew-table-horizontal-control{display:none!important}
+}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -15920,6 +15973,12 @@ function renderPersonnel(light=false){
           </tbody>
         </table>
       </div>
+      <div class="crew-table-horizontal-control" aria-label="Desplazamiento horizontal de tabla">
+        <span>Deslizar tabla</span>
+        <input type="range" min="0" max="1000" value="0" step="1"
+          aria-label="Desplazar tabla a izquierda o derecha"
+          oninput="crewSlideTable(this)">
+      </div>
     </details>`;
     })();
     groupTemplate.innerHTML=markup;
@@ -16008,6 +16067,13 @@ function renderPersonnel(light=false){
 
 
 
+
+function crewSlideTable(input){
+  const tableWrap=input?.closest('details.work-group')?.querySelector('.table-wrap');
+  if(!tableWrap)return;
+  const max=Math.max(0,tableWrap.scrollWidth-tableWrap.clientWidth);
+  tableWrap.scrollLeft=(Number(input.value)||0)/1000*max;
+}
 
 function rememberWorkGroupToggle(details,trabajo){
   if(!details)return;
