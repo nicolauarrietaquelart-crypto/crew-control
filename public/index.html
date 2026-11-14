@@ -17386,6 +17386,7 @@ function crewPauseMerge(remote,events){
         if(shift.serviceDate===event.serviceDate&&
           String(shift.trabajo||'')===String(event.trabajo||'')){
           shift.workerIds=(shift.workerIds||[]).filter(w=>String(w)!==workerId);
+          if(shift.returnStatuses)delete shift.returnStatuses[workerId];
         }
       }
       if(event.checked&&shifts.has(id)){
@@ -17393,12 +17394,31 @@ function crewPauseMerge(remote,events){
         shift.workerIds=[...new Set([...(shift.workerIds||[]),workerId])];
       }
       versions[key]=at;
+    }else if(event.kind==='return'){
+      const workerId=String(event.workerId||'');
+      const key='return:'+id+':'+workerId;
+      const shift=shifts.get(id);
+      const validStatuses=['PENDIENTE','CONTACTADO','PRESENTE','NO PRESENTADO'];
+      if(!shift||!workerId||!validStatuses.includes(event.status)||
+         at<Number(versions[key]||0))continue;
+      // Only allow return marks for a worker still assigned to this pause.
+      if(!(shift.workerIds||[]).some(w=>String(w)===workerId))continue;
+      const statuses={...(shift.returnStatuses||{})};
+      if(event.status==='PENDIENTE')delete statuses[workerId];
+      else statuses[workerId]=event.status;
+      shift.returnStatuses=statuses;
+      versions[key]=at;
     }
   }
   return {...remote,pauseShifts:[...shifts.values()],_pauseVersions:versions};
 }
 function crewPauseSave(event){
   if(!state.service?.code)return;
+  if(!event||!['add','remove','assign','return'].includes(event.kind)){
+    console.error('Turno de pausa sin evento válido; no se confirma el guardado');
+    setSaveState('Error: falta el cambio de pausa que debe guardarse','error');
+    return;
+  }
   const code=state.service.code;
   const pending=crewPausePending(code);
   pending.push({...event,at:Date.now(),eventId:crypto.randomUUID()});
