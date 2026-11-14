@@ -12885,7 +12885,8 @@ async function crewCheckRemoteChanges(){
     if(state.workerSaveInFlight||Object.keys(state.pendingWorkerUpdates||{}).length||
        crewLastLocalWrite>checkStarted||state.service?._syncRevision!==localRevision)return;
     if(remote._syncRevision===state.service._syncRevision)return;
-    state.service=remote;
+    state.service=crewRestoreLocalEdits(remote);
+    crewCacheRoster();
     const active=state.activeDay;
     renderScenarios();
     updateTeamSelects();
@@ -13743,7 +13744,18 @@ function openExistingService(){
   showBox('startStatus','Abriendo servicio…','info');
   backend.run
     .withSuccessHandler(openServiceData)
-    .withFailureHandler(err=>showBox('startStatus',errorMessage(err),'error'))
+    .withFailureHandler(err=>{
+      // If the device is offline, reopen the last saved roster and overlay
+      // only that device's unacknowledged edits, without claiming a cloud save.
+      const cached=crewReadLocal(CREW_CACHE_PREFIX,code);
+      if(cached?.service?.code===code){
+        openServiceData(cached.service);
+        setSaveState('Modo sin conexión · datos locales','error');
+        crewConnectionFailed(err);
+        return;
+      }
+      showBox('startStatus',errorMessage(err),'error');
+    })
     .loadService(code);
 }
 
@@ -13840,8 +13852,10 @@ function openServiceData(service){
     crewMobileShiftV11256='ALL';
     crewMobileWorkV11259='ALL';
   }
-  state.service=service;
+  state.service=crewRestoreLocalEdits(service);
   crewConnectionRestored();
+  state.pendingWorkerUpdates={};
+  const locallyPending=crewLoadPendingIntoState();
   state.service.workOrder=Array.isArray(state.service.workOrder)?state.service.workOrder.map(String):[];
   state.service.hiddenWorkTypes=Array.isArray(state.service.hiddenWorkTypes)?state.service.hiddenWorkTypes.map(String):[];
   state.selected.clear();
@@ -13892,7 +13906,13 @@ function openServiceData(service){
   updateTeamSelects();
   renderPersonnel();
   applyClosedState();
-  setSaveState('Guardado','saved');
+  if(locallyPending){
+    crewPendingNotice();
+    crewRetryLocalUpdates();
+  }else{
+    setSaveState('Sincronizado','saved');
+  }
+  crewCacheRoster();
   // Audit isn't needed for first paint. Schedule after core personnel render.
   const openedServiceCode=String(service.code);
   requestAnimationFrame(()=>{
@@ -13904,8 +13924,16 @@ function openServiceData(service){
 }
 
 function closeService(){
-  if(state.workerSaveInFlight||Object.keys(state.pendingWorkerUpdates||{}).length){
+  if(state.workerSaveInFlight||Object.keys(state.pendingWorkerUpdates||{}).length||
+     Object.keys(crewPendingJournal(state.service?.code)).length){
+    crewCacheRoster();
+    if(!navigator.onLine){
+      crewPendingNotice();
+      finalizeCloseServiceView();
+      return;
+    }
     setSaveState('Guardando antes de salir…','saving');
+    crewRetryLocalUpdates();
     flushPendingWorkerSaves(()=>finalizeCloseServiceView());
     return;
   }
@@ -13928,6 +13956,8 @@ function finalizeCloseServiceView(){
   crewMobileShiftV11256='ALL';
   crewMobileWorkV11259='ALL';
   state.selected.clear();
+  // Preserve the durable journal: pending edits may still be replayed
+  // when this service is reopened, even after leaving the view.
   state.pendingWorkerUpdates={};
   document.getElementById('serviceCodeInput').value='';
   document.getElementById('appScreen').classList.add('hidden');
@@ -13984,6 +14014,99 @@ function scheduleStructureSave(){
   },500);
 }
 
+// Durable local journal of worker edits: never treat an unacknowledged write as saved.
+const CREW_PENDING_PREFIX='crew-control-pending-v1:';
+const CREW_CACHE_PREFIX='crew-control-roster-v1:';
+const crewStorageKey=(prefix,code)=>prefix+String(code||'');
+function crewReadLocal(prefix,code){
+  try{return JSON.parse(localStorage.getItem(crewStorageKey(prefix,code))||'null');}
+  catch(error){console.warn('Lectura local:',error);return null;}
+}
+function crewWriteLocal(prefix,code,value){
+  try{localStorage.setItem(crewStorageKey(prefix,code),JSON.stringify(value));return true;}
+  catch(error){
+    console.error('No se puede guardar localmente:',error);
+    crewConnectionIssue='El almacenamiento local no está disponible. No cierres la aplicación hasta confirmar los cambios.';
+    crewConnectionDismissed=false;crewConnectionUI();
+    setSaveState('Error de almacenamiento local','error');
+    return false;
+  }
+}
+function crewPendingJournal(code){
+  const stored=crewReadLocal(CREW_PENDING_PREFIX,code);
+  return stored&&typeof stored==='object'&&!Array.isArray(stored)?stored:{};
+}
+function crewJournalUpdates(code,updates){
+  const journal=crewPendingJournal(code);
+  updates.forEach(update=>{
+    if(!update?.workerId)return;
+    const id=String(update.workerId);
+    journal[id]={...(journal[id]||{workerId:id}),...update,workerId:id};
+  });
+  return crewWriteLocal(CREW_PENDING_PREFIX,code,journal);
+}
+function crewAckJournal(code,batch){
+  const journal=crewPendingJournal(code);
+  for(const sent of batch){
+    const id=String(sent.workerId);
+    const current=journal[id];
+    if(!current)continue;
+    for(const [key,value] of Object.entries(sent)){
+      if(key!=='workerId'&&Object.prototype.hasOwnProperty.call(current,key)&&
+        JSON.stringify(current[key])===JSON.stringify(value))delete current[key];
+    }
+    if(Object.keys(current).every(k=>k==='workerId'))delete journal[id];
+  }
+  crewWriteLocal(CREW_PENDING_PREFIX,code,journal);
+  return journal;
+}
+function crewCacheRoster(){
+  const service=state.service;
+  if(!service?.code)return;
+  // Cache only the latest on-screen service for reopening if D1 is unreachable.
+  crewWriteLocal(CREW_CACHE_PREFIX,service.code,{savedAt:Date.now(),service});
+}
+function crewRestoreLocalEdits(service){
+  if(!service?.code)return service;
+  const journal=crewPendingJournal(service.code);
+  const edits=Object.values(journal);
+  if(!edits.length)return service;
+  const byId=new Map(edits.map(change=>[String(change.workerId),change]));
+  const workers=(service.workers||[]).map(worker=>{
+    const change=byId.get(String(worker.id));
+    if(!change)return worker;
+    const {workerId,...fields}=change;
+    return {...worker,...fields};
+  });
+  return {...service,workers};
+}
+function crewLoadPendingIntoState(){
+  if(!state.service?.code)return 0;
+  const journal=crewPendingJournal(state.service.code);
+  for(const update of Object.values(journal)){
+    if(!update?.workerId)continue;
+    const id=String(update.workerId);
+    state.pendingWorkerUpdates[id]={
+      ...(state.pendingWorkerUpdates[id]||{workerId:id}),...update,workerId:id
+    };
+  }
+  return Object.keys(journal).length;
+}
+function crewPendingNotice(){
+  const count=state.service?.code?Object.keys(crewPendingJournal(state.service.code)).length:0;
+  if(count)setSaveState(count+' cambios guardados localmente · pendientes de sincronizar','saving');
+  return count;
+}
+function crewRetryLocalUpdates(){
+  if(!state.service?.code||state.service.closed||state.workerSaveInFlight)return;
+  const count=crewLoadPendingIntoState();
+  if(count&&navigator.onLine)flushPendingWorkerSaves();
+  else if(count)crewPendingNotice();
+}
+window.setInterval(crewRetryLocalUpdates,3000);
+window.addEventListener('pagehide',()=>{if(state.service?.code)crewCacheRoster();});
+window.addEventListener('online',()=>crewRetryLocalUpdates());
+
 function saveWorkerUpdates(updates){
   if(!state.service||state.service.closed||!updates.length)return;
 
@@ -13998,10 +14121,11 @@ function saveWorkerUpdates(updates){
     };
   });
 
-  // Mark a local edit before the debounce, so remote synchronization cannot
-  // restore stale presence data while the user is changing status.
+  // Persist synchronously before any async network operation or page exit.
+  const durable=crewJournalUpdates(state.service.code,updates);
+  crewCacheRoster();
   crewLastLocalWrite=Date.now();
-  setSaveState('Guardando…','saving');
+  if(durable)setSaveState('Guardado en dispositivo · sincronizando…','saving');
   clearTimeout(state.workerSaveTimer);
   state.workerSaveTimer=setTimeout(()=>flushPendingWorkerSaves(),120);
 }
@@ -14021,12 +14145,16 @@ function flushPendingWorkerSaves(callback){
   }
 
   if(!state.service||state.service.closed){
-    state.pendingWorkerUpdates={};
-    runWorkerSaveCallbacks();
+    crewPendingNotice();
     return;
   }
 
   const serviceCode=state.service.code;
+  if(!navigator.onLine){
+    crewPendingNotice();
+    return;
+  }
+  // Entries stay on disk during the request; remove only after a 200 from D1.
   state.pendingWorkerUpdates={};
   state.workerSaveInFlight=true;
   clearTimeout(state.workerSaveTimer);
@@ -14034,13 +14162,15 @@ function flushPendingWorkerSaves(callback){
   backend.run
     .withSuccessHandler(()=>{
       state.workerSaveInFlight=false;
-
+      crewAckJournal(serviceCode,batch);
+      // New changes made during the in-flight request remain in the journal.
+      crewLoadPendingIntoState();
       if(Object.keys(state.pendingWorkerUpdates).length){
+        crewPendingNotice();
         flushPendingWorkerSaves();
         return;
       }
-
-      setSaveState('Guardado','saved');
+      setSaveState('Sincronizado con D1','saved');
       runWorkerSaveCallbacks();
       // Read the authoritative D1 snapshot after every confirmed batch.
       // This pulls changes made on desktop into tablet/phone (and vice versa).
@@ -14062,7 +14192,8 @@ function flushPendingWorkerSaves(callback){
       });
 
       state.workerSaveInFlight=false;
-      setSaveState('Error al guardar · cambios pendientes','error');
+      crewPendingNotice();
+      setSaveState('Sin conexión · cambios guardados localmente','error');
       crewConnectionFailed(err);
       state.workerSaveCallbacks=[];
       // Keep pending edits until a successful retry; do not discard them.
