@@ -10385,42 +10385,54 @@ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data
 }
 </style>
 <style id="crew-mobile-service-toolbar-one-row-v1">
+/* One uninterrupted mobile toolbar: service number, state, close, exit, devices. */
 @media(max-width:700px){
  html body #appScreen .service-top{
-  display:grid!important;grid-template-columns:clamp(92px,29vw,132px) minmax(0,1fr)!important;
-  align-items:center!important;gap:7px!important;padding:7px 8px!important;
-  margin-bottom:8px!important;min-width:0!important;
+  display:grid!important;
+  grid-template-columns:minmax(75px,auto) minmax(0,1fr)!important;
+  align-items:center!important;gap:5px!important;
+  padding:7px 6px!important;margin-bottom:8px!important;
+  min-width:0!important;flex-wrap:nowrap!important;
  }
  html body #appScreen .service-top>.service-code{
-  display:block!important;min-width:0!important;width:100%!important;margin:0!important;
+  display:flex!important;align-items:center!important;min-width:0!important;width:auto!important;margin:0!important;
  }
  html body #appScreen .service-top>.service-code>span:first-child,
  html body #appScreen .service-top>.service-code>.compact-code-btn{display:none!important;}
  html body #appScreen .service-top #serviceCodeBadge{
   display:flex!important;align-items:center!important;justify-content:center!important;
-  width:100%!important;min-width:0!important;max-width:100%!important;
-  min-height:38px!important;margin:0!important;padding:7px 5px!important;
-  box-sizing:border-box!important;font-size:clamp(14px,4vw,18px)!important;
-  letter-spacing:.025em!important;white-space:nowrap!important;
+  min-width:0!important;width:100%!important;
+  min-height:36px!important;margin:0!important;padding:6px 6px!important;
+  box-sizing:border-box!important;font-size:clamp(12px,3.6vw,17px)!important;
+  letter-spacing:0!important;white-space:nowrap!important;
   overflow:hidden!important;cursor:pointer!important;touch-action:manipulation!important;
  }
  html body #appScreen .service-top>.service-actions{
-  display:grid!important;grid-template-columns:minmax(0,1fr) 38px 38px!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 32px 32px 47px!important;
   width:100%!important;min-width:0!important;margin:0!important;padding:0!important;
-  gap:6px!important;align-items:center!important;
+  gap:4px!important;align-items:center!important;flex-wrap:nowrap!important;
  }
  html body #appScreen .service-top>.service-actions #saveState{
   grid-column:1!important;min-width:0!important;max-width:100%!important;
-  display:block!important;margin:0!important;padding:0 2px!important;
-  font-size:clamp(9px,2.6vw,12px)!important;line-height:1.2!important;
+  display:block!important;margin:0!important;padding:0!important;
+  font-size:clamp(8px,2.1vw,11px)!important;line-height:1.2!important;
   white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
  }
  html body #appScreen .service-top>.service-actions .icon-btn,
  html body #appScreen .service-top>.service-actions .close-service-btn{
-  width:38px!important;min-width:38px!important;max-width:38px!important;
-  height:38px!important;min-height:38px!important;margin:0!important;padding:0!important;
+  width:32px!important;min-width:32px!important;max-width:32px!important;
+  height:36px!important;min-height:36px!important;margin:0!important;padding:0!important;
   box-sizing:border-box!important;
  }
+ html body #appScreen .service-top>.service-actions #crewDeviceButton{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  gap:3px!important;width:47px!important;min-width:47px!important;max-width:47px!important;
+  height:36px!important;min-height:36px!important;margin:0!important;padding:0 3px!important;
+  font-size:10px!important;box-sizing:border-box!important;
+ }
+ html body #appScreen .service-top>.service-actions #crewDeviceButton svg{width:15px!important;height:15px!important;flex:none!important}
+ html body #appScreen .service-top>.service-actions #crewDeviceButton .crew-device-dot{width:6px!important;height:6px!important}
 }
 </style>
 <style id="crew-desktop-role-and-selection-fix-v1">
@@ -11004,7 +11016,6 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
       <div class="service-code">
         <span>Servicio</span>
         <span id="serviceCodeBadge" class="code-pill" role="button" tabindex="0" onclick="copyServiceCode()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();copyServiceCode()}" title="Toca para copiar el código" aria-label="Copiar código del servicio">000000</span>
-        <button type="button" id="crewDeviceButton" class="secondary crew-device-button" onclick="crewOpenDevices()" title="Dispositivos conectados" aria-label="Ver dispositivos conectados"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="13" height="11" rx="2"/><path d="M6 19h6m-3-4v4"/><rect x="17" y="8" width="5" height="11" rx="1.5"/></svg><span id="crewDeviceCount">0</span><span class="crew-device-dot" id="crewDeviceDot"></span></button>
         <button class="secondary icon-btn compact-code-btn" onclick="copyServiceCode()" title="Copiar código"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"></rect><path d="M5 16H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1"></path></svg><span>Copiar</span></button>
       </div>
       <div class="service-actions">
@@ -11016,6 +11027,7 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
         <button class="secondary icon-btn icon-only-mobile" onclick="closeService()" title="Cambiar servicio">
           <svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5"></path><path d="M15 12H3"></path><path d="M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"></path></svg><span>Salir</span>
         </button>
+        <button type="button" id="crewDeviceButton" class="secondary crew-device-button" onclick="crewOpenDevices()" title="Dispositivos conectados" aria-label="Ver dispositivos conectados"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="13" height="11" rx="2"/><path d="M6 19h6m-3-4v4"/><rect x="17" y="8" width="5" height="11" rx="1.5"/></svg><span id="crewDeviceCount">0</span><span class="crew-device-dot" id="crewDeviceDot"></span></button>
       </div>
     </div>
 
@@ -13928,22 +13940,57 @@ function openServiceData(service){
   // Refresh is handled through the Workers API on explicit reload.
 }
 
-function closeService(){
-  if(state.workerSaveInFlight||Object.keys(state.pendingWorkerUpdates||{}).length||
-     Object.keys(crewPendingJournal(state.service?.code)).length){
+let crewExitInProgress=false;
+async function closeService(){
+  if(crewExitInProgress||!state.service?.code)return;
+  crewExitInProgress=true;
+  const code=state.service.code;
+  const button=document.querySelector('#appScreen .service-actions button[title="Cambiar servicio"]');
+  if(button)button.disabled=true;
+  try{
+    // Before leaving, persist a local recovery point even if the network fails.
     crewCacheRoster();
+    clearTimeout(state.workerSaveTimer);
+    clearTimeout(state.metaTimer);
+    clearTimeout(state.structureTimer);
     if(!navigator.onLine){
       crewPendingNotice();
+      // The local journal must remain intact for replay on reconnect.
       finalizeCloseServiceView();
+      showBox('startStatus','Servicio guardado en este dispositivo. Hay cambios pendientes de sincronizar al recuperar conexión.','info');
       return;
     }
-    setSaveState('Guardando antes de salir…','saving');
-    crewRetryLocalUpdates();
-    flushPendingWorkerSaves(()=>finalizeCloseServiceView());
-    return;
+    setSaveState('Sincronizando antes de salir…','saving');
+    // Finish in-flight worker writes before starting the last retry.
+    await crewSaveQueue;
+    crewLoadPendingIntoState();
+    const batch=Object.values(crewPendingJournal(code));
+    if(batch.length){
+      // Use the same per-field timestamp conflict merge as normal saving.
+      await dispatchBackend('saveWorkerChanges',[code,batch]);
+      crewAckJournal(code,batch);
+      state.pendingWorkerUpdates={};
+    }
+    if(crewPausePending(code).length){
+      await crewPauseSync();
+      if(crewPausePending(code).length)throw new Error('Turnos de pausa pendientes de sincronizar');
+    }
+    await crewSaveQueue;
+    if(Object.keys(crewPendingJournal(code)).length||crewPausePending(code).length){
+      throw new Error('Quedan cambios pendientes de sincronización');
+    }
+    crewCacheRoster();
+    finalizeCloseServiceView();
+  }catch(error){
+    console.error('Salir y guardar:',error);
+    crewCacheRoster();
+    setSaveState('Cambios locales pendientes · no sincronizado','error');
+    crewConnectionFailed(error);
+    alert('No se ha confirmado el guardado en la nube. Tus cambios siguen guardados en este dispositivo. Revisa la conexión y vuelve a pulsar Salir.');
+  }finally{
+    crewExitInProgress=false;
+    if(button)button.disabled=false;
   }
-
-  finalizeCloseServiceView();
 }
 
 function finalizeCloseServiceView(){
