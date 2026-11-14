@@ -13128,7 +13128,7 @@ async function crewCheckRemoteChanges(){
       crewPendingNotice();
       setSaveState('Cambios locales pendientes · sin confirmar','saving');
     }else{
-      setSaveState('Sincronizado','saved');
+      if(!crewHeldNotice(code))setSaveState('Sincronizado','saved');
     }
   }catch(error){console.warn('Sincronización:',error)}
   finally{crewRemoteCheckInFlight=false}
@@ -14487,6 +14487,55 @@ function crewWriteLocal(prefix,code,value){
     return false;
   }
 }
+// A rejected edit must never be erased or replayed to a different worker.
+const CREW_HELD_PREFIX='crew-held-worker-updates-v1:';
+function crewHeldJournal(code){
+  const stored=crewReadLocal(CREW_HELD_PREFIX,code);
+  return stored&&typeof stored==='object'&&!Array.isArray(stored)?stored:{};
+}
+function crewHeldCount(code){return Object.keys(crewHeldJournal(code)).length;}
+function crewPendingIdentityMatches(worker,identity){
+  if(!worker||!identity)return false;
+  const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .trim().toUpperCase().replace(/\s+/g,' ');
+  const phone=v=>String(v||'').replace(/\D/g,'').slice(-9);
+  return Boolean(norm(identity.personal))&&
+    norm(worker.personal)===norm(identity.personal)&&
+    norm(worker.serviceDate)===norm(identity.serviceDate)&&
+    norm(worker.trabajo)===norm(identity.trabajo)&&
+    (!identity.movil||!worker.movil||phone(identity.movil)===phone(worker.movil))&&
+    (identity.inicio===undefined||String(identity.inicio||'')===String(worker.inicio||''))&&
+    (identity.fin===undefined||String(identity.fin||'')===String(worker.fin||''));
+}
+async function crewHoldMismatchedPending(code){
+  if(!code)return 0;
+  const remote=(await crewApi(code)).service;
+  if(!remote)return 0;
+  const pending=crewPendingJournal(code),invalid={};
+  for(const [id,update] of Object.entries(pending)){
+    const matches=(remote.workers||[]).filter(w=>String(w.id)===String(id));
+    if(matches.length!==1||!crewPendingIdentityMatches(matches[0],update._workerIdentity)){
+      invalid[id]=update;
+    }
+  }
+  if(!Object.keys(invalid).length)return 0;
+  const held={...crewHeldJournal(code)};
+  for(const [id,update] of Object.entries(invalid)){
+    held[id]=held[id]?crewMergeUpdate(held[id],update):update;
+  }
+  // Persist to a separate recovery journal before excluding from retries.
+  if(!crewWriteLocal(CREW_HELD_PREFIX,code,held))return 0;
+  const updated={...pending};
+  for(const id of Object.keys(invalid))delete updated[id];
+  if(!crewWriteLocal(CREW_PENDING_PREFIX,code,updated))return 0;
+  for(const id of Object.keys(invalid))delete state.pendingWorkerUpdates[id];
+  return Object.keys(invalid).length;
+}
+function crewHeldNotice(code){
+  const held=crewHeldCount(code);
+  if(held)setSaveState(held+' cambio(s) pendientes de revisión · fichajes protegidos','error');
+  return held;
+}
 function crewPendingJournal(code){
   const stored=crewReadLocal(CREW_PENDING_PREFIX,code);
   return stored&&typeof stored==='object'&&!Array.isArray(stored)?stored:{};
@@ -14630,6 +14679,7 @@ function crewLoadPendingIntoState(){
 function crewPendingNotice(){
   const count=state.service?.code?Object.keys(crewPendingJournal(state.service.code)).length:0;
   if(count)setSaveState(count+' cambios guardados localmente · pendientes de sincronizar','saving');
+  else if(state.service?.code)crewHeldNotice(state.service.code);
   return count;
 }
 function crewRetryLocalUpdates(){
@@ -14724,7 +14774,7 @@ function flushPendingWorkerSaves(callback){
       if(crewPausePending(serviceCode).length){
         setSaveState('Pausas pendientes de sincronizar','saving');
       }else{
-        setSaveState('Sincronizado con D1','saved');
+        if(!crewHeldNotice(serviceCode))setSaveState('Sincronizado con D1','saved');
       }
       runWorkerSaveCallbacks();
       // Read the authoritative D1 snapshot after every confirmed batch.
@@ -14748,6 +14798,17 @@ function flushPendingWorkerSaves(callback){
       setSaveState(!navigator.onLine?'Sin conexión · cambios guardados localmente':'Error al sincronizar · cambios guardados localmente','error');
       crewConnectionFailed(err);
       state.workerSaveCallbacks=[];
+      // Stale IDs must not poison every future sync attempt.
+      if(navigator.onLine&&/Identidad del trabajador no coincide|ID de trabajador duplicado en el lote/.test(String(err?.message||''))){
+        void crewHoldMismatchedPending(serviceCode).then(count=>{
+          if(count){
+            crewHeldNotice(serviceCode);
+            crewLastLocalWrite=0;
+            void crewCheckRemoteChanges();
+            if(Object.keys(state.pendingWorkerUpdates).length)flushPendingWorkerSaves();
+          }
+        }).catch(error=>console.warn('Revisión segura de fichajes:',error));
+      }
       // Keep pending edits until a successful retry; do not discard them.
       if(navigator.onLine) setTimeout(()=>{
         if(state.service?.code===serviceCode&&!state.workerSaveInFlight&&
