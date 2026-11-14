@@ -119,9 +119,9 @@ test('the next click uses the last confirmed version, even with no pending write
   const journal={};
   const workers=[{id:'W1',_fieldTimes:{}}];
   const state={service:{code:'123456',workers}};
-  const rebase=new Function('crewPendingJournal','crewWriteLocal','state',
+  const rebase=new Function('crewPendingJournal','crewWriteLocal','state','CREW_PENDING_PREFIX',
     code+';return crewRebasePendingJournal'
-  )(()=>journal,()=>true,state);
+  )(()=>journal,()=>true,state,'test:');
   rebase('123456',{W1:{status:1}});
   assert.equal(workers[0]._fieldTimes.status,1);
   journal.W1={workerId:'W1',status:'NO PRESENTADO',_baseFieldTimes:{status:0}};
