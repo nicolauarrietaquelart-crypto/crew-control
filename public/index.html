@@ -10973,6 +10973,32 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
   }
 }
 </style>
+<style id="crew-ipad-metrics-single-row">
+/* iPadOS can report a desktop-sized viewport. Use touch + iPad-class
+   viewport dimensions to restore four metrics in one row, in both orientations. */
+@media screen and (pointer:coarse) and (hover:none) and (min-width:700px) and (max-width:1400px) {
+  html body .sidebar-operational-v122 #operationalDashboard.operational-dashboard {
+    display:grid!important;
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    gap:6px!important;
+  }
+  html body .sidebar-operational-v122 #operationalDashboard .dashboard-metric.simple-v127 {
+    min-width:0!important;
+    min-height:58px!important;
+    padding:8px 7px!important;
+    border-radius:13px!important;
+  }
+  html body .sidebar-operational-v122 #operationalDashboard .dashboard-metric.simple-v127 strong {
+    font-size:20px!important;
+    line-height:1.1!important;
+  }
+  html body .sidebar-operational-v122 #operationalDashboard .dashboard-metric.simple-v127 span {
+    font-size:10px!important;
+    line-height:1.15!important;
+    overflow-wrap:anywhere!important;
+  }
+}
+</style>
 <style id="crew-search-collapsed-spacing-desktop">
 @media screen and (min-width:901px) {
   /* Do not reserve an invisible search input's min-height or flex gap. */
