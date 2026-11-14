@@ -12884,6 +12884,7 @@ const crewPersist=(service,mode='general')=>{
       const remote=(await crewApi(code)).service;
       if(!remote)throw new Error('No se ha encontrado el servicio');
       let workers=remote.workers||[];
+      let remoteDuplicateIds=new Set();
       if(mode==='roster'){
         // Resolve IDs on the authoritative remote roster, not on a stale tab.
         // Match a unique, verified row before retaining any cloud attendance.
@@ -12892,7 +12893,7 @@ const crewPersist=(service,mode='general')=>{
         const reserved=new Set(remoteRows.map(w=>String(w.id||'')).filter(Boolean));
         const remoteCounts=new Map();
         remoteRows.forEach(w=>remoteCounts.set(String(w.id||''),(remoteCounts.get(String(w.id||''))||0)+1));
-        const remoteDuplicateIds=new Set([...remoteCounts].filter(([id,count])=>id&&count>1).map(([id])=>id));
+        remoteDuplicateIds=new Set([...remoteCounts].filter(([id,count])=>id&&count>1).map(([id])=>id));
         const usedIds=new Set();
         const factualFields=['personal','movil','serviceDate','trabajo','blockId','blockLabel',
           'page','pdfRow','hLlam','inicio','fin','pausa','nDieta','especialidad','sortOrder'];
