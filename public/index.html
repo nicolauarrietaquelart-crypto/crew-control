@@ -12813,6 +12813,32 @@ let crewLastLocalWrite=0;
 let crewRemoteCheckInFlight=false;
 // General saves must never copy stale worker lists from another browser.
 // Only an explicit PDF roster import may replace the roster.
+// Worker IDs are row identities, not identifiers of a person across shifts.
+// Never reuse an ID within one service, even when imported PDF data contains
+// repeated IDs or an older roster already has duplicates.
+function crewUniqueWorkerIds(workers){
+  const used=new Set();
+  let repaired=0;
+  const list=(workers||[]).map(worker=>{
+    let id=String(worker.id||'').trim();
+    if(!id||used.has(id)){
+      do{id='W_'+crypto.randomUUID();}while(used.has(id));
+      repaired++;
+    }
+    used.add(id);
+    return id===worker.id?worker:{...worker,id};
+  });
+  return {workers:list,repaired};
+}
+function crewWorkerIdentityEqual(a,b){
+  const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .trim().toUpperCase().replace(/\s+/g,' ');
+  const phone=v=>String(v||'').replace(/\D/g,'').slice(-9);
+  return norm(a.personal)&&norm(a.personal)===norm(b.personal)&&
+    norm(a.serviceDate)===norm(b.serviceDate)&&
+    norm(a.trabajo)===norm(b.trabajo)&&
+    (!phone(a.movil)||!phone(b.movil)||phone(a.movil)===phone(b.movil));
+}
 const crewPersist=(service,mode='general')=>{
   if(!service?.code)return Promise.reject(new Error('Servicio no seleccionado'));
   crewLastLocalWrite=Date.now();
@@ -12823,30 +12849,43 @@ const crewPersist=(service,mode='general')=>{
       if(!remote)throw new Error('No se ha encontrado el servicio');
       let workers=remote.workers||[];
       if(mode==='roster'){
-        const currentById=new Map(workers.map(w=>[String(w.id),w]));
+        // Resolve IDs on the authoritative remote roster, not on a stale tab.
+        // Match a unique, verified row before retaining any cloud attendance.
+        const remoteRows=remote.workers||[];
+        const claimed=new Set();
+        const reserved=new Set(remoteRows.map(w=>String(w.id||'')).filter(Boolean));
+        const usedIds=new Set();
         const factualFields=['personal','movil','serviceDate','trabajo','blockId','blockLabel',
           'page','pdfRow','hLlam','inicio','fin','pausa','nDieta','especialidad','sortOrder'];
-        const same=v=>String(v||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ');
+        const freshId=()=>{
+          let id;
+          do{id='W_'+crypto.randomUUID();}while(usedIds.has(id)||reserved.has(id));
+          return id;
+        };
         workers=(service.workers||[]).map(imported=>{
-          const current=currentById.get(String(imported.id));
-          if(!current)return imported;
-          if(same(current.personal)!==same(imported.personal)||
-            same(current.serviceDate)!==same(imported.serviceDate)||
-            same(current.trabajo)!==same(imported.trabajo)){
-            throw new Error('Importación detenida: un ID corresponde a otra persona. No se han sobrescrito fichajes.');
+          const matches=remoteRows.filter(w=>!claimed.has(w)&&crewWorkerIdentityEqual(w,imported));
+          const exact=matches.filter(w=>String(w.id||'')===String(imported.id||''));
+          // An ambiguous same-person/same-shift duplicate is not safe to copy.
+          const current=exact.length===1?exact[0]:matches.length===1?matches[0]:null;
+          if(current)claimed.add(current);
+          // Existing current records have priority; a new PDF row cannot steal
+          // an ID belonging to another worker or another shift.
+          let id=String(current?.id||imported.id||'').trim();
+          if(!id||usedIds.has(id)||
+            (reserved.has(id)&&!current)){
+            id=freshId();
           }
-          // Preserve cloud attendance, actual times, ratings and team assignments.
+          usedIds.add(id);
+          if(!current)return {...imported,id};
           const merged={...current};
           for(const field of factualFields){
             if(Object.prototype.hasOwnProperty.call(imported,field))merged[field]=imported[field];
           }
-          return merged;
+          return {...merged,id};
         });
-        const seen=new Set();
-        for(const w of workers){
-          if(!w.id||seen.has(String(w.id)))throw new Error('Importación detenida: hay identificadores de trabajadores duplicados.');
-          seen.add(String(w.id));
-        }
+        // Extra defense against future importers that supply malformed IDs.
+        const unique=crewUniqueWorkerIds(workers);
+        workers=unique.workers;
       }
       const next={...remote,...service,workers,
         pauseShifts:remote.pauseShifts||[],_pauseVersions:remote._pauseVersions||{},
@@ -13090,6 +13129,9 @@ async function crewD1Dispatch(method,args){
       merged.sortOrder=index+1;
       return merged;
     });
+    // Repair duplicate/empty IDs from the PDF and the previously imported list.
+    // Keep the first matched row's ID; subsequent rows receive fresh UUIDs.
+    const uniqueWorkers=crewUniqueWorkerIds(workers);
     const removed=previous.length-matched;
     // Do not destroy existing data if a parser/template change suddenly stops
     // recognising most of a previously populated roster.
@@ -13099,9 +13141,10 @@ async function crewD1Dispatch(method,args){
     const next={...old,...(parsed.meta||{}),
       serviceName:String(parsed.meta?.reference||'').trim()||old.serviceName||'',
       pdfName:parsed.meta?.pdfName||old.pdfName||'',
-      workers,teams,blocks:parsed.blocks||[],code};
+      workers:uniqueWorkers.workers,teams,blocks:parsed.blocks||[],code};
     const saved=await crewPersist(next,'roster');
-    return {service:saved,summary:{matched,added,removed,scheduleChanged,pauseChanged,dietChanged,coordinatorChanged,movedToReserve,changedNames}};
+    const duplicateIdsCorrected=uniqueWorkers.repaired;
+    return {service:saved,summary:{matched,added,removed,scheduleChanged,pauseChanged,dietChanged,coordinatorChanged,movedToReserve,changedNames,duplicateIdsCorrected}};
   }
   if(method==='duplicateServiceSetup'){
     const newCode=String(crypto.getRandomValues(new Uint32Array(1))[0]%1000000).padStart(6,'0');
