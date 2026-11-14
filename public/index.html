@@ -12906,6 +12906,16 @@ async function crewCheckRemoteChanges(){
     if(state.workerSaveInFlight||
        crewLastLocalWrite>checkStarted||state.service?._syncRevision!==localRevision)return;
     if(remote._syncRevision===state.service._syncRevision)return;
+    // A PDF reimport may have replaced a worker behind an existing ID.
+    // Clear outdated selections rather than applying the next bulk action
+    // to another person with that reused ID.
+    const identity=w=>[w.personal,w.serviceDate,w.trabajo,w.movil].map(v=>String(v||'').trim().toUpperCase()).join('|');
+    const previousWorkers=new Map((state.service.workers||[]).map(w=>[String(w.id),identity(w)]));
+    const currentWorkers=new Map((remote.workers||[]).map(w=>[String(w.id),identity(w)]));
+    for(const id of state.selected){
+      if(!currentWorkers.has(String(id))||
+        previousWorkers.get(String(id))!==currentWorkers.get(String(id)))state.selected.delete(id);
+    }
     state.service=crewRestoreLocalEdits(remote);
     state.service=crewPauseMerge(state.service,crewPausePending(code));
     crewCacheRoster();
@@ -17521,7 +17531,11 @@ function crewStaffingChooseWork(){
   const linked=state.service.staffingLinkedWorks||{};
   linked[key]=[...new Set([...(linked[key]||[]),work])];
   state.service.staffingLinkedWorks=linked;
-  crewPersist(state.service).catch(console.error);
+  // Only the linked-work configuration is written; never an outdated roster.
+  const code=state.service.code;
+  const currentLinks=structuredClone(linked);
+  crewSaveLatest(code,remote=>({...remote,staffingLinkedWorks:currentLinks}))
+    .catch(error=>{console.error(error);setSaveState('Error al guardar planificación','error');});
   renderCrewStaffingLinkedWorks();renderStaffingRows();crewScheduleStaffingAutosave();
 }
 function crewStaffingRemoveWork(work){
@@ -17540,7 +17554,11 @@ function crewStaffingRemoveWork(work){
     if(!linked[key].length)delete linked[key];
   });
   state.service.staffingLinkedWorks=linked;
-  crewPersist(state.service).catch(console.error);
+  // Only the linked-work configuration is written; never an outdated roster.
+  const code=state.service.code;
+  const currentLinks=structuredClone(linked);
+  crewSaveLatest(code,remote=>({...remote,staffingLinkedWorks:currentLinks}))
+    .catch(error=>{console.error(error);setSaveState('Error al guardar planificación','error');});
   renderCrewStaffingLinkedWorks();renderStaffingRows();crewScheduleStaffingAutosave();
 }
 function renderCrewStaffingLinkedWorks(){
