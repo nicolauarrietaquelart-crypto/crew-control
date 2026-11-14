@@ -13951,8 +13951,12 @@ async function closeService(){
     // Before leaving, persist a local recovery point even if the network fails.
     crewCacheRoster();
     clearTimeout(state.workerSaveTimer);
+    const pendingMeta=Boolean(state.metaTimer);
+    const pendingStructure=Boolean(state.structureTimer);
     clearTimeout(state.metaTimer);
     clearTimeout(state.structureTimer);
+    state.metaTimer=null;
+    state.structureTimer=null;
     if(!navigator.onLine){
       crewPendingNotice();
       // The local journal must remain intact for replay on reconnect.
@@ -13961,6 +13965,20 @@ async function closeService(){
       return;
     }
     setSaveState('Sincronizando antes de salir…','saving');
+    // Flush debounced metadata / team edits that would otherwise be cancelled.
+    if(pendingMeta){
+      await dispatchBackend('saveServiceMeta',[code,{
+        serviceName:document.getElementById('serviceName').value.trim(),
+        serviceDate:document.getElementById('serviceDate').value.trim(),
+        venue:document.getElementById('venue').value.trim(),
+        pdfName:state.service.pdfName||'',
+        workOrder:Array.from(state.service.workOrder||[],String),
+        hiddenWorkTypes:Array.from(state.service.hiddenWorkTypes||[],String)
+      }]);
+    }
+    if(pendingStructure){
+      await dispatchBackend('saveScenariosAndTeams',[code,state.service.scenarios,state.service.teams]);
+    }
     // Finish in-flight worker writes before starting the last retry.
     await crewSaveQueue;
     crewLoadPendingIntoState();
