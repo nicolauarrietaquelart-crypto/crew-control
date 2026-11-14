@@ -14443,6 +14443,11 @@ function crewAckJournal(code,batch){
 function crewRebasePendingJournal(code,confirmedVersions){
   const journal=crewPendingJournal(code);
   for(const [id,versions] of Object.entries(confirmedVersions||{})){
+    // Always advance the local confirmed baseline, even without another
+    // pending click. Otherwise the next click falsely conflicts with itself.
+    const worker=state.service?.code===code?
+      (state.service.workers||[]).find(w=>String(w.id)===id):null;
+    if(worker)worker._fieldTimes={...(worker._fieldTimes||{}),...versions};
     const pending=journal[id];
     if(!pending)continue;
     const bases={...(pending._baseFieldTimes||{})};
@@ -14452,9 +14457,6 @@ function crewRebasePendingJournal(code,confirmedVersions){
       }
     }
     pending._baseFieldTimes=bases;
-    const worker=state.service?.code===code?
-      (state.service.workers||[]).find(w=>String(w.id)===id):null;
-    if(worker)worker._fieldTimes={...(worker._fieldTimes||{}),...versions};
   }
   crewWriteLocal(CREW_PENDING_PREFIX,code,journal);
 }
