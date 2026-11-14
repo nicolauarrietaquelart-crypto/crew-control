@@ -7663,10 +7663,12 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
 }
 </style><style id="crew-planning-open-team-style">
 #staffingRows .crew-plan-team-open{display:flex!important;align-items:center!important;gap:8px!important;text-align:left!important;width:100%!important;min-width:0!important;padding:5px 2px!important;background:transparent!important;border:0!important;border-radius:8px!important;color:inherit!important;cursor:pointer!important;font:inherit!important}
+#staffingRows .crew-plan-vest{width:34px;height:35px;flex:0 0 34px;display:inline-flex;align-items:center;justify-content:center;margin:0!important}
+#staffingRows .crew-plan-vest .crew-vest-icon{margin:0!important;flex-shrink:0}
 #staffingRows .crew-plan-team-open>span:nth-child(2){font-weight:800!important;min-width:0;overflow-wrap:anywhere}
-#staffingRows .crew-plan-team-open svg{margin-left:auto;flex-shrink:0;color:#777;transition:transform .2s}
+#staffingRows .crew-plan-team-open>svg{margin-left:auto;flex-shrink:0;color:#777;transition:transform .2s}
 #staffingRows .crew-plan-team-open:hover{background:#fff0e2!important}
-#staffingRows .crew-plan-team-open:hover svg{transform:translateX(3px);color:#f58220}
+#staffingRows .crew-plan-team-open:hover>svg{transform:translateX(3px);color:#f58220}
 </style><style id="crew-mobile-operational-cleanup">
 @media(max-width:900px){
  /* These summaries already live in the fixed bottom bar. */
@@ -17327,10 +17329,30 @@ function workHasNoTeams(trabajo){
   return !hasAssignedWorkers;
 }
 
+// An unset target follows assigned headcount. Only explicit user targets
+// are persisted, so adding/removing workers never freezes an automatic value.
 function requirementsForWork(trabajo){
-  return allRequirementsForWork(trabajo).filter(r=>
-    r.teamId!==NO_TEAMS_REQUIREMENT_TEAM_ID
-  );
+  const saved=allRequirementsForWork(trabajo);
+  if(saved.some(r=>r.teamId===NO_TEAMS_REQUIREMENT_TEAM_ID))return [];
+  const group=crewStaffingGroupFor(state.activeDay,trabajo);
+  const manual=group.flatMap(work=>allRequirementsForWork(work))
+    .filter(r=>r.teamId!==NO_TEAMS_REQUIREMENT_TEAM_ID);
+  const result=saved.filter(r=>r.teamId!==NO_TEAMS_REQUIREMENT_TEAM_ID).map(r=>({...r}));
+  const rows=crewStaffingUniqueRows((state.service?.workers||[]).filter(w=>
+    w.serviceDate===state.activeDay&&w.included&&w.teamId&&
+    group.some(work=>normalize(work)===normalize(w.trabajo))));
+  for(const team of state.service?.teams||[]){
+    if(result.some(r=>r.teamId===team.id))continue;
+    const explicit=manual.filter(r=>r.teamId===team.id);
+    if(explicit.length){
+      result.push({...explicit[0],serviceDate:state.activeDay,trabajo,
+        requiredCount:Math.max(...explicit.map(r=>Number(r.requiredCount)||0))});
+      continue;
+    }
+    const count=rows.filter(w=>w.teamId===team.id).length;
+    if(count)result.push({serviceDate:state.activeDay,trabajo,teamId:team.id,requiredCount:count,automatic:true});
+  }
+  return result;
 }
 
 function crewStaffingUniqueRows(rows){
@@ -17838,7 +17860,7 @@ function openStaffingModal(trabajo){
   state.staffingWork=trabajo;
   state.staffingDraft={};
 
-  crewStaffingGroupFor(state.activeDay,trabajo).flatMap(work=>requirementsForWork(work)).forEach(r=>{
+  crewStaffingGroupFor(state.activeDay,trabajo).flatMap(work=>requirementsForWork(work)).filter(r=>!r.automatic).forEach(r=>{
     state.staffingDraft[r.teamId]=Number(r.requiredCount||0);
   });
 
@@ -18041,14 +18063,7 @@ function renderStaffingRows(){
   );
 
   // Un trabajador puede tener varias franjas/tipos: contarlo una sola vez por equipo.
-  const uniqueRows=new Map();
-  rows.forEach(w=>{
-    const phone=String(w.movil||'').replace(/\D/g,'');
-    const identity=phone.length>=9?'TEL:'+phone:'ID:'+String(w.id);
-    const key=identity+'|'+String(w.teamId||'');
-    const prior=uniqueRows.get(key);
-    if(!prior||(!prior.status||prior.status!=='PRESENTE')&&w.status==='PRESENTE')uniqueRows.set(key,w);
-  });
+  const uniqueRows=crewStaffingUniqueRows(rows);
   const counts={};
 
   uniqueRows.forEach(w=>{
@@ -18074,11 +18089,12 @@ function renderStaffingRows(){
 
       ${teams.map(team=>{
         const count=counts[team.id]||{assigned:0,present:0};
-        const value=Number(state.staffingDraft[team.id]||0);
+        const manual=Object.prototype.hasOwnProperty.call(state.staffingDraft,team.id);
+        const value=manual?Number(state.staffingDraft[team.id]||0):count.assigned;
 
         return `<div class="requirement-row crew-plan-clickable" role="button" tabindex="0" aria-label="Ver personal de ${escapeAttr(team.name)}" onclick="if(!event.target.closest('input,button,select,a'))openTeamMembersModal('${escapeJsString(state.staffingWork)}','${escapeJsString(team.id)}')" onkeydown="if((event.key==='Enter'||event.key===' ')&&event.target===this){event.preventDefault();openTeamMembersModal('${escapeJsString(state.staffingWork)}','${escapeJsString(team.id)}')}">
           <button type="button" class="requirement-team crew-plan-team-open" onclick="openTeamMembersModal('${escapeJsString(state.staffingWork)}','${escapeJsString(team.id)}')" title="Ver personal de este equipo" aria-label="Ver personal de ${escapeAttr(team.name)}">
-            ${team.noVest?'<span class="team-dot" style="background:#BDBDBD"></span>':crewVestIcon(team.colorHex||'#BDBDBD')}
+            <span class="crew-plan-vest">${team.noVest?'<span class="team-dot" style="background:#BDBDBD"></span>':crewVestIcon(team.colorHex||'#BDBDBD')}</span>
             <span>${escapeHtml(team.name)}</span>
             ${team.noVest?'<span class="hint" style="margin:0">sin chaleco</span>':''}
             <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
@@ -18088,9 +18104,9 @@ function renderStaffingRows(){
             type="number"
             min="0"
             step="1"
-            value="${value||''}"
+            value="${manual?value:(value||'')}"
             placeholder="Necesarios"
-            oninput="state.staffingDraft['${escapeAttr(team.id)}']=Math.max(0,Number(this.value||0));crewScheduleStaffingAutosave()">
+            oninput="if(this.value==='')delete state.staffingDraft['${escapeAttr(team.id)}'];else state.staffingDraft['${escapeAttr(team.id)}']=Math.max(0,Number(this.value));crewScheduleStaffingAutosave()">
 
           <div class="requirement-current">
             <strong>${count.assigned}</strong><br>asignados
@@ -18195,7 +18211,10 @@ function randomlyAssignHandsToTeams(){
     w.teamId=reserveTeam.id;w.scenarioId=reserveTeam.scenarioId||'';
     reserveUpdates.push({workerId:w.id,teamId:reserveTeam.id});refreshWorkerRow(w.id);
   });
-  const targets=Object.entries(state.staffingDraft||{}).map(([teamId,count])=>({team:state.service.teams.find(t=>t.id===teamId),count:Math.max(0,Math.floor(Number(count)||0))})).filter(x=>x.team&&x.count>0&&!protectedRole(x.team.name)&&normalize(x.team.name)!=='RESERVAS');
+  const automaticTargets={};
+  crewStaffingUniqueRows((state.service.workers||[]).filter(w=>w.included&&w.serviceDate===state.activeDay&&inWork(w)&&w.teamId))
+    .forEach(w=>{automaticTargets[w.teamId]=(automaticTargets[w.teamId]||0)+1;});
+  const targets=Object.entries({...automaticTargets,...(state.staffingDraft||{})}).map(([teamId,count])=>({team:state.service.teams.find(t=>t.id===teamId),count:Math.max(0,Math.floor(Number(count)||0))})).filter(x=>x.team&&x.count>0&&!protectedRole(x.team.name)&&normalize(x.team.name)!=='RESERVAS');
   if(!targets.length){alert('Primero indica cuántas personas necesitas en cada equipo de la planificación.');return;}
   if(!hands.length){alert('No hay hands para asignar en este tipo de servicio.');return;}
   const total=targets.reduce((n,x)=>n+x.count,0);
@@ -18245,7 +18264,7 @@ function saveStaffingPlan(keepOpen=false){
   const noTeams=Boolean(document.getElementById('staffingNoTeams')?.checked);
   const payload=noTeams?[]:Object.entries(state.staffingDraft).map(([teamId,requiredCount])=>({
     teamId,requiredCount:Math.max(0,Math.floor(Number(requiredCount)||0))
-  })).filter(x=>x.requiredCount>0);
+  }));
   const previousRequirements=(state.service.requirements||[]).map(r=>({...r}));
   const matches=r=>r.serviceDate===serviceDate&&works.some(w=>normalize(w)===normalize(r.trabajo));
   // Los objetivos son compartidos: al guardar o quitar objetivos se actualizan
