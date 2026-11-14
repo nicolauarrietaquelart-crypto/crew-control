@@ -44,6 +44,23 @@ export default {
         return new Response(new Uint8Array(row.content),{headers:{'content-type':'application/pdf','content-disposition':"attachment; filename*=UTF-8''"+encodeURIComponent(row.filename),'cache-control':'no-store'}});
       }
     }
+    // Active-device presence is service-scoped and deliberately separate from
+    // the service snapshot, so heartbeat updates cannot overwrite attendance.
+    if(!section&&url.searchParams.get('format')==='presence'&&(m==='GET'||m==='POST')){
+      await env.DB.prepare('CREATE TABLE IF NOT EXISTS service_device_presence (service_id TEXT NOT NULL, device_id TEXT NOT NULL, label TEXT NOT NULL, last_seen INTEGER NOT NULL, pending INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(service_id,device_id))').run();
+      const now=Math.floor(Date.now()/1000);
+      if(m==='POST'){
+        const v=await body(request),deviceId=str(v.deviceId,100);
+        if(!/^[a-zA-Z0-9_-]{8,100}$/.test(deviceId))return err('Invalid device ID',400);
+        const label=str(v.label||'Dispositivo',90);
+        const pending=Math.max(0,Math.min(99999,Number(v.pending)||0));
+        await env.DB.prepare('INSERT INTO service_device_presence(service_id,device_id,label,last_seen,pending) VALUES(?,?,?,?,?) ON CONFLICT(service_id,device_id) DO UPDATE SET label=excluded.label,last_seen=excluded.last_seen,pending=excluded.pending').bind(service.id,deviceId,label,now,pending).run();
+      }
+      // Retain briefly disconnected devices for visibility; purge stale records.
+      await env.DB.prepare('DELETE FROM service_device_presence WHERE service_id=? AND last_seen<?').bind(service.id,now-86400).run();
+      const rows=await env.DB.prepare('SELECT device_id,label,last_seen,pending FROM service_device_presence WHERE service_id=? ORDER BY last_seen DESC LIMIT 80').bind(service.id).all();
+      return json({ok:true,serverTime:now,devices:rows.results||[]});
+    }
     if(!section&&m==='GET'&&url.searchParams.get('format')==='snapshot'){
       const row=await env.DB.prepare('SELECT snapshot FROM service_snapshots WHERE service_id=?').bind(service.id).first();
       return json({ok:true,service:row?.snapshot?JSON.parse(row.snapshot):{code:service.code,serviceName:service.name,serviceDate:service.service_date,venue:service.venue,closed:!!service.closed,workers:[],teams:[],scenarios:[],incidents:[],requirements:[],workOrder:[],hiddenWorkTypes:[]}});
