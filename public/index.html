@@ -12826,19 +12826,45 @@ let crewRemoteCheckInFlight=false;
 // Worker IDs are row identities, not identifiers of a person across shifts.
 // Never reuse an ID within one service, even when imported PDF data contains
 // repeated IDs or an older roster already has duplicates.
+// IDs identify individual roster rows, never just people or shifts.
+// Replace EVERY occurrence of a duplicated ID. Keeping the first one would
+// let an old attendance or pause reference accidentally point to that row.
 function crewUniqueWorkerIds(workers){
+  const counts=new Map();
+  for(const worker of workers||[]){
+    const id=String(worker.id||'').trim();
+    if(id)counts.set(id,(counts.get(id)||0)+1);
+  }
+  const ambiguousIds=new Set([...counts].filter(([,count])=>count>1).map(([id])=>id));
   const used=new Set();
   let repaired=0;
   const list=(workers||[]).map(worker=>{
     let id=String(worker.id||'').trim();
-    if(!id||used.has(id)){
-      do{id='W_'+crypto.randomUUID();}while(used.has(id));
+    if(!id||ambiguousIds.has(id)||used.has(id)){
+      do{id='W_'+crypto.randomUUID();}while(used.has(id)||counts.has(id));
       repaired++;
     }
     used.add(id);
     return id===worker.id?worker:{...worker,id};
   });
-  return {workers:list,repaired};
+  return {workers:list,repaired,ambiguousIds};
+}
+// An old reference to a duplicated ID is ambiguous: do not automatically
+// attach an attendance/return/incident to whichever row kept the old ID.
+function crewPruneWorkerReferences(snapshot,ambiguousIds=new Set()){
+  const validIds=new Set((snapshot.workers||[]).map(w=>String(w.id)));
+  const invalid=id=>ambiguousIds.has(String(id))||!validIds.has(String(id));
+  return {...snapshot,
+    pauseShifts:(snapshot.pauseShifts||[]).map(shift=>{
+      const returnStatuses={...(shift.returnStatuses||{})};
+      for(const id of Object.keys(returnStatuses)){
+        if(invalid(id))delete returnStatuses[id];
+      }
+      return {...shift,workerIds:(shift.workerIds||[]).filter(id=>!invalid(id)),returnStatuses};
+    }),
+    incidents:(snapshot.incidents||[]).map(incident=>
+      incident.workerId&&invalid(incident.workerId)?{...incident,workerId:''}:incident)
+  };
 }
 function crewWorkerIdentityEqual(a,b){
   const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
@@ -12864,6 +12890,9 @@ const crewPersist=(service,mode='general')=>{
         const remoteRows=remote.workers||[];
         const claimed=new Set();
         const reserved=new Set(remoteRows.map(w=>String(w.id||'')).filter(Boolean));
+        const remoteCounts=new Map();
+        remoteRows.forEach(w=>remoteCounts.set(String(w.id||''),(remoteCounts.get(String(w.id||''))||0)+1));
+        const remoteDuplicateIds=new Set([...remoteCounts].filter(([id,count])=>id&&count>1).map(([id])=>id));
         const usedIds=new Set();
         const factualFields=['personal','movil','serviceDate','trabajo','blockId','blockLabel',
           'page','pdfRow','hLlam','inicio','fin','pausa','nDieta','especialidad','sortOrder'];
@@ -12874,19 +12903,24 @@ const crewPersist=(service,mode='general')=>{
         };
         workers=(service.workers||[]).map(imported=>{
           const matches=remoteRows.filter(w=>!claimed.has(w)&&crewWorkerIdentityEqual(w,imported));
-          const exact=matches.filter(w=>String(w.id||'')===String(imported.id||''));
-          // An ambiguous same-person/same-shift duplicate is not safe to copy.
-          const current=exact.length===1?exact[0]:matches.length===1?matches[0]:null;
+          const sameShift=w=>String(w.inicio||'')===String(imported.inicio||'')&&
+            String(w.fin||'')===String(imported.fin||'');
+          const candidates=matches.length>1?matches.filter(sameShift):matches;
+          const idCounts=new Map();
+          remoteRows.forEach(w=>idCounts.set(String(w.id),(idCounts.get(String(w.id))||0)+1));
+          const exact=candidates.filter(w=>String(w.id||'')===String(imported.id||'')&&idCounts.get(String(w.id))===1);
+          // Do not copy a different row's attendance if same-name matches are ambiguous.
+          const current=exact.length===1?exact[0]:candidates.length===1?candidates[0]:null;
           if(current)claimed.add(current);
           // Existing current records have priority; a new PDF row cannot steal
           // an ID belonging to another worker or another shift.
           let id=String(current?.id||imported.id||'').trim();
-          if(!id||usedIds.has(id)||
+          if(!id||usedIds.has(id)||remoteDuplicateIds.has(id)||
             (reserved.has(id)&&!current)){
             id=freshId();
           }
           usedIds.add(id);
-          if(!current)return {...imported,id};
+          if(!current)return {...imported,id,status:'PENDIENTE',arrivalAt:'',actualStart:'',actualEnd:'',_fieldTimes:{}};
           const merged={...current};
           for(const field of factualFields){
             if(Object.prototype.hasOwnProperty.call(imported,field))merged[field]=imported[field];
@@ -12897,9 +12931,24 @@ const crewPersist=(service,mode='general')=>{
         const unique=crewUniqueWorkerIds(workers);
         workers=unique.workers;
       }
-      const next={...remote,...service,workers,
-        pauseShifts:remote.pauseShifts||[],_pauseVersions:remote._pauseVersions||{},
-        _syncRevision:remote._syncRevision};
+      let next;
+      if(mode==='roster'){
+        // A PDF is authoritative for its roster fields only. Never replace
+        // concurrently edited attendance, requirements, pauses or incidents.
+        const teams=[...(remote.teams||[])];
+        const reserve=(service.teams||[]).find(t=>String(t.name||'').toUpperCase()==='RESERVAS');
+        if(reserve&&!teams.some(t=>String(t.name||'').toUpperCase()==='RESERVAS'))teams.push(reserve);
+        next={...remote,workers,teams,
+          serviceName:service.serviceName||remote.serviceName||'',
+          pdfName:service.pdfName||remote.pdfName||'',
+          blocks:Array.isArray(service.blocks)?service.blocks:remote.blocks||[],
+          serviceDate:service.serviceDate||remote.serviceDate||'',
+          venue:service.venue||remote.venue||''};
+        next=crewPruneWorkerReferences(next,remoteDuplicateIds);
+      }else{
+        next={...remote,...service,workers};
+      }
+      next._syncRevision=remote._syncRevision;
       try{
         const result=await crewApi(code,'PUT',{service:next,revision:String(remote._syncRevision||'')});
         // Do not advance state.service revision until the full authoritative
@@ -13187,7 +13236,7 @@ async function crewD1Dispatch(method,args){
       loaded=await crewSaveLatest(code,remote=>{
         const fixed=crewUniqueWorkerIds(remote.workers||[]);
         if(!fixed.repaired)return remote;
-        return {...remote,workers:fixed.workers};
+        return crewPruneWorkerReferences({...remote,workers:fixed.workers},fixed.ambiguousIds);
       });
     }
     const ready=crewEnsureDefaultStructure(loaded);
@@ -13216,49 +13265,70 @@ async function crewD1Dispatch(method,args){
   }
   if(method==='saveWorkerChanges'){
     const changes=(args[1]||[]).filter(x=>x&&x.workerId);
-    if(!changes.length)return {ok:true};
+    if(!changes.length)return {ok:true,confirmedVersions:{}};
     const byId=new Map(changes.map(change=>[String(change.workerId),change]));
-    const normalizeIdentity=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase().replace(/\s+/g,' ');
-    const validate=(service)=>{
+    if(byId.size!==changes.length)throw new Error('ID de trabajador duplicado en el lote. Guardado bloqueado.');
+    const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .trim().toUpperCase().replace(/\s+/g,' ');
+    const validate=service=>{
       for(const change of changes){
         const candidates=(service.workers||[]).filter(w=>String(w.id)===String(change.workerId));
         const identity=change._workerIdentity;
-        if(candidates.length!==1||!identity||!normalizeIdentity(identity.personal)||
-          normalizeIdentity(candidates[0].personal)!==normalizeIdentity(identity.personal)||
-          normalizeIdentity(candidates[0].serviceDate)!==normalizeIdentity(identity.serviceDate)||
-          normalizeIdentity(candidates[0].trabajo)!==normalizeIdentity(identity.trabajo)||
+        if(candidates.length!==1||!identity||!norm(identity.personal)||
+          norm(candidates[0].personal)!==norm(identity.personal)||
+          norm(candidates[0].serviceDate)!==norm(identity.serviceDate)||
+          norm(candidates[0].trabajo)!==norm(identity.trabajo)||
           (identity.movil&&candidates[0].movil&&
-           String(identity.movil).replace(/\D/g,'').slice(-9)!==String(candidates[0].movil).replace(/\D/g,'').slice(-9))){
+           String(identity.movil).replace(/\D/g,'').slice(-9)!==String(candidates[0].movil).replace(/\D/g,'').slice(-9))||
+          (identity.inicio!==undefined&&String(identity.inicio||'')!==String(candidates[0].inicio||''))||
+          (identity.fin!==undefined&&String(identity.fin||'')!==String(candidates[0].fin||''))){
           throw new Error('Identidad del trabajador no coincide: guardado bloqueado para evitar marcar a otra persona.');
         }
       }
     };
-    const applyChanges=service=>({
-      ...service,
-      workers:(service.workers||[]).map(w=>{
+    const applyChanges=service=>{
+      const confirmedVersions={};
+      const workers=(service.workers||[]).map(w=>{
         const change=byId.get(String(w.id));if(!change)return w;
-        const times={...(w._fieldTimes||{})},fields={};
+        const times={...(w._fieldTimes||{})},fields={},confirmed={};
         for(const [key,value] of Object.entries(change)){
-          if(['workerId','_fieldTimes','_workerIdentity','id'].includes(key))continue;
+          if(['workerId','_fieldTimes','_baseFieldTimes','_workerIdentity','id'].includes(key))continue;
+          const current=Number(times[key]||0);
+          const hasBase=Object.prototype.hasOwnProperty.call(change._baseFieldTimes||{},key);
+          const base=Number(change._baseFieldTimes?.[key]||0);
           const incoming=Number(change._fieldTimes?.[key]||0);
-          if(incoming<Number(times[key]||0))continue;
-          fields[key]=value;times[key]=Math.max(incoming,Number(times[key]||0));
+          const equal=JSON.stringify(w[key])===JSON.stringify(value);
+          if((hasBase&&base!==current&&!equal)||
+             (!hasBase&&incoming<current&&!equal)){
+            throw new Error('Conflicto de edición: '+String(w.personal||'Trabajador')+
+              ' cambió en otro dispositivo ('+key+'). El cambio sigue pendiente; no se ha sobrescrito.');
+          }
+          if(!equal){
+            fields[key]=value;
+            // Monotonic field versions independent of client clock skew.
+            times[key]=current+1;
+          }
+          confirmed[key]=Number(times[key]||0);
         }
         if(Object.prototype.hasOwnProperty.call(fields,'especialidad'))fields.manualSpecialtyOverride=true;
+        confirmedVersions[String(w.id)]=confirmed;
         return {...w,...fields,_fieldTimes:times};
-      })
-    });
+      });
+      return {next:{...service,workers},confirmedVersions};
+    };
     const task=crewSaveQueue.then(async()=>{
       for(let attempt=0;attempt<5;attempt++){
         const remote=(await crewApi(code)).service;
         if(!remote)throw new Error('Servicio no encontrado');
+        if(remote.closed)throw new Error('El servicio está cerrado');
         validate(remote);
+        const {next,confirmedVersions}=applyChanges(remote);
         try{
-          const saved=await crewApi(code,'PUT',{service:applyChanges(remote),revision:String(remote._syncRevision||'')});
+          const saved=await crewApi(code,'PUT',{service:next,revision:String(remote._syncRevision||'')});
           crewLastLocalWrite=Date.now();
-          return {ok:true,revision:saved.revision};
+          return {ok:true,revision:saved.revision,confirmedVersions};
         }catch(error){
-          if(!String(error?.message||'').includes('Otro dispositivo')||attempt===4)throw error;
+          if(error.status!==409||attempt===4)throw error;
         }
       }
     });
@@ -14323,12 +14393,19 @@ function crewPendingJournal(code){
 function crewMergeUpdate(old,update){
   const merged={...old,workerId:String(update.workerId),_workerIdentity:update._workerIdentity||old._workerIdentity};
   const times={...(old._fieldTimes||{})};
+  const bases={...(old._baseFieldTimes||{})};
   for(const [key,value] of Object.entries(update)){
-    if(key==='workerId'||key==='_fieldTimes'||key==='_workerIdentity')continue;
+    if(['workerId','_fieldTimes','_baseFieldTimes','_workerIdentity'].includes(key))continue;
     const next=Number(update._fieldTimes?.[key]||0);
-    if(next>=Number(times[key]||0)){merged[key]=value;times[key]=next;}
+    if(next>=Number(times[key]||0)){
+      merged[key]=value;times[key]=next;
+      if(!Object.prototype.hasOwnProperty.call(bases,key)){
+        bases[key]=Number(update._baseFieldTimes?.[key]||0);
+      }
+    }
   }
   merged._fieldTimes=times;
+  merged._baseFieldTimes=bases;
   return merged;
 }
 function crewJournalUpdates(code,updates){
@@ -14346,18 +14423,39 @@ function crewAckJournal(code,batch){
     const id=String(sent.workerId),current=journal[id];
     if(!current)continue;
     const times={...(current._fieldTimes||{})};
+    const bases={...(current._baseFieldTimes||{})};
     for(const [key,value] of Object.entries(sent)){
-      if(key==='workerId'||key==='_fieldTimes'||key==='_workerIdentity')continue;
+      if(['workerId','_fieldTimes','_baseFieldTimes','_workerIdentity'].includes(key))continue;
       if(Number(sent._fieldTimes?.[key]||0)===Number(times[key]||0)&&
          JSON.stringify(current[key])===JSON.stringify(value)){
-        delete current[key];delete times[key];
+        delete current[key];delete times[key];delete bases[key];
       }
     }
-    if(Object.keys(current).every(k=>k==='workerId'||k==='_fieldTimes'||k==='_workerIdentity'))delete journal[id];
-    else current._fieldTimes=times;
+    if(Object.keys(current).every(k=>['workerId','_fieldTimes','_baseFieldTimes','_workerIdentity'].includes(k)))delete journal[id];
+    else {current._fieldTimes=times;current._baseFieldTimes=bases;}
   }
   crewWriteLocal(CREW_PENDING_PREFIX,code,journal);
   return journal;
+}
+// A newer local click made during an in-flight write starts from the
+// version that was actually acknowledged, not the stale pre-flight version.
+function crewRebasePendingJournal(code,confirmedVersions){
+  const journal=crewPendingJournal(code);
+  for(const [id,versions] of Object.entries(confirmedVersions||{})){
+    const pending=journal[id];
+    if(!pending)continue;
+    const bases={...(pending._baseFieldTimes||{})};
+    for(const field of Object.keys(versions||{})){
+      if(Object.prototype.hasOwnProperty.call(pending,field)){
+        bases[field]=Number(versions[field]||0);
+      }
+    }
+    pending._baseFieldTimes=bases;
+    const worker=state.service?.code===code?
+      (state.service.workers||[]).find(w=>String(w.id)===id):null;
+    if(worker)worker._fieldTimes={...(worker._fieldTimes||{}),...versions};
+  }
+  crewWriteLocal(CREW_PENDING_PREFIX,code,journal);
 }
 function crewCacheRoster(){
   const service=state.service;
@@ -14398,7 +14496,7 @@ function crewRestoreLocalEdits(service){
     if(duplicates.has(String(worker.id)))return worker;
     const change=byId.get(String(worker.id));
     if(!change)return worker;
-    const {workerId,_fieldTimes,_workerIdentity,...candidate}=change;
+    const {workerId,_fieldTimes,_baseFieldTimes,_workerIdentity,...candidate}=change;
     if(!_workerIdentity||norm(worker.personal)!==norm(_workerIdentity.personal)||
       norm(worker.serviceDate)!==norm(_workerIdentity.serviceDate)||
       norm(worker.trabajo)!==norm(_workerIdentity.trabajo)||
@@ -14406,7 +14504,9 @@ function crewRestoreLocalEdits(service){
         String(_workerIdentity.movil).replace(/\D/g,'').slice(-9)!==String(worker.movil).replace(/\D/g,'').slice(-9)))return worker;
     const fields={};
     for(const [key,value] of Object.entries(candidate)){
-      if(Number(_fieldTimes?.[key]||0)>=Number(worker._fieldTimes?.[key]||0))fields[key]=value;
+      // A local edit that has not been acknowledged must stay visible.
+      // Its version is validated against the authoritative D1 state at save time.
+      fields[key]=value;
     }
     return {...worker,...fields};
   });
@@ -14445,12 +14545,16 @@ function saveWorkerUpdates(updates){
   const stamped=updates.filter(update=>update?.workerId).map(update=>{
     const person=(state.service.workers||[]).find(w=>String(w.id)===String(update.workerId));
     if(!person)throw new Error('Trabajador no encontrado para guardar cambios');
-    const identity={personal:person.personal,serviceDate:person.serviceDate,trabajo:person.trabajo,movil:person.movil};
+    const identity={personal:person.personal,serviceDate:person.serviceDate,trabajo:person.trabajo,
+      movil:person.movil,inicio:person.inicio,fin:person.fin};
     const times={...(update._fieldTimes||{})};
+    const bases={...(update._baseFieldTimes||{})};
     for(const key of Object.keys(update)){
-      if(key!=='workerId'&&key!=='_fieldTimes')times[key]=editedAt;
+      if(['workerId','_fieldTimes','_baseFieldTimes','_workerIdentity'].includes(key))continue;
+      times[key]=editedAt;
+      bases[key]=Number(person._fieldTimes?.[key]||0);
     }
-    return {...update,_fieldTimes:times,_workerIdentity:identity};
+    return {...update,_fieldTimes:times,_baseFieldTimes:bases,_workerIdentity:identity};
   });
   stamped.forEach(update=>{
     const id=String(update.workerId);
@@ -14496,9 +14600,13 @@ function flushPendingWorkerSaves(callback){
   clearTimeout(state.workerSaveTimer);
 
   backend.run
-    .withSuccessHandler(()=>{
+    .withSuccessHandler(result=>{
       state.workerSaveInFlight=false;
+      if(!result?.ok||!result?.confirmedVersions){
+        throw new Error('D1 no confirmó los campos del fichaje; guardado local pendiente');
+      }
       crewAckJournal(serviceCode,batch);
+      crewRebasePendingJournal(serviceCode,result.confirmedVersions);
       // New changes made during the in-flight request remain in the journal.
       crewLoadPendingIntoState();
       if(Object.keys(state.pendingWorkerUpdates).length){
