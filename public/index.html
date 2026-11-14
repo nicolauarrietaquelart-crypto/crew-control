@@ -12810,6 +12810,10 @@ async function crewCheckRemoteChanges(){
   finally{crewRemoteCheckInFlight=false}
 }
 window.setInterval(crewCheckRemoteChanges,3000);
+window.addEventListener('focus',()=>{ void crewCheckRemoteChanges(); });
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden)void crewCheckRemoteChanges();
+});
 // Default crew teams; only bootstrap when a service has no teams.
 const CREW_DEFAULT_TEAMS=[
   ['LIGHTS','VERDE','#43F500',false],
@@ -13034,9 +13038,9 @@ async function crewD1Dispatch(method,args){
           const saved=await crewApi(code,'PUT',{
             service:next,revision:String(remote._syncRevision||'')
           });
-          if(state.service?.code===code){
-            state.service._syncRevision=saved.revision;
-          }
+          // Do not mark the local snapshot as up-to-date: the server save
+          // is based on its latest roster and may contain changes made elsewhere.
+          // The polling reader must fetch that roster before adopting this revision.
           crewLastLocalWrite=Date.now();
           return {ok:true,revision:saved.revision};
         }catch(error){
@@ -13936,6 +13940,12 @@ function flushPendingWorkerSaves(callback){
 
       setSaveState('Guardado','saved');
       runWorkerSaveCallbacks();
+      // Read the authoritative D1 snapshot after every confirmed batch.
+      // This pulls changes made on desktop into tablet/phone (and vice versa).
+      if(state.service?.code===serviceCode){
+        crewLastLocalWrite=0;
+        void crewCheckRemoteChanges();
+      }
     })
     .withFailureHandler(err=>{
       console.error(err);
