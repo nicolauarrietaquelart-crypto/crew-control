@@ -12747,14 +12747,69 @@ async function firebaseGenerateClosedPdf(code){
 
 
 // Cloudflare D1 adapter: retain the original Fluid Blocks interface.
+let crewConnectionFailures=0;
+let crewConnectionIssue='';
+let crewConnectionDismissed=false;
+function crewConnectionUI(){
+  let notice=document.getElementById('crewConnectionAlert');
+  if(!notice){
+    notice=document.createElement('div');
+    notice.id='crewConnectionAlert';
+    notice.setAttribute('role','alertdialog');
+    notice.setAttribute('aria-labelledby','crewConnectionTitle');
+    notice.setAttribute('aria-describedby','crewConnectionDescription');
+    notice.innerHTML='<div class="crew-connection-icon"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8.5a15 15 0 0 1 20 0"/><path d="M5 12a10.5 10.5 0 0 1 14 0"/><path d="M8.5 15.5a5.5 5.5 0 0 1 7 0"/><path d="m3 3 18 18"/><circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/></svg></div><div class="crew-connection-copy"><strong id="crewConnectionTitle">No hay buena conexión</strong><p id="crewConnectionDescription">No se puede confirmar la sincronización. Los cambios pendientes no se consideran guardados.</p><div class="crew-connection-actions"><button type="button" class="primary" id="crewConnectionRetry">Reintentar</button><button type="button" class="secondary" id="crewConnectionDismiss">Cerrar aviso</button></div></div>';
+    document.body.appendChild(notice);
+    document.getElementById('crewConnectionRetry').addEventListener('click',()=>{
+      crewConnectionDismissed=false;
+      if(state.service?.code){
+        if(Object.keys(state.pendingWorkerUpdates||{}).length&&!state.workerSaveInFlight)flushPendingWorkerSaves();
+        void crewCheckRemoteChanges();
+      }
+    });
+    document.getElementById('crewConnectionDismiss').addEventListener('click',()=>{
+      crewConnectionDismissed=true;
+      crewConnectionUI();
+    });
+  }
+  notice.classList.toggle('crew-connection-visible',Boolean(crewConnectionIssue)&&!crewConnectionDismissed);
+}
+function crewConnectionFailed(error){
+  crewConnectionFailures++;
+  if(!navigator.onLine||crewConnectionFailures>=2){
+    crewConnectionIssue=String(error?.message||'Sin conexión');
+    crewConnectionDismissed=false;
+    crewConnectionUI();
+    if(state.service) setSaveState('Sin conexión · sin sincronizar','error');
+  }
+}
+function crewConnectionRestored(){
+  crewConnectionFailures=0;
+  crewConnectionIssue='';
+  crewConnectionDismissed=false;
+  crewConnectionUI();
+}
 const crewApi=async(code,method='GET',payload)=> {
-  const response=await fetch('/api/services/'+encodeURIComponent(code)+'?format=snapshot',{
-    method,headers:{'content-type':'application/json','x-service-code':code},
-    ...(payload===undefined?{}:{body:JSON.stringify(payload)})
-  });
-  const data=await response.json();
-  if(!response.ok)throw new Error(data.error||'Error de Cloudflare D1');
-  return data;
+  try{
+    const response=await fetch('/api/services/'+encodeURIComponent(code)+'?format=snapshot',{
+      method,headers:{'content-type':'application/json','x-service-code':code},
+      cache:'no-store',signal:AbortSignal.timeout(8000),
+      ...(payload===undefined?{}:{body:JSON.stringify(payload)})
+    });
+    let data;
+    try{data=await response.json();}catch{throw new Error('Respuesta inválida del servidor');}
+    if(!response.ok){
+      const error=new Error(data.error||'Error de Cloudflare D1');
+      error.status=response.status;
+      if(response.status>=500||response.status===408||response.status===429)crewConnectionFailed(error);
+      throw error;
+    }
+    crewConnectionRestored();
+    return data;
+  }catch(error){
+    if(error.status===undefined)crewConnectionFailed(error);
+    throw error;
+  }
 };
 let crewSaveQueue=Promise.resolve();
 let crewLastLocalWrite=0;
@@ -12810,7 +12865,7 @@ const crewPersist=service=>{
 };
 async function crewCheckRemoteChanges(){
   if(crewRemoteCheckInFlight||document.hidden||!state.service?.code||state.service.closed)return;
-  if(Date.now()-crewLastLocalWrite<4000||state.workerSaveInFlight||
+  if(Date.now()-crewLastLocalWrite<500||state.workerSaveInFlight||
     Object.keys(state.pendingWorkerUpdates||{}).length||
     document.querySelector('.modal:not(.hidden)')||
     document.activeElement?.matches('input,textarea,select,[contenteditable="true"]'))return;
@@ -12841,7 +12896,20 @@ async function crewCheckRemoteChanges(){
   }catch(error){console.warn('Sincronización:',error)}
   finally{crewRemoteCheckInFlight=false}
 }
-window.setInterval(crewCheckRemoteChanges,3000);
+// Check the shared D1 snapshot once per second while this tab is active.
+// Requests are serialized by crewRemoteCheckInFlight so slow networks cannot pile up.
+window.setInterval(crewCheckRemoteChanges,1000);
+window.addEventListener('offline',()=>{
+  crewConnectionFailures=2;
+  crewConnectionFailed(new Error('Dispositivo sin acceso a Internet'));
+});
+window.addEventListener('online',()=>{
+  crewConnectionDismissed=false;
+  if(state.service?.code){
+    if(Object.keys(state.pendingWorkerUpdates||{}).length&&!state.workerSaveInFlight)flushPendingWorkerSaves();
+    void crewCheckRemoteChanges();
+  }
+});
 window.addEventListener('focus',()=>{ void crewCheckRemoteChanges(); });
 document.addEventListener('visibilitychange',()=>{
   if(!document.hidden)void crewCheckRemoteChanges();
@@ -13773,6 +13841,7 @@ function openServiceData(service){
     crewMobileWorkV11259='ALL';
   }
   state.service=service;
+  crewConnectionRestored();
   state.service.workOrder=Array.isArray(state.service.workOrder)?state.service.workOrder.map(String):[];
   state.service.hiddenWorkTypes=Array.isArray(state.service.hiddenWorkTypes)?state.service.hiddenWorkTypes.map(String):[];
   state.selected.clear();
@@ -13851,6 +13920,7 @@ function finalizeCloseServiceView(){
   document.body.classList.remove('control-sidebar-open');
   stopFirebaseRealtime();
   state.service=null;
+  crewConnectionRestored();
   clearPdfSidebarStatus();
   const initialStatus=document.getElementById('initialPdfStatus');
   if(initialStatus){initialStatus.innerHTML='';initialStatus.className='status-box';}
@@ -13992,8 +14062,14 @@ function flushPendingWorkerSaves(callback){
       });
 
       state.workerSaveInFlight=false;
-      setSaveState('Error al guardar','error');
+      setSaveState('Error al guardar · cambios pendientes','error');
+      crewConnectionFailed(err);
       state.workerSaveCallbacks=[];
+      // Keep pending edits until a successful retry; do not discard them.
+      if(navigator.onLine) setTimeout(()=>{
+        if(state.service?.code===serviceCode&&!state.workerSaveInFlight&&
+          Object.keys(state.pendingWorkerUpdates||{}).length)flushPendingWorkerSaves();
+      },3000);
     })
     .saveWorkerChanges(serviceCode,batch);
 }
@@ -20323,5 +20399,17 @@ document.addEventListener('keydown',event=>{
   }
 });
 </script>
+<style>
+#crewConnectionAlert{position:fixed;z-index:2147483000;bottom:18px;right:18px;width:min(440px,calc(100vw - 28px));display:none;align-items:flex-start;gap:13px;padding:17px;border:1px solid #e0aaaa;border-left:5px solid #c32e2e;border-radius:13px;background:#fff;box-shadow:0 18px 54px rgba(0,0,0,.22);color:#141414;font-family:"Plus Jakarta Sans",sans-serif}
+#crewConnectionAlert.crew-connection-visible{display:flex;animation:crewConnIn .22s ease-out}
+#crewConnectionAlert .crew-connection-icon{display:flex;flex:none;color:#b52a2a}
+#crewConnectionAlert .crew-connection-copy{min-width:0;flex:1}
+#crewConnectionAlert strong{font-size:15px;font-weight:800}
+#crewConnectionAlert p{font-size:12px;line-height:1.5;color:#555;margin:6px 0 12px}
+#crewConnectionAlert .crew-connection-actions{display:flex;flex-wrap:wrap;gap:8px}
+#crewConnectionAlert button{font-size:12px;min-height:34px;padding:7px 11px}
+@keyframes crewConnIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:600px){#crewConnectionAlert{bottom:12px;left:14px;right:14px;width:auto}}
+</style>
 </body>
 </html>
