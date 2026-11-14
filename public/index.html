@@ -10910,7 +10910,7 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
   display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;
   overflow-x:auto!important;overflow-y:hidden!important;
   -webkit-overflow-scrolling:touch!important;
-  touch-action:pan-x!important;overscroll-behavior-x:contain!important;
+  touch-action:pan-x pan-y!important;overscroll-behavior-x:contain!important;overscroll-behavior-y:auto!important;
   scrollbar-width:auto!important;position:relative!important;
   box-sizing:border-box!important;
  }
@@ -11048,7 +11048,17 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
 #operationalWorkPager #operationalWorkFilters{min-width:0!important;width:100%!important;margin:0!important;padding:3px 0!important;scroll-padding-inline:0!important}
 #operationalWorkPager.operational-work-pager-v11233>button{position:static!important;inset:auto!important;transform:none!important;flex:none!important;opacity:1}
 #operationalWorkPager.operational-work-pager-v11233>button:disabled{opacity:.35!important}
-</style></head>
+</style><style>
+html.crew-android body #personnelGroups details.work-group > .table-wrap > table > tbody > tr[data-worker-row] > td.mobile-status select.status[data-status-worker],
+html.crew-android body .team-member-card select.status{
+ font-size:16px!important;
+ color:#111!important;
+ text-indent:100px!important;
+}
+html.crew-android select.status option{font-size:16px!important;color:#111!important;text-indent:0!important}
+</style>
+<script>if(/Android/i.test(navigator.userAgent))document.documentElement.classList.add('crew-android');</script>
+</head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
 <div class="crew-access-photo-slide" id="crewAccessPhotoB" aria-hidden="true"></div>
@@ -18151,7 +18161,8 @@ function crewToggleAssignPersonnel(){
 }
 function crewAssignPersonnelFromWork(){
  if(!state.service||state.service.closed)return;
- const source=document.getElementById('crewAssignPersonnelSource')?.value,target=state.staffingWork;
+ const source=document.getElementById('crewAssignPersonnelSource')?.value;
+ const targets=new Set(crewStaffingWorks().map(normalize));
  if(!source){alert('Selecciona un tipo de servicio de origen.');return}
  const rows=state.service.workers||[],day=state.activeDay,teams=state.service.teams||[];
  const phone=w=>String(w.movil||'').replace(/\D/g,''),name=w=>normalize(w.personal||'');
@@ -18169,9 +18180,9 @@ function crewAssignPersonnelFromWork(){
   if(p.length>=9)byPhone.set(p,byPhone.has(p)?null:w);
   if(n)byName.set(n,byName.has(n)?null:w);
  });
- const updates=[];let skipped=0;
- rows.filter(w=>w.included&&w.serviceDate===day&&normalize(w.trabajo)===normalize(target)).forEach(w=>{
-  if(isProtected(w)){skipped++;return}
+ const updates=[];
+ rows.filter(w=>w.included&&w.serviceDate===day&&targets.has(normalize(w.trabajo))&&normalize(w.trabajo)!==normalize(source)).forEach(w=>{
+  if(isProtected(w))return;
   const p=phone(w),n=name(w);
   // Solo aceptar nombres cuando ambos registros carecen de teléfono válido.
   const match=p.length>=9?byPhone.get(p):n?byName.get(n):null;
@@ -18179,7 +18190,7 @@ function crewAssignPersonnelFromWork(){
   if(p.length<9&&phone(match).length>=9)return;
   const team=teams.find(t=>t.id===match.teamId);
   if(!team||special(team.name))return;
-  if(w.teamId===team.id)return;
+  if(w.teamId===team.id&&String(w.scenarioId||'')===String(team.scenarioId||''))return;
   w.teamId=team.id;w.scenarioId=team.scenarioId||'';
   updates.push({workerId:w.id,teamId:team.id,scenarioId:w.scenarioId});
   refreshWorkerRow(w.id);
@@ -18192,15 +18203,29 @@ function crewAssignPersonnelFromWork(){
  alert(updates.length+' personas asignadas desde '+source+'. Los trabajadores de Reserva, Forklifter y Crew Head mantienen su equipo original en cada tipo de servicio.');
 }
 
+// Give one shared slot to the same person across linked service types.
+function crewGroupHandsForAssignment(hands){
+  const groups=new Map();
+  for(const worker of hands){
+    const phone=String(worker.movil||'').replace(/\D/g,'').replace(/^(?:0034|34)(?=\d{9}$)/,'');
+    const name=normalize(worker.personal||'');
+    const key=name?JSON.stringify([name,phone.length>=9?phone:'']):'row:'+worker.id;
+    if(!groups.has(key))groups.set(key,[]);
+    groups.get(key).push(worker);
+  }
+  return [...groups.values()].flatMap(rows=>
+    new Set(rows.map(w=>normalize(w.trabajo))).size===rows.length?[rows]:rows.map(w=>[w]));
+}
+
 function randomlyAssignHandsToTeams(){
   if(!state.service||state.service.closed||!state.staffingWork)return;
-  const work=state.staffingWork;
-  const inWork=w=>crewStaffingWorks().some(x=>normalize(x)===normalize(w.trabajo));
+  const works=new Set(crewStaffingWorks().map(normalize));
+  const inWork=w=>works.has(normalize(w.trabajo));
   if(document.getElementById('staffingNoTeams')?.checked){alert('Este tipo de servicio está configurado sin equipos.');return;}
   const protectedRole=value=>/\b(CREW[\s_-]*HEAD|FORK[\s_-]*LIFT(?:ER)?|CARRETILLERO)\b/.test(normalize(value));
   const hands=(state.service.workers||[]).filter(w=>w.included&&w.status!=='NO PRESENTADO'&&w.serviceDate===state.activeDay&&inWork(w)&&!protectedRole(w.especialidad)&&!protectedRole(w.categoria)&&!protectedRole(w.role)&&!w.isReserve);
   // No modificar roles protegidos durante el reparto.
-  const protectedUpdates=[];
+
   // No asignar equipos exclusivos a personal sin la especialidad correspondiente.
   const invalidSpecialUpdates=[];
   (state.service.workers||[]).filter(w=>w.included&&w.serviceDate===state.activeDay&&inWork(w)).forEach(w=>{
@@ -18211,7 +18236,7 @@ function randomlyAssignHandsToTeams(){
     const isFork=/\bFORK[\s_-]*LIFT(?:ER)?\b/.test(teamRole);
     const specialty=normalize(w.especialidad);
     if((isCrew&&!/\bCREW[\s_-]*HEAD\b/.test(specialty))||(isFork&&!/\bFORK[\s_-]*LIFT(?:ER)?\b/.test(specialty))){
-      w.teamId='';w.scenarioId='';invalidSpecialUpdates.push({workerId:w.id,teamId:''});refreshWorkerRow(w.id);
+      w.teamId='';w.scenarioId='';invalidSpecialUpdates.push({workerId:w.id,teamId:'',scenarioId:''});refreshWorkerRow(w.id);
     }
   });
   // Reservas: equipo propio, fuera de las plazas ordinarias del reparto.
@@ -18228,7 +18253,7 @@ function randomlyAssignHandsToTeams(){
   reserveWorkers.forEach(w=>{
     if(w.teamId===reserveTeam.id)return;
     w.teamId=reserveTeam.id;w.scenarioId=reserveTeam.scenarioId||'';
-    reserveUpdates.push({workerId:w.id,teamId:reserveTeam.id});refreshWorkerRow(w.id);
+    reserveUpdates.push({workerId:w.id,teamId:reserveTeam.id,scenarioId:w.scenarioId});refreshWorkerRow(w.id);
   });
   const automaticTargets={};
   crewStaffingUniqueRows((state.service.workers||[]).filter(w=>w.included&&w.serviceDate===state.activeDay&&inWork(w)&&w.teamId))
@@ -18244,25 +18269,25 @@ function randomlyAssignHandsToTeams(){
     const protectedAssigned=state.service.workers.filter(w=>w.included&&w.serviceDate===state.activeDay&&inWork(w)&&w.teamId===team.id&&!hands.includes(w)).length;
     for(let i=0;i<Math.max(0,count-protectedAssigned);i++)slots.push(team);
   });
-  const shuffled=[...hands];
+  const shuffled=crewGroupHandsForAssignment(hands);
   for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
   for(let i=slots.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[slots[i],slots[j]]=[slots[j],slots[i]];}
-  const updates=[];
-  shuffled.forEach((w,i)=>{
-    const team=slots[i]||null;
-    const teamId=team?.id||'';
-    if(w.teamId===teamId)return;
-    w.teamId=teamId;
-    w.scenarioId=team?.scenarioId||'';
-    updates.push({workerId:w.id,teamId});
-    refreshWorkerRow(w.id);
+  const updates=new Map([...invalidSpecialUpdates,...reserveUpdates].map(update=>[update.workerId,update]));
+  shuffled.forEach((rows,i)=>{
+    const teamId=slots[i]?.id||'';
+    const scenarioId=slots[i]?.scenarioId||'';
+    for(const w of rows){
+      if(w.teamId===teamId&&String(w.scenarioId||'')===scenarioId)continue;
+      w.teamId=teamId;
+      w.scenarioId=scenarioId;
+      updates.set(w.id,{workerId:w.id,teamId,scenarioId});
+    }
   });
-  if(updates.length||protectedUpdates.length||reserveUpdates.length||invalidSpecialUpdates.length)saveWorkerUpdates([...invalidSpecialUpdates,...reserveUpdates,...updates]);
+  if(updates.size)saveWorkerUpdates([...updates.values()]);
+  renderPersonnel(true);
   renderStaffingRows();
-  updateGroupSummary(work);
-  renderOperationalAlerts();
-  if(hands.length<slots.length)alert('Faltan '+(slots.length-hands.length)+' hands para cubrir los objetivos. Se han asignado todos los disponibles.');
-  else if(hands.length>slots.length)alert('Objetivos cubiertos. '+(hands.length-slots.length)+' hands quedan sin asignar porque superan las plazas planificadas.');
+  if(shuffled.length<slots.length)alert('Faltan '+(slots.length-shuffled.length)+' hands para cubrir los objetivos. Se han asignado todos los disponibles.');
+  else if(shuffled.length>slots.length)alert('Objetivos cubiertos. '+(shuffled.length-slots.length)+' hands quedan sin asignar porque superan las plazas planificadas.');
 }
 
 let crewStaffingAutoTimer=null;
