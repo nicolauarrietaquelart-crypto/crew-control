@@ -11020,6 +11020,17 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
   }
 }
 </style>
+<style id="crew-compact-day-selector">
+  /* One short date label per day: no duplicate numeric date or staff count. */
+  #daysNav.days-nav .day-btn {
+    width:auto!important;
+    max-width:max-content!important;
+    min-height:36px!important;
+    padding:8px 13px!important;
+    border-radius:14px!important;
+    white-space:nowrap!important;
+  }
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -15992,14 +16003,10 @@ function renderDays(){
   const days=getDays();
   if(days.length&&!days.includes(state.activeDay))state.activeDay=days[0];
 
-  document.getElementById('daysNav').innerHTML=days.map(day=>{
-    const count=state.service.workers.filter(w=>(w.serviceDate||'SIN FECHA')===day&&w.included).length;
-    const fullDate=day==='SIN FECHA'?'':day;
-    return `<button class="day-btn ${state.activeDay===day?'active':''} ${day==='SIN FECHA'?'no-day':''}"
-      onclick="setActiveDay('${escapeAttr(day)}')">${escapeHtml(dayLabel(day))}
-      ${fullDate?`<span class="day-date-full">${escapeHtml(fullDate)}</span>`:''}
-      <span class="day-count">${count}</span></button>`;
-  }).join('');
+  document.getElementById('daysNav').innerHTML=days.map(day=>
+    `<button class="day-btn ${state.activeDay===day?'active':''} ${day==='SIN FECHA'?'no-day':''}"
+      onclick="setActiveDay('${escapeAttr(day)}')">${escapeHtml(dayLabel(day))}</button>`
+  ).join('');
 }
 
 function setActiveDay(day){
