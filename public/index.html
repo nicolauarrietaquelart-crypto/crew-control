@@ -13077,7 +13077,7 @@ const crewSaveLatest=(code,update)=>{
   crewSaveQueue=task.catch(()=>{});
   return task;
 };
-async function crewCheckRemoteChanges(){
+async async function crewCheckRemoteChanges(){
   if(crewRemoteCheckInFlight||document.hidden||!state.service?.code||state.service.closed)return;
   if(Date.now()-crewLastLocalWrite<500||state.workerSaveInFlight)return;
   // Keep fetching server updates even if a dialog or text input is open.
@@ -13197,7 +13197,7 @@ function crewAssignDefaultSpecialtyTeam(worker,teams,scenarios){
   const team=ordered[0];
   return team?{...worker,teamId:team.id,scenarioId:team.scenarioId||''}:worker;
 }
-async function crewD1Dispatch(method,args){
+async async function crewD1Dispatch(method,args){
   const code=String(args[0]||state.service?.code||'');
   if(method==='replaceWorkersFromPdf'){
     // Finish earlier worker edits before taking the import snapshot.
