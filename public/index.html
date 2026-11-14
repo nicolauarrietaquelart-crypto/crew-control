@@ -11058,6 +11058,12 @@ html.crew-android body .team-member-card select.status{
 html.crew-android select.status option{font-size:16px!important;color:#111!important;text-indent:0!important}
 </style>
 <script>if(/Android/i.test(navigator.userAgent))document.documentElement.classList.add('crew-android');</script>
+<script>
+if (/iPad/i.test(navigator.userAgent) ||
+    (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1)) {
+  document.documentElement.classList.add('crew-ipad-table');
+}
+</script>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -21576,5 +21582,45 @@ document.addEventListener('keydown',event=>{
  }
 }
 </style>
+<style>
+@media(max-width:700px){
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap{
+  overflow-x:auto!important;overflow-y:hidden!important;touch-action:pan-x pan-y!important;
+ }
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table{
+  display:table!important;table-layout:fixed!important;width:1520px!important;min-width:1520px!important;max-width:none!important;
+ }
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup{display:table-column-group!important}
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(1){width:30px!important;min-width:30px!important;max-width:30px!important}
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(2){width:80px!important;min-width:80px!important;max-width:80px!important}
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(3){width:270px!important;min-width:270px!important;max-width:270px!important}
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(4){width:160px!important;min-width:160px!important;max-width:160px!important}
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(5){width:170px!important;min-width:170px!important;max-width:170px!important}
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(6){width:75px!important;min-width:75px!important;max-width:75px!important}
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(7){width:75px!important;min-width:75px!important;max-width:75px!important}
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(8){width:140px!important;min-width:140px!important;max-width:140px!important}
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(9){width:225px!important;min-width:225px!important;max-width:225px!important}
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(10){width:165px!important;min-width:165px!important;max-width:165px!important}
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(11){width:130px!important;min-width:130px!important;max-width:130px!important}
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > thead{display:table-header-group!important}
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > tbody{display:table-row-group!important}
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > :is(thead,tbody) > tr{
+  display:table-row!important;width:auto!important;
+ }
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > :is(thead,tbody) > tr > :is(th,td):not(.crew-flex-spacer-cell),
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td:not(.crew-flex-spacer-cell){
+  display:table-cell!important;width:auto!important;min-width:0!important;max-width:none!important;padding:6px!important;
+  vertical-align:middle!important;overflow:hidden!important;
+ }
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table td:is(.mobile-phone,.mobile-vest,.mobile-rating),
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table th:is(:nth-child(8),:nth-child(10),:nth-child(11)){
+  text-align:center!important;white-space:nowrap!important;
+ }
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-phone .crew-phone-desktop-v11264{display:inline-flex!important}
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-phone .crew-phone-mobile-v11264{display:none!important}
+ html.crew-ipad-table .mobile-shift-sort{display:none!important}
+}
+</style>
+
 </body>
 </html>
