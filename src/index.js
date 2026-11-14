@@ -69,6 +69,14 @@ export default {
       if(service.closed)return err('Service is closed',409);
       const input=await body(request),snapshot=input.service;
       if(!snapshot||typeof snapshot!=='object'||Array.isArray(snapshot))return err('Invalid service snapshot');
+      if(!Array.isArray(snapshot.workers))return err('Lista de trabajadores no válida',422);
+      const uniqueWorkerIds=new Set();
+      for(const worker of snapshot.workers){
+       if(!worker||typeof worker!=='object'||Array.isArray(worker))return err('Registro de trabajador no válido',422);
+       const id=String(worker.id||'').trim();
+       if(!id||uniqueWorkerIds.has(id))return err('ID de trabajador vacío o duplicado. Guardado bloqueado para proteger los fichajes.',422);
+       uniqueWorkerIds.add(id);
+      }
       if(JSON.stringify(snapshot).length>2000000)return err('Service too large',413);
       const expected=String(input.revision||'');
       const revision=crypto.randomUUID();
