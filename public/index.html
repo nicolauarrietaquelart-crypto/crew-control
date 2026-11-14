@@ -11033,7 +11033,17 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
     white-space:nowrap!important;
   }
 </style>
-</head>
+<style>
+#operationalTimePager{display:grid;grid-template-columns:36px minmax(0,1fr) 36px;align-items:center;gap:4px;width:100%;min-width:0;margin-top:6px}
+#operationalTimePager:has(#operationalTimeFilters.hidden-v1210),#operationalTimePager:has(#operationalTimeFilters:empty){display:none}
+#operationalTimePager #operationalTimeFilters{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important;min-width:0!important;width:100%!important;margin:0!important;padding:3px 0!important;scrollbar-width:none!important;overscroll-behavior-x:contain}
+#operationalTimePager #operationalTimeFilters::-webkit-scrollbar{display:none}
+#operationalTimePager .operational-time-chip-v1210{flex:0 0 auto!important}
+#operationalTimePager>button{display:grid!important;place-items:center;width:36px!important;min-width:36px!important;height:40px!important;margin:0!important;padding:0!important;border:0!important;border-radius:12px!important;background:#fff!important;color:#171717!important;box-shadow:none!important;cursor:pointer}
+#operationalTimePager>button:disabled{opacity:.35;cursor:default}
+#operationalTimePager>button:not(:disabled):hover{background:#fff0e2!important}
+#operationalTimePager>button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+</style></head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
 <div class="crew-access-photo-slide" id="crewAccessPhotoB" aria-hidden="true"></div>
@@ -11214,7 +11224,11 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
                 title="Ver los siguientes tipos de servicio"
                 aria-label="Ver siguientes tipos de servicio">›</button>
             </div>
-            <div id="operationalTimeFilters" class="operational-time-filters-v1210"></div>
+            <div id="operationalTimePager" class="operational-time-pager">
+              <button id="operationalTimePrevious" type="button" aria-label="Ver horas anteriores" title="Ver horas anteriores" onclick="scrollOperationalTimes(-1)" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+              <div id="operationalTimeFilters" class="operational-time-filters-v1210"></div>
+              <button id="operationalTimeNext" type="button" aria-label="Ver horas siguientes" title="Ver horas siguientes" onclick="scrollOperationalTimes(1)" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+            </div>
             <div id="operationalDashboard" class="operational-dashboard"></div>
           </div>
 
@@ -19721,6 +19735,20 @@ function operationalTimesForCurrentWork(){
   });
 }
 
+function updateOperationalTimeArrows(){
+  const host=document.getElementById('operationalTimeFilters');
+  const previous=document.getElementById('operationalTimePrevious');
+  const next=document.getElementById('operationalTimeNext');
+  if(!host||!previous||!next)return;
+  previous.disabled=host.scrollLeft<=2;
+  next.disabled=host.scrollLeft>=Math.max(0,host.scrollWidth-host.clientWidth)-2;
+}
+function scrollOperationalTimes(direction){
+  const host=document.getElementById('operationalTimeFilters');
+  if(!host)return;
+  host.scrollBy({left:direction*Math.max(140,host.clientWidth*.72),
+    behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+}
 function renderOperationalTimeFilters(){
   const host=document.getElementById('operationalTimeFilters');
   if(!host)return;
@@ -19744,6 +19772,7 @@ function renderOperationalTimeFilters(){
     state.operationalTimeFilter='ALL';
   }
 
+  const previousScroll=host.scrollLeft;
   host.innerHTML=['ALL',...times].map(time=>{
     const active=time==='ALL'?!crewOpSelectedTimes.size:crewOpSelectedTimes.has(time);
     const label=time==='ALL'?'Todas':time;
@@ -19768,6 +19797,13 @@ function renderOperationalTimeFilters(){
     </button>`;
   }).join('');
 
+  host.scrollLeft=previousScroll;
+  if(!host.dataset.timeScrollListener){
+    host.addEventListener('scroll',updateOperationalTimeArrows,{passive:true});
+    if(typeof ResizeObserver!=='undefined')new ResizeObserver(updateOperationalTimeArrows).observe(host);
+    host.dataset.timeScrollListener='1';
+  }
+  requestAnimationFrame(updateOperationalTimeArrows);
   updateScopeSelectButton();
 }
 
