@@ -11004,6 +11004,7 @@ html body .personnel-sidebar-toolbar-v121>#scopeSelectBtn{order:6!important}
       <div class="service-code">
         <span>Servicio</span>
         <span id="serviceCodeBadge" class="code-pill" role="button" tabindex="0" onclick="copyServiceCode()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();copyServiceCode()}" title="Toca para copiar el código" aria-label="Copiar código del servicio">000000</span>
+        <button type="button" id="crewDeviceButton" class="secondary crew-device-button" onclick="crewOpenDevices()" title="Dispositivos conectados" aria-label="Ver dispositivos conectados"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="13" height="11" rx="2"/><path d="M6 19h6m-3-4v4"/><rect x="17" y="8" width="5" height="11" rx="1.5"/></svg><span id="crewDeviceCount">0</span><span class="crew-device-dot" id="crewDeviceDot"></span></button>
         <button class="secondary icon-btn compact-code-btn" onclick="copyServiceCode()" title="Copiar código"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"></rect><path d="M5 16H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1"></path></svg><span>Copiar</span></button>
       </div>
       <div class="service-actions">
@@ -13853,6 +13854,8 @@ function openServiceData(service){
     crewMobileWorkV11259='ALL';
   }
   state.service=crewRestoreLocalEdits(service);
+  crewDevices=[];crewPresenceLastCode='';
+  void crewPresenceHeartbeat();
   crewConnectionRestored();
   state.pendingWorkerUpdates={};
   const locallyPending=crewLoadPendingIntoState();
@@ -13948,6 +13951,9 @@ function finalizeCloseServiceView(){
   document.body.classList.remove('control-sidebar-open');
   stopFirebaseRealtime();
   state.service=null;
+  crewDevices=[];
+  document.getElementById('crewDevicesModal')?.classList.remove('show');
+  crewDevicesRender();
   crewConnectionRestored();
   clearPdfSidebarStatus();
   const initialStatus=document.getElementById('initialPdfStatus');
@@ -14013,6 +14019,97 @@ function scheduleStructureSave(){
       .saveScenariosAndTeams(state.service.code,state.service.scenarios,state.service.teams);
   },500);
 }
+
+// Presence uses an independent D1 table: never modifies service attendance.
+const CREW_DEVICE_ID_KEY='crew-control-device-id-v1';
+let crewDeviceId=(()=>{
+  try{
+    let id=localStorage.getItem(CREW_DEVICE_ID_KEY);
+    if(!id){id='d_'+crypto.randomUUID();localStorage.setItem(CREW_DEVICE_ID_KEY,id);}
+    return id;
+  }catch{return 'd_'+crypto.randomUUID();}
+})();
+const crewDeviceLabel=(()=>{
+  const ua=navigator.userAgent||'';
+  const tablet=/iPad/i.test(ua)||(/Macintosh/i.test(ua)&&navigator.maxTouchPoints>1);
+  const phone=/iPhone|Android.+Mobile/i.test(ua);
+  return tablet?'iPad / tablet':phone?'Móvil':/Android/i.test(ua)?'Tablet Android':'Ordenador';
+})();
+let crewPresenceRequest=false;
+let crewDevices=[];
+let crewPresenceServerTime=0;
+let crewPresenceLocalCheck=0;
+let crewPresenceLastCode='';
+function crewDeviceRows(){
+  const now=crewPresenceServerTime+Math.max(0,Math.floor((Date.now()-crewPresenceLocalCheck)/1000));
+  return crewDevices.map(d=>{
+    const age=Math.max(0,now-Number(d.last_seen||0));
+    const mine=d.device_id===crewDeviceId;
+    const state=age<=8?'green':age<=20?'orange':'red';
+    return {...d,age,mine,state};
+  });
+}
+function crewDevicesRender(){
+  const rows=crewDeviceRows();
+  const active=rows.filter(d=>d.state==='green').length;
+  const dot=document.getElementById('crewDeviceDot');
+  if(dot){dot.className='crew-device-dot '+(!navigator.onLine?'red':active?'green':'orange');}
+  const number=document.getElementById('crewDeviceCount');
+  if(number)number.textContent=String(active);
+  const list=document.getElementById('crewDeviceList');
+  if(!list)return;
+  const escape=(value)=>String(value||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  list.innerHTML=rows.length?rows.map(d=>{
+    const status=d.state==='green'?'En tiempo real':d.state==='orange'?'Conexión inestable':'Sin conexión reciente';
+    const pending=Number(d.pending||0);
+    return '<div class="crew-device-entry"><span class="crew-device-status '+d.state+'"></span><div class="crew-device-info"><strong>'+escape(d.label)+(d.mine?' · Este dispositivo':'')+'</strong><small>'+status+' · última señal hace '+d.age+' s'+(pending?' · '+pending+' cambio(s) pendiente(s)':'')+'</small></div></div>';
+  }).join(''):'<p class="crew-device-empty">Aún no hay dispositivos registrados en este servicio.</p>';
+}
+function crewOpenDevices(){
+  let modal=document.getElementById('crewDevicesModal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='crewDevicesModal';
+    modal.className='crew-devices-backdrop';
+    modal.innerHTML='<section class="crew-devices-panel" role="dialog" aria-modal="true" aria-label="Dispositivos del servicio"><div class="crew-devices-title"><div><strong>Dispositivos del servicio</strong><p>Estado de sincronización por conexión al servidor</p></div><button class="crew-devices-x" id="crewDevicesClose" type="button" aria-label="Cerrar ventana"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 5 19 19M19 5 5 19"/></svg></button></div><div id="crewDeviceList"></div><p class="crew-devices-note">Verde: conectado recientemente. Naranja: conexión retrasada. Rojo: sin señal reciente. Los dispositivos pueden aparecer temporalmente como conectados tras perder Internet.</p></section>';
+    document.body.appendChild(modal);
+    modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('show');});
+    document.getElementById('crewDevicesClose').onclick=()=>modal.classList.remove('show');
+  }
+  modal.classList.add('show');
+  crewDevicesRender();
+  void crewPresenceHeartbeat();
+}
+async function crewPresenceHeartbeat(){
+  const code=state.service?.code;
+  if(!code||document.hidden||crewPresenceRequest)return;
+  crewPresenceRequest=true;
+  const pending=Object.keys(crewPendingJournal(code)).length;
+  try{
+    const response=await fetch('/api/services/'+encodeURIComponent(code)+'?format=presence',{
+      method:'POST',headers:{'content-type':'application/json','x-service-code':code},
+      body:JSON.stringify({deviceId:crewDeviceId,label:crewDeviceLabel,pending}),
+      cache:'no-store',signal:AbortSignal.timeout(6500)
+    });
+    if(!response.ok)throw new Error('Heartbeat error '+response.status);
+    const body=await response.json();
+    if(state.service?.code!==code)return;
+    crewPresenceLastCode=code;crewDevices=Array.isArray(body.devices)?body.devices:[];
+    crewPresenceServerTime=Number(body.serverTime||0);
+    crewPresenceLocalCheck=Date.now();
+    crewDevicesRender();
+    // A healthy server response triggers replay of offline edits.
+    if(pending)crewRetryLocalUpdates();
+  }catch(error){
+    console.warn('Dispositivos:',error);
+    crewDevicesRender();
+  }finally{crewPresenceRequest=false;}
+}
+window.setInterval(crewPresenceHeartbeat,3000);
+window.setInterval(crewDevicesRender,1000);
+window.addEventListener('online',()=>{crewRetryLocalUpdates();void crewPresenceHeartbeat();});
+window.addEventListener('focus',()=>{crewRetryLocalUpdates();void crewPresenceHeartbeat();});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){crewRetryLocalUpdates();void crewPresenceHeartbeat();}});
 
 // Durable local journal of worker edits: never treat an unacknowledged write as saved.
 const CREW_PENDING_PREFIX='crew-control-pending-v1:';
@@ -20541,6 +20638,26 @@ document.addEventListener('keydown',event=>{
 #crewConnectionAlert button{font-size:12px;min-height:34px;padding:7px 11px}
 @keyframes crewConnIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:600px){#crewConnectionAlert{bottom:12px;left:14px;right:14px;width:auto}}
+</style>
+<style>
+.crew-device-button{display:inline-flex;align-items:center;gap:6px!important;min-height:36px!important;padding:7px 9px!important;white-space:nowrap;color:#111}
+.crew-device-dot,.crew-device-status{display:inline-block;width:9px;height:9px;border-radius:50%;background:#999;flex:none}
+.crew-device-dot.green,.crew-device-status.green{background:#159447}
+.crew-device-dot.orange,.crew-device-status.orange{background:#e69919}
+.crew-device-dot.red,.crew-device-status.red{background:#c73535}
+.crew-devices-backdrop{display:none;position:fixed;inset:0;z-index:2147482000;background:rgba(0,0,0,.43);align-items:center;justify-content:center;padding:16px}
+.crew-devices-backdrop.show{display:flex}
+.crew-devices-panel{width:min(500px,100%);max-height:85vh;overflow:auto;background:#fff;color:#171717;border-radius:14px;padding:20px;box-shadow:0 18px 55px rgba(0,0,0,.23);font-family:'Plus Jakarta Sans',sans-serif}
+.crew-devices-title{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:13px}
+.crew-devices-title strong{font-size:18px;font-weight:800}
+.crew-devices-title p,.crew-devices-note{font-size:12px;color:#777;margin:5px 0}
+.crew-devices-x{background:transparent;color:#111;padding:5px;min-height:30px}
+.crew-device-entry{display:flex;align-items:center;gap:12px;padding:13px 3px;border-top:1px solid #e8e8e8}
+.crew-device-info{min-width:0;display:flex;flex-direction:column;gap:4px}
+.crew-device-info strong{font-size:13px}
+.crew-device-info small{font-size:11px;color:#666;line-height:1.4}
+.crew-device-empty{font-size:13px;color:#777}
+.crew-devices-note{border-top:1px solid #eee;padding-top:12px;line-height:1.5}
 </style>
 </body>
 </html>
