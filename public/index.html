@@ -18201,7 +18201,7 @@ function setSelectedTimeNow(mode){
 
   renderPersonnel();
   saveWorkerUpdates(updates);
-  setSaveState(`${mode==='start'?'Entrada':'Fin'} ${value} aplicado`,'saved');
+  setSaveState(`${mode==='start'?'Entrada':'Fin'} ${value} pendiente de confirmar`,'saving');
 }
 
 function setModalTimeNow(inputId){
@@ -20262,7 +20262,9 @@ function saveWorkerModal(){
   const w=state.service.workers.find(x=>x.id===state.modalWorkerId);if(!w||!state.modalDraft)return;
 
   const update={workerId:w.id};
-
+  // Only fields actually changed in this modal receive a new timestamp.
+  // Unchanged stale values must not override another device's newer edits.
+  const before={...w};
   applyReserveStateLocally(
     w,
     document.getElementById('modalWorkerReserve').checked,
@@ -20284,7 +20286,7 @@ function saveWorkerModal(){
   w.ratingPuntualidad=Number(state.modalDraft.ratingPuntualidad||0);
   recomputeWorkerMinutes(w);
 
-  Object.assign(update,{
+  const candidate={
     actualStart:w.actualStart,
     actualEnd:w.actualEnd,
     actualPause:w.actualPause,
@@ -20293,9 +20295,15 @@ function saveWorkerModal(){
     ratingUniformidad:w.ratingUniformidad,
     ratingActitud:w.ratingActitud,
     ratingPuntualidad:w.ratingPuntualidad
-  });
-
-  saveWorkerUpdates([update]);
+  };
+  for(const [key,value] of Object.entries(candidate)){
+    if(JSON.stringify(before[key])!==JSON.stringify(value))update[key]=value;
+  }
+  // Reserve assignments also have to be an explicit actual change.
+  for(const key of Object.keys(update)){
+    if(key!=='workerId'&&JSON.stringify(before[key])===JSON.stringify(update[key]))delete update[key];
+  }
+  if(Object.keys(update).length>1)saveWorkerUpdates([update]);
 
   const id=w.id;
   closeWorkerModal();
