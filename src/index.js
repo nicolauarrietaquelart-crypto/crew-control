@@ -2,6 +2,31 @@ const json=(data,status=200,extra={})=>new Response(JSON.stringify(data),{status
 const err=(message,status=400)=>json({ok:false,error:message},status);
 async function body(request){const value=await request.json();if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Invalid JSON object');return value}
 const str=(v,max=500)=>String(v??'').slice(0,max);
+// Record only differences accepted by the snapshot compare-and-swap.
+export function deviceChanges(before,after){
+ const changes=[];
+ const previous=new Map((before.workers||[]).map(w=>[String(w.id),w]));
+ const current=new Set((after.workers||[]).map(w=>String(w.id)));
+ const value=v=>v===undefined||v===null||v===''?'—':typeof v==='boolean'?(v?'Sí':'No'):String(v).slice(0,200);
+ for(const worker of after.workers||[]){
+  const old=previous.get(String(worker.id));
+  const person=str(worker.personal,200);
+  if(!old){changes.push({person,field:'workerAdded',after:person});continue;}
+  for(const key of new Set([...Object.keys(old),...Object.keys(worker)])){
+   if(key==='id'||key.startsWith('_')||key==='sortOrder'||(worker[key]!==null&&typeof worker[key]==='object'))continue;
+   if(JSON.stringify(old[key])===JSON.stringify(worker[key]))continue;
+   const display=(snapshot,v)=>key==='teamId'?(snapshot.teams||[]).find(t=>t.id===v)?.name||value(v):
+    key==='scenarioId'?(snapshot.scenarios||[]).find(t=>t.id===v)?.name||value(v):value(v);
+   changes.push({person,field:key,before:display(before,old[key]),after:display(after,worker[key])});
+  }
+ }
+ for(const worker of before.workers||[])if(!current.has(String(worker.id)))changes.push({person:str(worker.personal,200),field:'workerRemoved'});
+ for(const key of ['serviceName','serviceDate','venue','closed','teams','scenarios','incidents','requirements','pauseShifts','workOrder','hiddenWorkTypes']){
+  if(JSON.stringify(before[key])===JSON.stringify(after[key]))continue;
+  changes.push({field:key,...(Array.isArray(after[key])?{after:'Actualizado'}:{before:value(before[key]),after:value(after[key])})});
+ }
+ return changes;
+}
 export default {
  async fetch(request,env){
   const url=new URL(request.url),p=url.pathname,m=request.method;
@@ -61,6 +86,12 @@ export default {
       const rows=await env.DB.prepare('SELECT device_id,label,last_seen,pending FROM service_device_presence WHERE service_id=? ORDER BY last_seen DESC LIMIT 80').bind(service.id).all();
       return json({ok:true,serverTime:now,devices:rows.results||[]});
     }
+    if(!section&&m==='GET'&&url.searchParams.get('format')==='activity'){
+      const deviceId=str(url.searchParams.get('deviceId'),100);
+      if(!/^[a-zA-Z0-9_-]{8,100}$/.test(deviceId))return err('Invalid device ID',400);
+      const rows=await env.DB.prepare('SELECT id,created_at,changes FROM service_device_activity WHERE service_id=? AND device_id=? ORDER BY created_at DESC,id DESC LIMIT 30').bind(service.id,deviceId).all();
+      return json({ok:true,events:(rows.results||[]).map(row=>({...row,changes:JSON.parse(row.changes)}))});
+    }
     if(!section&&m==='GET'&&url.searchParams.get('format')==='snapshot'){
       const row=await env.DB.prepare('SELECT snapshot FROM service_snapshots WHERE service_id=?').bind(service.id).first();
       return json({ok:true,service:row?.snapshot?JSON.parse(row.snapshot):{code:service.code,serviceName:service.name,serviceDate:service.service_date,venue:service.venue,closed:!!service.closed,workers:[],teams:[],scenarios:[],incidents:[],requirements:[],workOrder:[],hiddenWorkTypes:[]}});
@@ -83,14 +114,25 @@ export default {
       snapshot.code=service.code;
       snapshot._syncRevision=revision;
       const serialized=JSON.stringify(snapshot);
-      let result;
+      const oldRow=await env.DB.prepare('SELECT snapshot FROM service_snapshots WHERE service_id=?').bind(service.id).first();
+      const changes=deviceChanges(oldRow?.snapshot?JSON.parse(oldRow.snapshot):{},snapshot);
+      const deviceId=str(request.headers.get('x-device-id'),100);
+      const statements=[];
       if(!expected){
-        result=await env.DB.prepare('INSERT OR IGNORE INTO service_snapshots(service_id,snapshot,updated_at) VALUES(?,?,CURRENT_TIMESTAMP)').bind(service.id,serialized).run();
-        if(!result.meta?.changes)result=await env.DB.prepare("UPDATE service_snapshots SET snapshot=?,updated_at=CURRENT_TIMESTAMP WHERE service_id=? AND json_extract(snapshot,'$._syncRevision') IS NULL").bind(serialized,service.id).run();
+        statements.push(env.DB.prepare('INSERT OR IGNORE INTO service_snapshots(service_id,snapshot,updated_at) VALUES(?,?,CURRENT_TIMESTAMP)').bind(service.id,serialized));
+        statements.push(env.DB.prepare("UPDATE service_snapshots SET snapshot=?,updated_at=CURRENT_TIMESTAMP WHERE service_id=? AND json_extract(snapshot,'$._syncRevision') IS NULL").bind(serialized,service.id));
       }else{
-        result=await env.DB.prepare("UPDATE service_snapshots SET snapshot=?,updated_at=CURRENT_TIMESTAMP WHERE service_id=? AND json_extract(snapshot,'$._syncRevision')=?").bind(serialized,service.id,expected).run();
+        statements.push(env.DB.prepare("UPDATE service_snapshots SET snapshot=?,updated_at=CURRENT_TIMESTAMP WHERE service_id=? AND json_extract(snapshot,'$._syncRevision')=?").bind(serialized,service.id,expected));
       }
-      if(!result.meta?.changes)return err('Otro dispositivo ha modificado este servicio. Actualiza para sincronizar antes de guardar.',409);
+      const writeCount=statements.length;
+      if(changes.length&&/^[a-zA-Z0-9_-]{8,100}$/.test(deviceId)){
+        statements.push(env.DB.prepare("INSERT INTO service_device_activity(id,service_id,device_id,created_at,changes) SELECT ?,?,?,?,? WHERE EXISTS (SELECT 1 FROM service_snapshots WHERE service_id=? AND json_extract(snapshot,'$._syncRevision')=?)")
+          .bind(revision,service.id,deviceId,Date.now(),JSON.stringify(changes),service.id,revision));
+      }
+      // D1 batch is transactional: no history for failed writes, no lost audit
+      // event between a committed snapshot and a separate logging request.
+      const results=await env.DB.batch(statements);
+      if(!results.slice(0,writeCount).some(result=>result.meta?.changes))return err('Otro dispositivo ha modificado este servicio. Actualiza para sincronizar antes de guardar.',409);
       return json({ok:true,service:snapshot,revision});
     }
     if(!section&&m==='GET'){

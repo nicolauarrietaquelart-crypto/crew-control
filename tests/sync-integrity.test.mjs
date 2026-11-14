@@ -157,7 +157,7 @@ test('all browser and Worker scripts have valid JavaScript syntax',()=>{
     if(match[1].trim())assert.doesNotThrow(()=>new Function(match[1]));
   }
   assert.doesNotThrow(()=>new Function(pauseUi));
-  assert.doesNotThrow(()=>new Function(workerApi.replace('export default','const app =')));
+  assert.doesNotThrow(()=>new Function(workerApi.replace('export default','const app =').replace('export function','function')));
 });
 
 
