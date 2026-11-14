@@ -150,3 +150,12 @@ test('D1 rejects duplicate worker IDs before committing a service snapshot',()=>
   assert.match(workerApi,/ID de trabajador vacío o duplicado/);
   assert.match(html,/crewRebasePendingJournal\(serviceCode,result\.confirmedVersions\)/);
 });
+
+test('all browser and Worker scripts have valid JavaScript syntax',()=>{
+  const scripts=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)];
+  for(const match of scripts){
+    if(match[1].trim())assert.doesNotThrow(()=>new Function(match[1]));
+  }
+  assert.doesNotThrow(()=>new Function(pauseUi));
+  assert.doesNotThrow(()=>new Function(workerApi.replace('export default','const app =')));
+});
