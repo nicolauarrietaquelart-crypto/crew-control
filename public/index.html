@@ -12840,7 +12840,10 @@ const crewPersist=service=>{
         merged.arrivalAt=serverWorker.arrivalAt;
         return merged;
       });
-      const next={...service,workers,_syncRevision:remote._syncRevision};
+      // General snapshot writes never overwrite pause plans from another device.
+      // Pause plans use their own event-based merge and local journal below.
+      const next={...remote,...service,workers,pauseShifts:remote.pauseShifts||[],
+        _pauseVersions:remote._pauseVersions||{},_syncRevision:remote._syncRevision};
       try{
         const result=await crewApi(code,'PUT',{
           service:next,revision:String(remote._syncRevision||'')
@@ -12891,6 +12894,7 @@ async function crewCheckRemoteChanges(){
        crewLastLocalWrite>checkStarted||state.service?._syncRevision!==localRevision)return;
     if(remote._syncRevision===state.service._syncRevision)return;
     state.service=crewRestoreLocalEdits(remote);
+    state.service=crewPauseMerge(state.service,crewPausePending(code));
     crewCacheRoster();
     const active=state.activeDay;
     renderScenarios();
@@ -13851,7 +13855,7 @@ function openServiceData(service){
     crewMobileShiftV11256='ALL';
     crewMobileWorkV11259='ALL';
   }
-  state.service=crewRestoreLocalEdits(service);
+  state.service=crewPauseMerge(crewRestoreLocalEdits(service),crewPausePending(service.code));
   crewDevices=[];crewPresenceLastCode='';
   void crewPresenceHeartbeat();
   crewConnectionRestored();
@@ -14217,7 +14221,7 @@ function crewRetryLocalUpdates(){
 }
 window.setInterval(crewRetryLocalUpdates,3000);
 window.addEventListener('pagehide',()=>{if(state.service?.code)crewCacheRoster();});
-window.addEventListener('online',()=>crewRetryLocalUpdates());
+window.addEventListener('online',()=>{crewRetryLocalUpdates();void crewPauseSync();});
 
 function saveWorkerUpdates(updates){
   if(!state.service||state.service.closed||!updates.length)return;
@@ -17032,7 +17036,98 @@ function teamMembersBackdropClick(event){
 // Turnos de pausa: planificación operativa separada de w.pausa, w.actualPause y los horarios PDF.
 let crewPauseWork='';
 const crewPauseRecords=()=>{if(!Array.isArray(state.service.pauseShifts))state.service.pauseShifts=[];return state.service.pauseShifts};
-function crewPauseSave(){crewPersist(state.service).then(()=>setSaveState('Turnos de pausa guardados','saved')).catch(e=>{console.error(e);setSaveState('Error al guardar turnos','error')})}
+// Event journal makes offline pause planning additive, not whole-array replacement.
+const CREW_PAUSE_QUEUE='crew-control-pause-events-v1:';
+let crewPauseQueueInFlight=false;
+function crewPausePending(code){
+  const saved=crewReadLocal(CREW_PAUSE_QUEUE,code);
+  return Array.isArray(saved)?saved:[];
+}
+function crewPauseMerge(remote,events){
+  const shifts=new Map((remote.pauseShifts||[]).map(x=>[String(x.id),{...x,workerIds:[...(x.workerIds||[])]}]));
+  const versions={...(remote._pauseVersions||{})};
+  const ordered=[...events].sort((x,y)=>Number(x.at||0)-Number(y.at||0));
+  for(const event of ordered){
+    const at=Number(event.at||0),id=String(event.id||'');
+    if(!id)continue;
+    if(event.kind==='add'){
+      const key='shift:'+id;
+      if(at<Number(versions[key]||0))continue;
+      shifts.set(id,{...event.shift,workerIds:[...(event.shift?.workerIds||[])]});
+      versions[key]=at;
+    }else if(event.kind==='remove'){
+      const key='shift:'+id;
+      if(at<Number(versions[key]||0))continue;
+      shifts.delete(id);versions[key]=at;
+    }else if(event.kind==='assign'){
+      const workerId=String(event.workerId||'');
+      const key='assignment:'+String(event.serviceDate||'')+':'+String(event.trabajo||'')+':'+workerId;
+      if(!workerId||at<Number(versions[key]||0))continue;
+      for(const shift of shifts.values()){
+        if(shift.serviceDate===event.serviceDate&&
+          String(shift.trabajo||'')===String(event.trabajo||'')){
+          shift.workerIds=(shift.workerIds||[]).filter(w=>String(w)!==workerId);
+        }
+      }
+      if(event.checked&&shifts.has(id)){
+        const shift=shifts.get(id);
+        shift.workerIds=[...new Set([...(shift.workerIds||[]),workerId])];
+      }
+      versions[key]=at;
+    }
+  }
+  return {...remote,pauseShifts:[...shifts.values()],_pauseVersions:versions};
+}
+function crewPauseSave(event){
+  if(!state.service?.code)return;
+  const code=state.service.code;
+  const pending=crewPausePending(code);
+  pending.push({...event,at:Date.now(),eventId:crypto.randomUUID()});
+  if(!crewWriteLocal(CREW_PAUSE_QUEUE,code,pending))return;
+  crewCacheRoster();
+  setSaveState('Turnos de pausa guardados localmente','saving');
+  void crewPauseSync();
+}
+async function crewPauseSync(){
+  const code=state.service?.code;
+  if(!code||!navigator.onLine||crewPauseQueueInFlight||state.service.closed)return;
+  const events=crewPausePending(code);
+  if(!events.length)return;
+  crewPauseQueueInFlight=true;
+  try{
+    const task=crewSaveQueue.then(async()=>{
+      for(let attempt=0;attempt<5;attempt++){
+        const remote=(await crewApi(code)).service;
+        if(!remote)throw Error('Servicio no encontrado');
+        const next=crewPauseMerge(remote,events);
+        try{
+          const result=await crewApi(code,'PUT',{service:next,revision:String(remote._syncRevision||'')});
+          return {result,next};
+        }catch(error){
+          if(!String(error?.message||'').includes('Otro dispositivo')||attempt===4)throw error;
+        }
+      }
+    });
+    crewSaveQueue=task.catch(()=>{});
+    const {result,next}=await task;
+    const completed=new Set(events.map(e=>e.eventId));
+    crewWriteLocal(CREW_PAUSE_QUEUE,code,crewPausePending(code).filter(e=>!completed.has(e.eventId)));
+    if(state.service?.code===code){
+      state.service._syncRevision=result.revision;
+      state.service._pauseVersions=next._pauseVersions;
+      state.service.pauseShifts=crewPauseMerge(next,crewPausePending(code)).pauseShifts;
+      if(!document.getElementById('crewPauseShiftsModal')?.classList.contains('hidden'))renderCrewPauseShifts();
+      setSaveState('Turnos de pausa sincronizados','saved');
+    }
+  }catch(error){
+    console.error('Pausas pendientes:',error);
+    setSaveState('Pausas guardadas localmente · sin sincronizar','error');
+    crewConnectionFailed(error);
+  }finally{crewPauseQueueInFlight=false;}
+}
+window.setInterval(()=>{if(state.service?.code)void crewPauseSync()},1000);
+window.addEventListener('online',()=>void crewPauseSync());
+
 function openCrewPauseShifts(){
   if(!state.service)return;
   const works=[...new Set((state.service.workers||[]).filter(w=>w.included&&w.serviceDate===state.activeDay).map(w=>w.trabajo||'SIN TIPO'))].sort();
@@ -17050,13 +17145,14 @@ function crewPauseAddShift(){
   if(!state.service||state.service.closed||!crewPauseWork)return;
   const start=document.getElementById('crewPauseStart').value,end=document.getElementById('crewPauseEnd').value;
   if(!start||!end||start===end){alert('Indica un inicio y un fin distintos.');return}
-  crewPauseRecords().push({id:'PS_'+crypto.randomUUID(),serviceDate:state.activeDay,trabajo:crewPauseWork,start,end,workerIds:[]});
-  crewPauseSave();renderCrewPauseShifts();
+  const shift={id:'PS_'+crypto.randomUUID(),serviceDate:state.activeDay,trabajo:crewPauseWork,start,end,workerIds:[]};
+  crewPauseRecords().push(shift);
+  crewPauseSave({kind:'add',id:shift.id,shift});renderCrewPauseShifts();
 }
 function crewPauseRemoveShift(id){
   if(!state.service||state.service.closed||!confirm('¿Eliminar este turno de pausa?'))return;
   state.service.pauseShifts=crewPauseRecords().filter(x=>x.id!==id);
-  crewPauseSave();renderCrewPauseShifts();
+  crewPauseSave({kind:'remove',id});renderCrewPauseShifts();
 }
 function crewPauseToggleWorker(id,workerId,checked){
   if(!state.service||state.service.closed)return;
@@ -17064,7 +17160,8 @@ function crewPauseToggleWorker(id,workerId,checked){
   // Un trabajador solo puede pertenecer a un turno de pausa del mismo día y tipo.
   crewPauseRecords().filter(x=>x.serviceDate===shift.serviceDate&&normalize(x.trabajo)===normalize(shift.trabajo)).forEach(x=>{x.workerIds=(x.workerIds||[]).filter(w=>w!==workerId)});
   if(checked)shift.workerIds.push(workerId);
-  crewPauseSave();renderCrewPauseShifts();crewPauseRenderPeople();
+  crewPauseSave({kind:'assign',id,workerId,checked,serviceDate:shift.serviceDate,trabajo:shift.trabajo});
+  renderCrewPauseShifts();crewPauseRenderPeople();
 }
 function crewPauseFilterWorkers(id,value){
   const container=document.getElementById('crewPauseWorkers_'+id);if(!container)return;
