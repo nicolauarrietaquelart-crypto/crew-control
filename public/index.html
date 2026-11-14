@@ -13170,9 +13170,18 @@ async function crewD1Dispatch(method,args){
   }
   if(method==='generateClosedServicePdf')throw new Error('El PDF final todavía requiere un generador compatible con Cloudflare; los datos del servicio permanecen guardados en D1.');
   if(method==='loadService'){
-    const loaded=(await crewApi(code)).service;
+    let loaded=(await crewApi(code)).service;
+    if(!loaded.closed&&crewDuplicateWorkerIds(loaded).length){
+      // Repair an already imported service when it is opened. Run against
+      // the latest D1 revision, so every device receives the same new IDs.
+      loaded=await crewSaveLatest(code,remote=>{
+        const fixed=crewUniqueWorkerIds(remote.workers||[]);
+        if(!fixed.repaired)return remote;
+        return {...remote,workers:fixed.workers};
+      });
+    }
     const ready=crewEnsureDefaultStructure(loaded);
-    if(ready!==loaded && !loaded.closed)await crewPersist(ready);
+    if(ready!==loaded && !loaded.closed)return crewPersist(ready);
     return ready;
   }
   if(method==='generateNewService'){
