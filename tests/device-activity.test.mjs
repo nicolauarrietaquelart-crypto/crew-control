@@ -47,7 +47,8 @@ print(json.dumps(out))
    {sql:'CREATE TABLE service_snapshots(service_id TEXT PRIMARY KEY,snapshot TEXT,updated_at TEXT)'},
    {sql:'INSERT INTO services(id,code,closed) VALUES (?,?,0)',args:['S1','123456']},
    {sql:'INSERT INTO services(id,code,closed) VALUES (?,?,0)',args:['S2','654321']},
-   ...readFileSync(new URL('../db/migrations/0003_device_activity.sql',import.meta.url),'utf8').split(';').filter(s=>s.trim()).map(s=>({sql:s}))
+   ...['0003_device_activity.sql','0005_deleted_services.sql'].flatMap(file=>
+    readFileSync(new URL('../db/migrations/'+file,import.meta.url),'utf8').split(';').filter(s=>s.trim()).map(s=>({sql:s})))
   ]);
   const call=(method,body,device='device_111',code='123456',format='snapshot')=>worker.fetch(new Request('https://example.test/api/services/'+code+'?format='+format+(format==='activity'?'&deviceId='+device:''),{
    method,headers:{'content-type':'application/json','x-service-code':code,...(device?{'x-device-id':device}:{})},...(body?{body:JSON.stringify(body)}:{})}),{DB});
@@ -143,6 +144,8 @@ print(json.dumps(out))
    }),{DB,CREW_MANAGER_INITIAL_PASSWORD:useSecret?initial:undefined});
   const login={username:'franpenny',password:initial};
   assert.equal((await manager('services')).status,401);
+  const target={code:'654321'};
+  assert.equal((await manager('delete-service',target)).status,401);
   assert.equal((await manager('login',login,undefined,'https://foreign.test')).status,403);
   assert.equal((await manager('login',login,undefined,'https://example.test',false)).status,503);
   const setup=await manager('login',login);
@@ -150,6 +153,7 @@ print(json.dumps(out))
   assert.equal((await setup.json()).setup,true);
   const setupCookie=setup.headers.get('set-cookie').split(';')[0];
   assert.equal((await manager('services',undefined,setupCookie)).status,403);
+  assert.equal((await manager('delete-service',target,setupCookie)).status,403);
   assert.equal((await manager('password',{password:initial},setupCookie)).status,400);
   const encoder=new TextEncoder();
   const hex=buffer=>Buffer.from(buffer).toString('hex');
@@ -172,5 +176,14 @@ print(json.dumps(out))
   assert.notEqual(stored,newProof);
   assert.equal((await manager('login',{username:'franpenny',proof:stored})).status,401);
   assert.equal((await manager('password',{password:'another-manager-password'},newCookie)).status,400);
+  assert.equal((await manager('delete-service',target,newCookie,'https://foreign.test')).status,403);
+  assert.equal((await manager('delete-service',{code:'invalid'},newCookie)).status,400);
+  assert.equal((await manager('delete-service',target,newCookie)).status,200);
+  assert.equal((await manager('delete-service',target,newCookie)).status,404);
+  const {services}=await (await manager('services',undefined,newCookie)).json();
+  assert.deepEqual(services.map(service=>service.code),['123456']);
+  assert.equal((await call('GET',null,'',target.code)).status,404);
+  assert.equal((await call('PUT',{service:snapshot},'device_111',target.code)).status,404);
+  assert.ok(sql([{sql:'SELECT deleted_at FROM services WHERE code=?',args:[target.code]}])[0].results[0].deleted_at);
  }finally{rmSync(dir,{recursive:true,force:true});}
 });

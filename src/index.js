@@ -77,7 +77,7 @@ export default {
    if(match){
     const code=decodeURIComponent(match[1]),section=match[2];
     if(code!==accessCode)return err('Código de servicio incorrecto',403);
-    const service=await env.DB.prepare('SELECT * FROM services WHERE code=?').bind(code).first();
+    const service=await env.DB.prepare('SELECT * FROM services WHERE code=? AND deleted_at IS NULL').bind(code).first();
     if(!service)return err('Service not found',404);
     if(section==='pdf'){
       const file=url.searchParams.get('file')||'';
@@ -202,7 +202,7 @@ export default {
    const worker=p.match(/^\/api\/workers\/([^/]+)$/);
    if(worker&&m==='PATCH'){
     const v=await body(request),id=worker[1];
-    const current=await env.DB.prepare('SELECT w.*,s.closed FROM workers w JOIN services s ON s.id=w.service_id WHERE w.id=?').bind(id).first();
+    const current=await env.DB.prepare('SELECT w.*,s.closed FROM workers w JOIN services s ON s.id=w.service_id WHERE w.id=? AND s.deleted_at IS NULL').bind(id).first();
     if(!current)return err('Worker not found',404);
     const owner=await env.DB.prepare('SELECT code FROM services WHERE id=?').bind(current.service_id).first();
     if(owner?.code!==accessCode)return err('Código de servicio incorrecto',403);

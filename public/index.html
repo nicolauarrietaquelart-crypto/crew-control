@@ -17140,7 +17140,7 @@ function renderPersonnel(light=false){
       ${workTeamFilterHtml(trabajo,includedRows)}
       <div class="table-wrap" style="display:block;width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:auto;overscroll-behavior-x:contain">
         <table style="display:table;table-layout:fixed;width:100%;min-width:957px;max-width:none;flex-shrink:0;transform:none">
-          <colgroup><col style="width:3.125000000%!important;min-width:0!important;max-width:none!important"><col style="width:7.291666667%!important;min-width:0!important;max-width:none!important"><col style="width:17.708333333%!important;min-width:0!important;max-width:none!important"><col style="width:9.375000000%!important;min-width:0!important;max-width:none!important"><col style="width:9.375000000%!important;min-width:0!important;max-width:none!important"><col style="width:7.291666667%!important;min-width:0!important;max-width:none!important"><col style="width:7.291666667%!important;min-width:0!important;max-width:none!important"><col style="width:9.375000000%!important;min-width:0!important;max-width:none!important"><col style="width:11.458333333%!important;min-width:0!important;max-width:none!important"><col style="width:8.333333333%!important;min-width:0!important;max-width:none!important"><col style="width:9.375000000%!important;min-width:0!important;max-width:none!important"></colgroup>
+          <colgroup><col style="--crew-column-base:30px;width:var(--crew-column-width,3.125000000%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:70px;width:var(--crew-column-width,7.291666667%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:170px;width:var(--crew-column-width,17.708333333%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:90px;width:var(--crew-column-width,9.375000000%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:90px;width:var(--crew-column-width,9.375000000%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:70px;width:var(--crew-column-width,7.291666667%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:70px;width:var(--crew-column-width,7.291666667%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:90px;width:var(--crew-column-width,9.375000000%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:110px;width:var(--crew-column-width,11.458333333%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:80px;width:var(--crew-column-width,8.333333333%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:90px;width:var(--crew-column-width,9.375000000%)!important;min-width:0!important;max-width:none!important"></colgroup>
           <thead><tr>
             <th></th>
             <th class="sortable-th">${sortHeaderHtml(trabajo,'estado','Estado')}</th>
@@ -21738,18 +21738,15 @@ document.addEventListener('keydown',event=>{
  html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table{
   width:max(100%,960px)!important;min-width:960px!important;max-width:none!important;table-layout:fixed!important;
  }
- /* One set of table tracks for desktop and tablet, independent of the sidebar breakpoint. */
- html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(1){width:3.125000000%!important;min-width:0!important;max-width:none!important}
- html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(2){width:7.291666667%!important;min-width:0!important;max-width:none!important}
- html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(3){width:17.708333333%!important;min-width:0!important;max-width:none!important}
- html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(4){width:9.375000000%!important;min-width:0!important;max-width:none!important}
- html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(5){width:9.375000000%!important;min-width:0!important;max-width:none!important}
- html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(6){width:7.291666667%!important;min-width:0!important;max-width:none!important}
- html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(7){width:7.291666667%!important;min-width:0!important;max-width:none!important}
- html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(8){width:9.375000000%!important;min-width:0!important;max-width:none!important}
- html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(9){width:11.458333333%!important;min-width:0!important;max-width:none!important}
- html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(10){width:8.333333333%!important;min-width:0!important;max-width:none!important}
- html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(11){width:9.375000000%!important;min-width:0!important;max-width:none!important}
+ @supports (width:1cqw){
+  html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap{
+   container-type:inline-size;
+  }
+  html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > colgroup > col{
+   /* Share extra width across all columns above the 960px minimum. */
+   --crew-column-width:calc(var(--crew-column-base) + max(0px,(100cqw - 960px) / 11));
+  }
+ }
  html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-team{
   text-align:left!important;vertical-align:middle!important;
  }
@@ -21774,17 +21771,9 @@ document.addEventListener('keydown',event=>{
   display:table!important;table-layout:fixed!important;width:max(100%,960px)!important;min-width:960px!important;max-width:none!important;
  }
  html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup{display:table-column-group!important}
- html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(1){width:3.125000000%!important;min-width:0!important;max-width:none!important}
- html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(2){width:7.291666667%!important;min-width:0!important;max-width:none!important}
- html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(3){width:17.708333333%!important;min-width:0!important;max-width:none!important}
- html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(4){width:9.375000000%!important;min-width:0!important;max-width:none!important}
- html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(5){width:9.375000000%!important;min-width:0!important;max-width:none!important}
- html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(6){width:7.291666667%!important;min-width:0!important;max-width:none!important}
- html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(7){width:7.291666667%!important;min-width:0!important;max-width:none!important}
- html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(8){width:9.375000000%!important;min-width:0!important;max-width:none!important}
- html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(9){width:11.458333333%!important;min-width:0!important;max-width:none!important}
- html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(10){width:8.333333333%!important;min-width:0!important;max-width:none!important}
- html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col:nth-child(11){width:9.375000000%!important;min-width:0!important;max-width:none!important}
+ html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > colgroup > col{
+  --crew-column-width:var(--crew-column-base);
+ }
  html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > thead{display:table-header-group!important}
  html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > tbody{display:table-row-group!important}
  html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > :is(thead,tbody) > tr{
@@ -21832,7 +21821,7 @@ html body #personnelGroups details.work-group > .table-wrap > table > thead > tr
  }
 }
 </style>
-<link rel="stylesheet" href="/service-tools.css?v=4">
+<link rel="stylesheet" href="/service-tools.css?v=5">
 <script>
 function crewAddDayButton(){
  return state.service?.closed?'':`<button type="button" class="crew-add-day" onclick="crewOpenAddDay()" aria-label="Añadir día" title="Añadir día">
@@ -22029,15 +22018,19 @@ function crewManagerCard(service){
  types.hidden=!service.types;
  const actions=document.createElement('div');
  actions.className='crew-manager-actions';
- const button=(label,callback,primary=false)=>{
+ const button=(label,callback,style='secondary')=>{
   const element=document.createElement('button');
   element.type='button';
-  element.className=primary?'primary':'secondary';
+  element.className=style;
   element.textContent=label;
   element.onclick=async()=>{
    element.disabled=true;
+   managerUI.status.textContent='';
    try{await callback();}
-   catch(error){managerUI.status.textContent=error.message;}
+   catch(error){
+    if(error.status===401)crewManagerView('login');
+    managerUI.status.textContent=error.message;
+   }
    finally{element.disabled=false;}
   };
   actions.append(element);
@@ -22047,13 +22040,13 @@ function crewManagerCard(service){
   openServiceData(loaded);
   managerUI.dialog.close();
  };
- button('Acceder',open,true);
+ button('Acceder',open,'primary');
  if(service.closed){
   button('Descargar Excel',async()=>{
    const {service:closed}=await crewApi(service.code);
    if(!closed.closed)throw new Error('El servicio se ha reabierto. Actualiza la lista.');
    await downloadClosedServiceExcel(false,false,closed);
-  });
+  },'crew-manager-export');
  }else{
   const input=document.createElement('input');
   input.type='file';
@@ -22074,6 +22067,12 @@ function crewManagerCard(service){
   button(service.pdf?'Actualizar PDF':'Importar PDF',()=>input.click());
   actions.append(input);
  }
+ button('Eliminar',async()=>{
+  if(!confirm('¿Eliminar «'+title.textContent+'» ('+service.code+')? Se quitará de la lista y su código dejará de dar acceso al servicio.'))return;
+  await crewManagerApi('delete-service',{code:service.code});
+  article.remove();
+  managerUI.status.textContent='Servicio eliminado.';
+ },'crew-manager-delete');
  heading.append(title,status);
  article.append(heading,details,types,actions);
  return article;
@@ -22089,23 +22088,23 @@ function crewManagerCard(service){
   flex-wrap:wrap!important;min-width:0!important;
  }
 }
-</style><style id="crew-rating-to-edge">
+</style><style id="crew-rating-alignment">
 @media(min-width:701px){
  html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(11),
  html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-rating{
-  width:auto!important;max-width:none!important;text-align:right!important;padding-inline:6px 10px!important;
+  width:auto!important;max-width:none!important;text-align:center!important;padding-inline:6px!important;
  }
  html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(11) > .sort-btn{
-  width:100%!important;justify-content:flex-end!important;text-align:right!important;padding-inline:0!important;
+  width:100%!important;justify-content:center!important;text-align:center!important;padding-inline:0!important;
  }
 }
 @media(max-width:700px){
  html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(11),
  html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-rating{
-  width:auto!important;max-width:none!important;text-align:right!important;padding-inline:6px 10px!important;
+  width:auto!important;max-width:none!important;text-align:center!important;padding-inline:6px!important;
  }
  html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(11) > .sort-btn{
-  width:100%!important;justify-content:flex-end!important;text-align:right!important;padding-inline:0!important;
+  width:100%!important;justify-content:center!important;text-align:center!important;padding-inline:0!important;
  }
 }
 </style>

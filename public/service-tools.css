@@ -27,3 +27,7 @@ body:has(#startScreen.hidden) #crewManagerEntry{display:none!important}
 #crewManager .crew-manager-actions>button.primary{background:#ff851a!important;border-color:#ff851a!important;color:#151515!important}
 #crewManager .crew-manager-actions>button:not(.primary):hover{background:#edf0f4!important}
 #crewManager .crew-manager-actions>button.primary:hover{background:#ff9a42!important}
+#crewManager .crew-manager-actions>button.crew-manager-export{background:#edf6ef!important;border-color:#c6dfca!important;color:#205d35!important}
+#crewManager .crew-manager-actions>button.crew-manager-export:hover{background:#deefe3!important}
+#crewManager .crew-manager-actions>button.crew-manager-delete{background:#fff5f4!important;border-color:#ebcecb!important;color:#9b2927!important}
+#crewManager .crew-manager-actions>button.crew-manager-delete:hover{background:#fce5e3!important}

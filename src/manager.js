@@ -114,6 +114,14 @@ export async function manager(request,env,url){
   return response({setup:false},200,cookie(nextToken,28800));
  }
  if(session.setup)return error('Cambia la contraseña inicial para ver los servicios.',403);
+ if(action==='delete-service'&&writes){
+  const input=await request.json();
+  const code=input?.code;
+  if(typeof code!=='string'||!/^(?:\d{6}|[A-Za-z0-9_-]{12,80})$/.test(code))return error('Código de servicio no válido.',400);
+  const result=await db.prepare('UPDATE services SET deleted_at=CURRENT_TIMESTAMP WHERE code=? AND deleted_at IS NULL').bind(code).run();
+  if(!result.meta.changes)return error('El servicio ya no está disponible. Actualiza la lista.',404);
+  return response({ok:true});
+ }
  if(action==='services'&&request.method==='GET'){
   const {results}=await db.prepare(`SELECT s.code,
    COALESCE(NULLIF(json_extract(p.snapshot,'$.serviceName'),''),s.name) name,
@@ -123,6 +131,7 @@ export async function manager(request,env,url){
    COALESCE(json_array_length(p.snapshot,'$.workers'),0) workers,
    (SELECT group_concat(DISTINCT json_extract(value,'$.trabajo')) FROM json_each(p.snapshot,'$.workers')) types
    FROM services s LEFT JOIN service_snapshots p ON p.service_id=s.id
+   WHERE s.deleted_at IS NULL
    ORDER BY COALESCE(p.updated_at,s.created_at) DESC,s.code`).all();
   return response({services:results});
  }
