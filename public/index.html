@@ -17143,16 +17143,16 @@ function renderPersonnel(light=false){
           <colgroup><col style="--crew-column-base:30px;width:var(--crew-column-width,3.125000000%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:70px;width:var(--crew-column-width,7.291666667%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:170px;width:var(--crew-column-width,17.708333333%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:90px;width:var(--crew-column-width,9.375000000%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:90px;width:var(--crew-column-width,9.375000000%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:70px;width:var(--crew-column-width,7.291666667%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:70px;width:var(--crew-column-width,7.291666667%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:90px;width:var(--crew-column-width,9.375000000%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:110px;width:var(--crew-column-width,11.458333333%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:80px;width:var(--crew-column-width,8.333333333%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:90px;width:var(--crew-column-width,9.375000000%)!important;min-width:0!important;max-width:none!important"></colgroup>
           <thead><tr>
             <th></th>
-            <th class="sortable-th">${sortHeaderHtml(trabajo,'estado','Estado')}</th>
-            <th class="sortable-th">${sortHeaderHtml(trabajo,'personal','Personal')}</th>
-            <th class="sortable-th">${sortHeaderHtml(trabajo,'especialidad','Especialidad')}</th>
-            <th class="sortable-th">${sortHeaderHtml(trabajo,'horario','Horario')}</th>
-            <th class="sortable-th">${sortHeaderHtml(trabajo,'pausa','Pausa')}</th>
-            <th class="sortable-th">${sortHeaderHtml(trabajo,'dieta','Dieta')}</th>
-            <th class="sortable-th">${sortHeaderHtml(trabajo,'movil','Móvil')}</th>
-            <th class="sortable-th">${sortHeaderHtml(trabajo,'equipo','Escenario / equipo')}</th>
-            <th class="sortable-th">${sortHeaderHtml(trabajo,'chaleco','Chaleco')}</th>
-            <th class="sortable-th">${sortHeaderHtml(trabajo,'valoracion','Valoración')}</th>
+            <th scope="col" class="sortable-th">${sortHeaderHtml(trabajo,'estado','Estado')}</th>
+            <th scope="col" class="sortable-th">${sortHeaderHtml(trabajo,'personal','Personal')}</th>
+            <th scope="col" class="sortable-th">${sortHeaderHtml(trabajo,'especialidad','Especialidad')}</th>
+            <th scope="col" class="sortable-th">${sortHeaderHtml(trabajo,'horario','Horario')}</th>
+            <th scope="col" class="sortable-th">${sortHeaderHtml(trabajo,'pausa','Pausa')}</th>
+            <th scope="col" class="sortable-th">${sortHeaderHtml(trabajo,'dieta','Dieta')}</th>
+            <th scope="col" class="sortable-th">${sortHeaderHtml(trabajo,'movil','Móvil')}</th>
+            <th scope="col" class="sortable-th">${sortHeaderHtml(trabajo,'equipo','Escenario / equipo')}</th>
+            <th scope="col" class="sortable-th">${sortHeaderHtml(trabajo,'chaleco','Chaleco')}</th>
+            <th scope="col" class="sortable-th">${sortHeaderHtml(trabajo,'valoracion','Valoración')}</th>
           </tr></thead>
           <tbody data-work-team-body="${escapeAttr(trabajo)}">
             ${rowsGroupedByEntryHtml(trabajo,filteredRowsForWork(trabajo,rows))}
@@ -21796,19 +21796,14 @@ document.addEventListener('keydown',event=>{
 
 <style>
 @media(min-width:701px){
- html body #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(9),
  html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-team{
   padding-inline:5px!important;text-align:center!important;vertical-align:middle!important;
  }
 }
 @media(max-width:700px){
- html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(9),
  html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-team{
   padding-inline:5px!important;text-align:center!important;vertical-align:middle!important;
  }
-}
-html body #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(9) > .sort-btn{
- width:100%!important;margin:0!important;padding-inline:0!important;justify-content:center!important;text-align:center!important;
 }
 @media(min-width:701px){
  html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-team > select[data-team-worker]{
@@ -22090,22 +22085,29 @@ function crewManagerCard(service){
 }
 </style><style id="crew-rating-alignment">
 @media(min-width:701px){
- html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(11),
  html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-rating{
   width:auto!important;max-width:none!important;text-align:center!important;padding-inline:6px!important;
  }
- html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(11) > .sort-btn{
-  width:100%!important;justify-content:center!important;text-align:center!important;padding-inline:0!important;
- }
 }
 @media(max-width:700px){
- html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(11),
  html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-rating{
   width:auto!important;max-width:none!important;text-align:center!important;padding-inline:6px!important;
  }
- html.crew-ipad-table body #personnelGroups details.work-group > .table-wrap > table > thead > tr > th:nth-child(11) > .sort-btn{
-  width:100%!important;justify-content:center!important;text-align:center!important;padding-inline:0!important;
- }
+}
+</style>
+<style id="crew-centered-column-headings">
+html body #personnelGroups details.work-group > .table-wrap > table > thead > tr > th.sortable-th[scope="col"]{
+ text-align:center!important;vertical-align:middle!important;padding-inline:5px!important;
+}
+html body #personnelGroups details.work-group > .table-wrap > table > thead > tr > th.sortable-th[scope="col"] > button.sort-btn{
+ position:relative;display:block!important;box-sizing:border-box!important;
+ width:100%!important;min-width:0!important;max-width:none!important;
+ margin:0!important;padding:8px 0!important;text-align:center!important;white-space:normal!important;
+}
+/* Keep the label centered even when its sort indicator is visible. */
+#personnelGroups .sortable-th .sort-btn > .sort-arrow{
+ position:absolute;inset-block-start:0;inset-inline:0;margin:0;
+ text-align:center;font-size:7px;line-height:1;
 }
 </style>
 </body>
