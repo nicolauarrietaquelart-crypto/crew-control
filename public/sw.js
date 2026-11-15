@@ -1,4 +1,4 @@
-const CACHE = 'crew-control-shell-v3';
+const CACHE = 'crew-control-shell-v4';
 const SHELL = ['/', '/ICON.PNG', '/manifest.webmanifest'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(async cache => {
@@ -19,7 +19,7 @@ self.addEventListener('fetch', event => {
   const url = new URL(req.url);
   if(url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
   if(req.mode === 'navigate') {
-    event.respondWith(fetch(req).then(response => {
+    event.respondWith(fetch(req,{cache:'reload'}).then(response => {
       if(response.ok) {
         const copy = response.clone();
         event.waitUntil(caches.open(CACHE).then(cache => cache.put('/', copy)));

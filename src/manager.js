@@ -41,7 +41,7 @@ export async function manager(request,env,url){
   return response({salt:record?.salt.startsWith(clientSaltPrefix)?record.salt.slice(clientSaltPrefix.length):null});
  }
  const page=request.headers.get('x-crew-manager-page')||'';
- if(!/^[a-f0-9-]{36}$/.test(page))return error('Entra como gestor desde esta página.',401);
+ if(!/^[a-f0-9-]{36}$/.test(page))return error('Actualiza Crew Control y vuelve a abrir Gestor. Esta ventana usa una versión anterior.',409);
  // A restored browser cookie cannot open a manager session in a new page.
  const sessionDigest=token=>digest(token+':'+page);
  if(action==='login'&&writes){
