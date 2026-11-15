@@ -14397,14 +14397,15 @@ async function closeService(){
         serviceDate:document.getElementById('serviceDate').value.trim(),
         venue:document.getElementById('venue').value.trim(),
         pdfName:state.service.pdfName||'',
-        workOrder:Array.from(state.service.workOrder||[],String),
-        hiddenWorkTypes:Array.from(state.service.hiddenWorkTypes||[],String)
+        workOrder:Array.from(state.service.workOrder||[],String)
       }]);
     }
     if(pendingStructure){
       await dispatchBackend('saveScenariosAndTeams',[code,state.service.scenarios,state.service.teams]);
     }
     // Finish in-flight worker writes before starting the last retry.
+    await crewSyncWorkVisibility(code);
+    if(Object.keys(crewVisibilityJournal(code)).length)throw new Error('Hay cambios de visibilidad pendientes');
     await crewSaveQueue;
     const batch=Object.values(crewCurrentWorkerJournal(code));
     if(batch.length){
@@ -14479,8 +14480,7 @@ function scheduleMetaSave(){
       serviceDate:document.getElementById('serviceDate').value.trim(),
       venue:document.getElementById('venue').value.trim(),
       pdfName:state.service.pdfName||'',
-      workOrder:Array.from(state.service.workOrder||[],String),
-      hiddenWorkTypes:Array.from(state.service.hiddenWorkTypes||[],String)
+      workOrder:Array.from(state.service.workOrder||[],String)
     };
     backend.run
       .withSuccessHandler(()=>{
@@ -14835,6 +14835,8 @@ function crewAckJournal(code,batch,result){
   crewValidateWorkerReceipt(batch,result);
   const journal=crewCurrentWorkerJournal(code);
   const active=state.service?.code===code;
+  const held=crewHeldJournal(code);
+  let reviewed=false;
   const latestReceipt=result.service&&!crewSnapshotIsOlder(code,result.service);
   const confirmedWorkers=new Map((result.service?.workers||[]).map(w=>[String(w.id),w]));
   for(const sent of batch){
@@ -14852,6 +14854,20 @@ function crewAckJournal(code,batch,result){
           ['status','arrivalAt'].includes(field))worker[field]=savedWorker[field];
       }
       worker._fieldTimes=baseline;
+    }
+    if(Number.isSafeInteger(versions.status)&&Number.isSafeInteger(versions.arrivalAt)){
+      for(const [key,previous] of Object.entries(held)){
+        if(String(previous.workerId)!==id||!previous.status||
+          !crewPendingIdentityMatches(previous._workerIdentity,sent._workerIdentity)||
+          Number(sent._fieldTimes?.status||0)<=Number(previous._fieldTimes?.status||0))continue;
+        const remaining={...previous,_fieldTimes:{...previous._fieldTimes},_baseFieldTimes:{...previous._baseFieldTimes}};
+        for(const field of ['status','arrivalAt']){
+          delete remaining[field];delete remaining._fieldTimes[field];delete remaining._baseFieldTimes[field];
+        }
+        if(Object.keys(remaining).some(field=>field!=='workerId'&&!field.startsWith('_')))held[key]=remaining;
+        else delete held[key];
+        reviewed=true;
+      }
     }
     if(!current||!crewPendingIdentityMatches(current._workerIdentity,sent._workerIdentity))continue;
     const ownPending=active?state.pendingWorkerUpdates[id]:null;
@@ -14874,6 +14890,7 @@ function crewAckJournal(code,batch,result){
     if(Object.keys(current).every(k=>['workerId','_fieldTimes','_baseFieldTimes','_workerIdentity'].includes(k)))delete journal[id];
     else {current._fieldTimes=times;current._baseFieldTimes=bases;}
   }
+  if(reviewed)crewWriteLocal(CREW_HELD_PREFIX,code,held);
   if(active)state.pendingWorkerUpdates=journal;
   crewWriteLocal(CREW_PENDING_PREFIX,code,journal);
   return journal;
@@ -14907,6 +14924,7 @@ function crewCanEditWorkerIds(ids){
 }
 function crewRestoreLocalEdits(service){
   if(!service?.code)return service;
+  service=crewApplyVisibility(service,crewVisibilityJournal(service.code));
   const journal=crewCurrentWorkerJournal(service.code);
   if(crewWorkerBatchInFlight?.code===service.code){
     for(const sent of crewWorkerBatchInFlight.batch){
@@ -15099,7 +15117,7 @@ function setSaveState(text,cls){
   const el=document.getElementById('saveState');
   const code=state.service?.code;
   if(code&&cls==='saved'){
-    if(state.workerSaveInFlight||Object.keys(crewCurrentWorkerJournal(code)).length||crewPausePending(code).length){
+    if(state.workerSaveInFlight||Object.keys(crewCurrentWorkerJournal(code)).length||crewPausePending(code).length||Object.keys(crewVisibilityJournal(code)).length){
       text='Cambios pendientes de sincronizar';cls='saving';
     }else if(crewHeldCount(code)){
       text=crewHeldMessage(code);cls='error';
@@ -16629,71 +16647,70 @@ function persistWorkDisplayPrefs(){
   scheduleMetaSave();
 }
 
-let crewWorkVisibilityBusy=false;
-const crewWorkReduceMotion=()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-async function crewAnimateWorkVisibility(element,frames,duration){
- if(!element||crewWorkReduceMotion()||typeof element.animate!=='function')return;
- try{
-  const animation=element.animate(frames,{duration,easing:'cubic-bezier(.22,.8,.25,1)'});
-  await animation.finished;
- }catch(error){ /* Element may be replaced during a service refresh. */ }
+const CREW_VISIBILITY_PREFIX='crew-visibility-pending-v1:';
+const crewVisibilityMemory=new Map();
+const crewVisibilityInFlight=new Map();
+function crewVisibilityJournal(code){
+  return {...(crewReadLocal(CREW_VISIBILITY_PREFIX,code)||{}),...crewVisibilityMemory.get(code)};
 }
-async function hideWorkType(work){
- if(!state.service||crewWorkVisibilityBusy||isWorkTypeHidden(work))return;
- crewWorkVisibilityBusy=true;
- try{
-  const group=[...document.querySelectorAll('#personnelGroups > details.work-group')]
-    .find(el=>normalize(el.dataset.workGroup||'')===normalize(work));
-  if(group){
-   group.style.pointerEvents='none';
-   await crewAnimateWorkVisibility(group,[
-    {opacity:1,transform:'translateY(0) scale(1)',maxHeight:group.offsetHeight+'px',marginBottom:getComputedStyle(group).marginBottom},
-    {opacity:0,transform:'translateY(-12px) scale(.985)',maxHeight:'0px',marginBottom:'0px'}
-   ],240);
+function crewApplyVisibility(service,changes){
+  if(!Object.keys(changes).length)return service;
+  const hidden=new Map((service.hiddenWorkTypes||[]).map(work=>[normalize(work),work]));
+  for(const change of Object.values(changes)){
+    const key=normalize(change.work);
+    if(change.hidden)hidden.set(key,change.work);
+    else hidden.delete(key);
   }
-  // Update model exactly once, then redraw all derived menus and filters.
-  if(!state.service)return;
-  const hidden=Array.isArray(state.service.hiddenWorkTypes)?state.service.hiddenWorkTypes:[];
-  if(!hidden.some(x=>normalize(x)===normalize(work)))hidden.push(work);
-  state.service.hiddenWorkTypes=hidden;
-  if(normalize(state.operationalWorkFilter)===normalize(work)){
-   state.operationalWorkFilter='ALL';
-   state.operationalTimeFilter='ALL';
-  }
-  if(typeof crewMobileWorkV11259!=='undefined'&&normalize(crewMobileWorkV11259)===normalize(work)){
-   crewMobileWorkV11259='ALL';
-   crewMobileShiftV11256='ALL';
-  }
-  persistWorkDisplayPrefs();
+  return {...service,hiddenWorkTypes:[...hidden.values()]};
+}
+function crewSyncWorkVisibility(code){
+  if(crewVisibilityInFlight.has(code))return crewVisibilityInFlight.get(code);
+  const batch=crewVisibilityJournal(code);
+  if(!navigator.onLine||!Object.keys(batch).length)return Promise.resolve();
+  const task=crewSaveLatest(code,remote=>crewApplyVisibility(remote,batch)).then(saved=>{
+    const remaining=crewVisibilityJournal(code);
+    for(const [key,change] of Object.entries(batch)){
+      if(remaining[key]?.id===change.id)delete remaining[key];
+    }
+    crewVisibilityMemory.set(code,remaining);
+    crewWriteLocal(CREW_VISIBILITY_PREFIX,code,remaining);
+    if(state.service?.code===code&&!crewSnapshotIsOlder(code,saved)){
+      state.service.hiddenWorkTypes=crewApplyVisibility(saved,remaining).hiddenWorkTypes;
+      renderPersonnel(true);
+      setSaveState('Guardado','saved');
+    }
+  }).catch(error=>{
+    console.warn('Visibilidad pendiente:',error);
+    if(state.service?.code===code)setSaveState('Visibilidad pendiente de sincronizar','error');
+  }).finally(()=>crewVisibilityInFlight.delete(code));
+  crewVisibilityInFlight.set(code,task);
+  return task;
+}
+function crewSetWorkVisibility(work,hidden){
+  if(!state.service||state.service.closed||isWorkTypeHidden(work)===hidden)return;
+  const code=state.service.code;
+  const journal={...crewVisibilityJournal(code),[normalize(work)]:{id:crypto.randomUUID(),work,hidden}};
+  crewVisibilityMemory.set(code,journal);
+  crewWriteLocal(CREW_VISIBILITY_PREFIX,code,journal);
+  state.service.hiddenWorkTypes=crewApplyVisibility(state.service,journal).hiddenWorkTypes;
+  setSaveState('Guardando visibilidad…','saving');
   renderPersonnel(true);
   renderOperationalWorkFilters();
- }finally{crewWorkVisibilityBusy=false}
+  void crewSyncWorkVisibility(code);
 }
-async function restoreWorkType(work){
- if(!state.service||crewWorkVisibilityBusy||!isWorkTypeHidden(work))return;
- crewWorkVisibilityBusy=true;
- try{
-  const chip=[...document.querySelectorAll('#hiddenWorkTypesBar .hidden-work-chip-v11227')]
-    .find(el=>normalize(el.dataset.hiddenWork||'')===normalize(work));
-  if(chip){
-   chip.style.pointerEvents='none';
-   await crewAnimateWorkVisibility(chip,[
-    {opacity:1,transform:'scale(1)'},{opacity:0,transform:'scale(.88)'}
-   ],150);
+function hideWorkType(work){crewSetWorkVisibility(work,true);}
+function restoreWorkType(work){crewSetWorkVisibility(work,false);}
+function crewRetryWorkVisibility(){
+  const service=state.service;
+  if(service?.code&&!service.closed)void crewSyncWorkVisibility(service.code);
+}
+window.addEventListener('online',crewRetryWorkVisibility);
+window.setInterval(crewRetryWorkVisibility,1500);
+
+function crewRemoveHiddenSelections(){
+  for(const selected of [crewOpSelectedWorks,crewMobileSelectedWorks]){
+    for(const work of selected)if(isWorkTypeHidden(work))selected.delete(work);
   }
-  if(!state.service)return;
-  state.service.hiddenWorkTypes=(state.service.hiddenWorkTypes||[])
-   .filter(x=>normalize(x)!==normalize(work));
-  persistWorkDisplayPrefs();
-  renderPersonnel(true);
-  renderOperationalWorkFilters();
-  const group=[...document.querySelectorAll('#personnelGroups > details.work-group')]
-   .find(el=>normalize(el.dataset.workGroup||'')===normalize(work));
-  await crewAnimateWorkVisibility(group,[
-   {opacity:0,transform:'translateY(12px) scale(.985)'},
-   {opacity:1,transform:'translateY(0) scale(1)'}
-  ],250);
- }finally{crewWorkVisibilityBusy=false}
 }
 
 function renderHiddenWorkTypesBar(){
@@ -16982,6 +16999,7 @@ function renderPersonnel(light=false){
   }
 
   const host=document.getElementById('personnelGroups');
+  crewRemoveHiddenSelections();
   renderCrewMobileDayShiftV11256();
   const workers=workersForActiveDay().filter(w=>operationalWorkMatches(w.trabajo||'SIN TIPO')&&operationalTimeMatches(w));
 

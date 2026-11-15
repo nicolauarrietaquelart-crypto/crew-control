@@ -326,8 +326,8 @@ test('a receipt preserves a second click made while offline storage is unavailab
   const existing={id:'OLD',...identity,status:'NO PRESENTADO',_fieldTimes:{}};
   const second={...recoveryEdit,status:'NO PRESENTADO',_fieldTimes:{status:101}};
   const state={service:{code:'123456',workers:[existing]},pendingWorkerUpdates:{OLD:second}};
-  const ack=new Function('state','crewPendingJournal','crewWriteLocal','CREW_PENDING_PREFIX','crewPendingIdentityMatches','crewSnapshotIsOlder',
-    source+';return crewAckJournal')(state,()=>({}),()=>false,'pending:',(a,b)=>a?.personal===b?.personal,()=>false);
+  const ack=new Function('state','crewPendingJournal','crewWriteLocal','CREW_PENDING_PREFIX','crewPendingIdentityMatches','crewSnapshotIsOlder','crewHeldJournal','CREW_HELD_PREFIX',
+    source+';return crewAckJournal')(state,()=>({}),()=>false,'pending:',(a,b)=>a?.personal===b?.personal,()=>false,()=>({}),'held:');
   const firstReceipt={ok:true,confirmedVersions:{OLD:{status:1}},service:{workers:[{...existing,status:'PRESENTE'}]}};
   assert.throws(()=>ack('123456',[recoveryEdit],{ok:true,confirmedVersions:{}}),/no confirmó todos/);
   ack('123456',[recoveryEdit],firstReceipt);
@@ -416,4 +416,50 @@ test('importing a separate day keeps all earlier workers, check-ins and PDF refe
   assert.notEqual(saved.workers[1].id,prior.id);
   assert.deepEqual(saved.pdfDocuments,{'14/11/2026':'old-pdf','15/11/2026':'new-pdf'});
   assert.equal(saved.blocks.length,2);
+});
+
+
+test('a slow visibility save cannot resurrect a hidden group or discard a newer click',async()=>{
+  const source=section("const CREW_VISIBILITY_PREFIX=", "function crewRemoveHiddenSelections");
+  const state={service:{code:'123456',hiddenWorkTypes:[],workers:[{id:'1',status:'PRESENTE'}]}};
+  let cloud={...state.service,hiddenWorkTypes:['Catering']};
+  let release;
+  const wait=new Promise(resolve=>{release=resolve;});
+  const storage=new Map();
+  const noop=()=>{};
+  const view=new Function('state','navigator','window','crypto','normalize','crewReadLocal','crewWriteLocal','crewSaveLatest',
+    'crewSnapshotIsOlder','renderPersonnel','renderOperationalWorkFilters','setSaveState','isWorkTypeHidden','setInterval',
+    source+';return {hideWorkType,restoreWorkType,crewVisibilityJournal,crewApplyVisibility,crewSyncWorkVisibility}')
+  (state,{onLine:true},{addEventListener:noop,setInterval:noop},{randomUUID},x=>x.toUpperCase(),(p,c)=>storage.get(p+c),
+    (p,c,data)=>storage.set(p+c,structuredClone(data)),async(c,update)=>{await wait;cloud=update(cloud);return cloud;},
+    ()=>false,noop,noop,noop,work=>state.service.hiddenWorkTypes.includes(work),noop);
+  view.hideWorkType('Load In');
+  const pending=view.crewSyncWorkVisibility('123456');
+  assert.deepEqual(view.crewApplyVisibility(cloud,view.crewVisibilityJournal('123456')).hiddenWorkTypes,['Catering','Load In']);
+  view.restoreWorkType('Load In');
+  view.hideWorkType('Audio');
+  release();
+  await pending;
+  assert.deepEqual(state.service.hiddenWorkTypes,['Catering','Audio']);
+  await view.crewSyncWorkVisibility('123456');
+  assert.deepEqual(cloud.hiddenWorkTypes,['Catering','Audio']);
+  assert.deepEqual(cloud.workers,[{id:'1',status:'PRESENTE'}]);
+});
+
+test('a confirmed newer attendance choice resolves the old warning and preserves other pending edits',()=>{
+  const source=section('function crewMergeUpdate','function crewCacheRoster');
+  const old={...recoveryEdit,arrivalAt:'08:00',teamId:'audio',
+    _fieldTimes:{status:100,arrivalAt:100,teamId:100},_baseFieldTimes:{status:0,arrivalAt:0,teamId:0}};
+  const newer={...recoveryEdit,status:'NO PRESENTADO',arrivalAt:'',
+    _fieldTimes:{status:101,arrivalAt:101},_baseFieldTimes:{status:1,arrivalAt:1}};
+  const written=new Map();
+  const state={service:{code:'123456',workers:[{id:'OLD',...recoveryIdentity}]},pendingWorkerUpdates:{}};
+  const ack=new Function('state','crewPendingJournal','crewWriteLocal','CREW_PENDING_PREFIX',
+    'crewPendingIdentityMatches','crewSnapshotIsOlder','crewHeldJournal','CREW_HELD_PREFIX',
+    source+';return crewAckJournal')(state,()=>({}),(p,c,data)=>written.set(p,structuredClone(data)),
+    'pending:',(a,b)=>a?.personal===b?.personal,()=>false,()=>({OLD:old}),'held:');
+  ack('123456',[newer],{ok:true,confirmedVersions:{OLD:{status:2,arrivalAt:2}}});
+  assert.equal(written.get('held:').OLD.status,undefined);
+  assert.equal(written.get('held:').OLD.arrivalAt,undefined);
+  assert.equal(written.get('held:').OLD.teamId,'audio');
 });
