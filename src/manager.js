@@ -19,6 +19,15 @@ const response=(value,status=200,headers={})=>Response.json(value,{status,header
 const error=(message,status)=>response({error:message},status);
 const cookie=(token,maxAge)=>({'set-cookie':sessionName+'='+token+'; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age='+maxAge});
 
+const clientSaltPrefix='browser-v1:';
+const validProof=proof=>typeof proof==='string'&&/^[0-9a-f]{64}$/.test(proof);
+async function checkPassword(record,password,proof){
+ if(record.salt.startsWith(clientSaltPrefix)){
+  return validProof(proof)&&equal(await digest(proof),record.password_hash);
+ }
+ return typeof password==='string'&&password.length<=256&&equal(await passwordHash(password,record.salt),record.password_hash);
+}
+
 export async function manager(request,env,url){
  const db=env.DB;
  const action=url.pathname.slice('/api/manager/'.length);
@@ -27,6 +36,10 @@ export async function manager(request,env,url){
   return error('Solicitud fuera de Crew Control.',403);
  }
  const now=Date.now();
+ if(action==='challenge'&&request.method==='GET'){
+  const record=await db.prepare('SELECT salt FROM crew_manager WHERE id=1').first();
+  return response({salt:record?.salt.startsWith(clientSaltPrefix)?record.salt.slice(clientSaltPrefix.length):null});
+ }
  if(action==='login'&&writes){
   const input=await request.json();
   const password=typeof input.password==='string'?input.password:'';
@@ -37,7 +50,7 @@ export async function manager(request,env,url){
   const windowStart=Math.floor(now/900000)*900000;
   const attempt=await db.prepare('INSERT INTO crew_manager_attempts VALUES(?,?,1) ON CONFLICT(source) DO UPDATE SET window_start=excluded.window_start, attempts=CASE WHEN window_start=excluded.window_start THEN attempts+1 ELSE 1 END RETURNING attempts').bind(source,windowStart).first();
   if(attempt.attempts>8)return error('Demasiados intentos. Vuelve a probar en unos minutos.',429);
-  const correct=record?equal(await passwordHash(password,record.salt),record.password_hash):
+  const correct=record?await checkPassword(record,password,input.proof):
    equal(await digest(password),await digest(env.CREW_MANAGER_INITIAL_PASSWORD));
   if(input.username!==username||!correct)return error('Usuario o contraseña incorrectos.',401);
   await db.prepare('DELETE FROM crew_manager_attempts WHERE window_start < ? OR source=?').bind(windowStart,source).run();
@@ -60,25 +73,30 @@ export async function manager(request,env,url){
  }
  if(action==='session'&&request.method==='GET')return response({setup:!!session.setup});
  if(action==='password'&&writes){
-  const {current,password}=await request.json();
-  if(typeof password!=='string'||password.length<12||password.length>256){
+  const {current,password,currentProof,newProof,newSalt,newLength,fingerprint}=await request.json();
+  const browser=validProof(newProof)&&typeof newSalt==='string'&&/^[a-f0-9]{32}$/.test(newSalt)&&(!session.setup||validProof(fingerprint));
+  const length=browser?newLength:typeof password==='string'?password.length:0;
+  if(!Number.isInteger(length)||length<12||length>256){
    return error('La contraseña nueva debe tener entre 12 y 256 caracteres.',400);
   }
   const record=await db.prepare('SELECT salt,password_hash FROM crew_manager WHERE id=1').first();
   if(session.setup){
    if(record)return error('La cuenta ya se activó. Vuelve a entrar.',409);
    if(!env.CREW_MANAGER_INITIAL_PASSWORD)return error('Configura el acceso de gestor en Cloudflare.',503);
-   if(equal(await digest(password),await digest(env.CREW_MANAGER_INITIAL_PASSWORD))){
+   if(equal(browser?fingerprint:await digest(password),await digest(env.CREW_MANAGER_INITIAL_PASSWORD))){
     return error('La contraseña nueva debe ser distinta de la inicial.',400);
    }
   }else{
-   if(typeof current!=='string'||!current||current.length>256)return error('Escribe tu contraseña actual.',400);
-   if(!record||!equal(await passwordHash(current,record.salt),record.password_hash)){
+   if(!current&&!currentProof)return error('Escribe tu contraseña actual.',400);
+   if(!record||!(await checkPassword(record,current,currentProof))){
     return error('La contraseña actual no coincide.',401);
    }
-   if(password===current)return error('La contraseña nueva debe ser distinta de la actual.',400);
+   if(!browser&&password===current)return error('La contraseña nueva debe ser distinta de la actual.',400);
   }
-  const salt=random(16),hash=await passwordHash(password,salt);
+  // Browser-side PBKDF2 keeps activation within the Worker's CPU budget.
+  // Store a digest of its output, never the proof accepted at login.
+  const salt=browser?clientSaltPrefix+newSalt:random(16);
+  const hash=browser?await digest(newProof):await passwordHash(password,salt);
   const nextToken=random(32),nextHash=await digest(nextToken);
   const change=record?
    db.prepare('UPDATE crew_manager SET salt=?,password_hash=? WHERE id=1 AND password_hash=?').bind(salt,hash,record.password_hash):

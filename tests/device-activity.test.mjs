@@ -151,7 +151,13 @@ print(json.dumps(out))
   const setupCookie=setup.headers.get('set-cookie').split(';')[0];
   assert.equal((await manager('services',undefined,setupCookie)).status,403);
   assert.equal((await manager('password',{password:initial},setupCookie)).status,400);
-  const activated=await manager('password',{password:next},setupCookie);
+  const encoder=new TextEncoder();
+  const hex=buffer=>Buffer.from(buffer).toString('hex');
+  const newSalt='0123456789abcdef0123456789abcdef';
+  const key=await crypto.subtle.importKey('raw',encoder.encode(next),'PBKDF2',false,['deriveBits']);
+  const newProof=hex(await crypto.subtle.deriveBits({name:'PBKDF2',salt:encoder.encode(newSalt),iterations:100000,hash:'SHA-256'},key,256));
+  const fingerprint=hex(await crypto.subtle.digest('SHA-256',encoder.encode(next)));
+  const activated=await manager('password',{newSalt,newProof,newLength:next.length,fingerprint},setupCookie);
   assert.equal(activated.status,200);
   const newCookie=activated.headers.get('set-cookie').split(';')[0];
   assert.equal((await manager('services',undefined,setupCookie)).status,401);
@@ -159,7 +165,11 @@ print(json.dumps(out))
   assert.equal(list.status,200);
   assert.equal((await list.json()).services.length,2);
   assert.equal((await manager('login',login)).status,401);
-  assert.equal((await manager('login',{...login,password:next})).status,200);
+  assert.equal((await (await manager('challenge')).json()).salt,newSalt);
+  assert.equal((await manager('login',{username:'franpenny',proof:newProof})).status,200);
+  const stored=sql([{sql:'SELECT password_hash FROM crew_manager WHERE id=1'}])[0].results[0].password_hash;
+  assert.notEqual(stored,newProof);
+  assert.equal((await manager('login',{username:'franpenny',proof:stored})).status,401);
   assert.equal((await manager('password',{password:'another-manager-password'},newCookie)).status,400);
  }finally{rmSync(dir,{recursive:true,force:true});}
 });

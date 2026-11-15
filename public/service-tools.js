@@ -99,6 +99,13 @@ async function crewManagerLogout(){
  try{await crewManagerApi('logout',{});crewManagerView('login');}
  catch(error){managerUI.status.textContent=error.message;}
 }
+const crewManagerEncoder=new TextEncoder();
+const crewManagerHex=bytes=>Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
+async function crewManagerProof(password,salt){
+ const key=await crypto.subtle.importKey('raw',crewManagerEncoder.encode(password),'PBKDF2',false,['deriveBits']);
+ const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:crewManagerEncoder.encode(salt),iterations:100000,hash:'SHA-256'},key,256);
+ return crewManagerHex(new Uint8Array(bits));
+}
 function crewManagerForm(form,action,onSuccess){
  form.addEventListener('submit',async event=>{
   event.preventDefault();
@@ -112,6 +119,26 @@ function crewManagerForm(form,action,onSuccess){
     if(payload.password!==payload.repeat)throw new Error('Las contraseñas nuevas no coinciden.');
     delete payload.repeat;
     managerUI.status.textContent='Guardando contraseña…';
+   }
+   const {salt}=await crewManagerApi('challenge');
+   if(action==='login'&&salt){
+    payload.proof=await crewManagerProof(payload.password,salt);
+    delete payload.password;
+   }
+   if(action==='password'){
+    if(payload.current&&payload.current===payload.password)throw new Error('La contraseña nueva debe ser distinta de la actual.');
+    if(salt&&payload.current){
+     payload.currentProof=await crewManagerProof(payload.current,salt);
+     delete payload.current;
+    }
+    const password=payload.password;
+    payload.newLength=password.length;
+    payload.newSalt=crewManagerHex(crypto.getRandomValues(new Uint8Array(16)));
+    payload.newProof=await crewManagerProof(password,payload.newSalt);
+    if(form.dataset.setup==='true'){
+     payload.fingerprint=crewManagerHex(new Uint8Array(await crypto.subtle.digest('SHA-256',crewManagerEncoder.encode(password))));
+    }
+    delete payload.password;
    }
    const result=await crewManagerApi(action,payload);
    if(action==='password')managerUI.status.textContent='Contraseña guardada. Cargando servicios…';
