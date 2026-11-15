@@ -1,3 +1,4 @@
+import {manager} from './manager.js';
 const json=(data,status=200,extra={})=>new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store',...extra}});
 const err=(message,status=400)=>json({ok:false,error:message},status);
 async function body(request){const value=await request.json();if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Invalid JSON object');return value}
@@ -59,6 +60,9 @@ export default {
    try{await env.DB.prepare('SELECT 1').first();return json({ok:true,database:'d1'})}catch{return err('D1 unavailable',503)}
   }
   if(!env.DB)return err('D1 not configured',503);
+  if(p.startsWith('/api/manager/')){
+   try{return await manager(request,env,url);}catch{return err('Error en el acceso de gestor.',500);}
+  }
   const accessCode=str(request.headers.get('x-service-code'),100).trim();
   if(!/^(?:\d{6}|[A-Za-z0-9_-]{12,80})$/.test(accessCode))return err('Código de servicio no válido',403);
   try{
@@ -76,6 +80,8 @@ export default {
     const service=await env.DB.prepare('SELECT * FROM services WHERE code=?').bind(code).first();
     if(!service)return err('Service not found',404);
     if(section==='pdf'){
+      const file=url.searchParams.get('file')||'';
+      if(file&&!/^[a-f0-9-]{36}$/.test(file))return err('Identificador de PDF no válido',400);
       await env.DB.prepare('CREATE TABLE IF NOT EXISTS service_pdf_files (service_id TEXT PRIMARY KEY, filename TEXT NOT NULL, content BLOB NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)').run();
       if(m==='PUT'){
         if(service.closed)return err('Service is closed',409);
@@ -83,11 +89,17 @@ export default {
         if(!bytes.byteLength||bytes.byteLength>8000000)return err('PDF vacío o superior a 8 MB',413);
         const name=str(decodeURIComponent(request.headers.get('x-pdf-filename')||'personal.pdf'),180).replace(/[\\/]/g,'_');
         if(new Uint8Array(bytes).slice(0,5).some((b,i)=>b!==[37,80,68,70,45][i]))return err('El archivo no es un PDF válido',400);
+        if(file){
+          await env.DB.prepare('INSERT INTO service_pdf_documents(service_id,document_key,filename,content) VALUES(?,?,?,?) ON CONFLICT(service_id,document_key) DO UPDATE SET filename=excluded.filename,content=excluded.content').bind(service.id,file,name,new Uint8Array(bytes)).run();
+          return json({ok:true,filename:name});
+        }
         await env.DB.prepare('INSERT INTO service_pdf_files(service_id,filename,content,updated_at) VALUES(?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(service_id) DO UPDATE SET filename=excluded.filename,content=excluded.content,updated_at=CURRENT_TIMESTAMP').bind(service.id,name,new Uint8Array(bytes)).run();
         return json({ok:true,filename:name});
       }
       if(m==='GET'){
-        const row=await env.DB.prepare('SELECT filename,content FROM service_pdf_files WHERE service_id=?').bind(service.id).first();
+        const row=file?
+          await env.DB.prepare('SELECT filename,content FROM service_pdf_documents WHERE service_id=? AND document_key=?').bind(service.id,file).first():
+          await env.DB.prepare('SELECT filename,content FROM service_pdf_files WHERE service_id=?').bind(service.id).first();
         if(!row)return err('No hay un PDF original guardado para este servicio',404);
         return new Response(new Uint8Array(row.content),{headers:{'content-type':'application/pdf','content-disposition':"attachment; filename*=UTF-8''"+encodeURIComponent(row.filename),'cache-control':'no-store'}});
       }

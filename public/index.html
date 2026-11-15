@@ -11062,6 +11062,8 @@ html.crew-android select.status option{font-size:16px!important;color:#111!impor
 if (/iPad/i.test(navigator.userAgent) ||
     (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1)) {
   document.documentElement.classList.add('crew-ipad-table');
+} else if (/Macintosh/i.test(navigator.userAgent)&&!/Mobile/i.test(navigator.userAgent)) {
+  document.documentElement.classList.add('crew-ipad-table');
 }
 </script>
 </head>
@@ -11120,6 +11122,37 @@ if (/iPad/i.test(navigator.userAgent) ||
     </button>
     <div id="startStatus" class="status-box"></div>
   </section>
+
+  <button type="button" id="crewManagerEntry" class="secondary" onclick="crewOpenManager()">Gestor</button>
+  <dialog id="crewManager" class="crew-tool-dialog">
+    <div class="crew-tool-head"><h2>Gestor de servicios</h2><button type="button" class="secondary" onclick="this.closest('dialog').close()" aria-label="Cerrar">×</button></div>
+    <p id="crewManagerStatus" role="status"></p>
+    <form id="crewManagerLogin" hidden>
+      <label>Usuario<input name="username" autocomplete="username" required></label>
+      <label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label>
+      <button class="primary">Entrar</button>
+    </form>
+    <div id="crewManagerToolbar" class="crew-manager-actions" hidden>
+      <button type="button" class="secondary" onclick="crewRefreshManager()">Actualizar lista</button>
+      <button type="button" class="secondary" onclick="document.getElementById('crewManagerPassword').hidden=false">Cambiar contraseña</button>
+      <button type="button" class="secondary" onclick="crewManagerLogout()">Salir</button>
+    </div>
+    <form id="crewManagerPassword" hidden>
+      <label>Contraseña actual<input name="current" type="password" autocomplete="current-password" required></label>
+      <label>Nueva contraseña<input name="password" type="password" autocomplete="new-password" minlength="12" required></label>
+      <button class="primary">Guardar contraseña</button>
+    </form>
+    <div id="crewManagerList"></div>
+  </dialog>
+  <dialog id="crewAddDay" class="crew-tool-dialog">
+    <div class="crew-tool-head"><h2>Añadir día</h2><button type="button" class="secondary" onclick="this.closest('dialog').close()" aria-label="Cerrar">×</button></div>
+    <form id="crewAddDayForm">
+      <label>Fecha<input type="date" name="date" required></label>
+      <label>PDF (opcional)<input type="file" name="pdf" accept=".pdf,application/pdf"></label>
+      <p id="crewAddDayStatus" role="status"></p>
+      <button class="primary">Añadir día</button>
+    </form>
+  </dialog>
 
   <section id="appScreen" class="hidden">
     <div class="service-top">
@@ -13047,11 +13080,14 @@ const crewPersist=(service,mode='general')=>{
       if(mode==='roster'){
         // Resolve IDs on the authoritative remote roster, not on a stale tab.
         // Match a unique, verified row before retaining any cloud attendance.
-        const remoteRows=remote.workers||[];
+        const allRows=remote.workers||[];
+        const dates=new Set((service.workers||[]).map(w=>w.serviceDate||'SIN FECHA'));
+        const remoteRows=allRows.filter(w=>dates.has(w.serviceDate||'SIN FECHA'));
+        const otherDays=allRows.filter(w=>!dates.has(w.serviceDate||'SIN FECHA'));
         const claimed=new Set();
-        const reserved=new Set(remoteRows.map(w=>String(w.id||'')).filter(Boolean));
+        const reserved=new Set(allRows.map(w=>String(w.id||'')).filter(Boolean));
         const remoteCounts=new Map();
-        remoteRows.forEach(w=>remoteCounts.set(String(w.id||''),(remoteCounts.get(String(w.id||''))||0)+1));
+        allRows.forEach(w=>remoteCounts.set(String(w.id||''),(remoteCounts.get(String(w.id||''))||0)+1));
         remoteDuplicateIds=new Set([...remoteCounts].filter(([id,count])=>id&&count>1).map(([id])=>id));
         const usedIds=new Set();
         const factualFields=['personal','movil','serviceDate','trabajo','blockId','blockLabel',
@@ -13099,7 +13135,7 @@ const crewPersist=(service,mode='general')=>{
         }
         // Extra defense against future importers that supply malformed IDs.
         const unique=crewUniqueWorkerIds(workers);
-        workers=unique.workers;
+        workers=[...otherDays,...unique.workers];
       }
       let next;
       if(mode==='roster'){
@@ -13111,7 +13147,11 @@ const crewPersist=(service,mode='general')=>{
         next={...remote,workers,teams,
           serviceName:service.serviceName||remote.serviceName||'',
           pdfName:service.pdfName||remote.pdfName||'',
-          blocks:Array.isArray(service.blocks)?service.blocks:remote.blocks||[],
+          pdfDocuments:{...(remote.pdfDocuments||{}),...Object.fromEntries(
+            (service.pdfDocumentDates||[]).map(day=>[day,service.pdfDocumentId]))},
+          blocks:Array.isArray(service.blocks)?
+            [...(remote.blocks||[]).filter(b=>!(service.workers||[]).some(w=>w.serviceDate===b.serviceDate)),...service.blocks]:
+            remote.blocks||[],
           serviceDate:service.serviceDate||remote.serviceDate||'',
           venue:service.venue||remote.venue||''};
         next=crewPruneWorkerReferences(next,remoteDuplicateIds);
@@ -13291,10 +13331,12 @@ async function crewD1Dispatch(method,args){
   if(method==='replaceWorkersFromPdf'){
     // Finish earlier worker edits before taking the import snapshot.
     await crewSaveQueue;
-    const parsed=args[1]||{},old=state.service||{},previous=old.workers||[];
+    const parsed=args[1]||{},old=state.service||{};
     const incoming=Array.isArray(parsed.workers)?parsed.workers:[];
     if(!incoming.length)throw new Error('El PDF no contiene trabajadores válidos; no se ha modificado el servicio.');
 
+    const dates=new Set(incoming.map(w=>w.serviceDate||'SIN FECHA'));
+    const previous=(old.workers||[]).filter(w=>dates.has(w.serviceDate||'SIN FECHA'));
     const normalName=value=>normalize(value).replace(/[^A-Z0-9 ]/g,'').replace(/\s+/g,' ').trim();
     const normalPhone=value=>{
       const digits=crewCanonicalWorkerPhone(value);
@@ -13390,7 +13432,7 @@ async function crewD1Dispatch(method,args){
     const next={...old,...(parsed.meta||{}),
       serviceName:String(parsed.meta?.reference||'').trim()||old.serviceName||'',
       pdfName:parsed.meta?.pdfName||old.pdfName||'',
-      workers:uniqueWorkers.workers,teams,blocks:parsed.blocks||[],code};
+      workers:uniqueWorkers.workers,teams,blocks:parsed.blocks||[],pdfDocumentId:parsed.pdfDocumentId,pdfDocumentDates:parsed.pdfDocumentDates,code};
     const saved=await crewPersist(next,'roster');
     const duplicateIdsCorrected=uniqueWorkers.repaired;
     return {service:saved,summary:{matched,added,removed,scheduleChanged,pauseChanged,dietChanged,coordinatorChanged,movedToReserve,changedNames,duplicateIdsCorrected}};
@@ -13400,7 +13442,7 @@ async function crewD1Dispatch(method,args){
     const res=await fetch('/api/services',{method:'POST',headers:{'content-type':'application/json','x-service-code':newCode},body:JSON.stringify({name:state.service?.serviceName||''})});
     const created=await res.json();if(!res.ok)throw new Error(created.error||'Error al duplicar');
     const original=state.service||{};
-    const copy={...original,code:newCode,closed:false,workers:[],incidents:[],requirements:[],blocks:[],pdfName:'',scenarios:(original.scenarios||[]).map(x=>({...x})),teams:(original.teams||[]).map(x=>({...x}))};
+    const copy={...original,code:newCode,closed:false,workers:[],incidents:[],requirements:[],blocks:[],addedDays:[],pdfDocuments:{},pdfName:'',scenarios:(original.scenarios||[]).map(x=>({...x})),teams:(original.teams||[]).map(x=>({...x}))};
     return crewPersist(copy);
   }
   if(method==='addScenario'){
@@ -15456,23 +15498,28 @@ async function downloadServicePdf(){
   const code=state.service?.code;
   if(!code)return;
   try{
-    const response=await fetch('/api/services/'+encodeURIComponent(code)+'/pdf',{headers:{'x-service-code':code}});
+    const pdfUrl='/api/services/'+encodeURIComponent(code)+'/pdf';
+    const options={headers:{'x-service-code':code}};
+    const day=state.activeDay;
+    const documentId=state.service.pdfDocuments?.[day];
+    const response=await fetch(pdfUrl+(documentId?'?file='+encodeURIComponent(documentId):''),options);
     if(!response.ok)throw new Error((await response.json()).error||'No se pudo descargar el PDF');
     const blob=await response.blob();
     const link=document.createElement('a');
     const url=URL.createObjectURL(blob);
     link.href=url;
-    link.download=state.service.pdfName||'personal.pdf';
+    const filename=response.headers.get('content-disposition')?.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+    link.download=filename?decodeURIComponent(filename):state.service.pdfName||'personal.pdf';
     document.body.appendChild(link);link.click();link.remove();
     setTimeout(()=>URL.revokeObjectURL(url),30000);
   }catch(error){alert(error.message)}
 }
 /* PDF */
-async function importPdf(file){
-  if(!state.service)return;
+async function importPdf(file,targetDay=''){
+  if(!state.service||state.service.closed)return;
   const code=state.service.code;
   if(state.service.workers.length){
-    const ok=confirm('Este servicio ya tiene personal. ¿Actualizar el personal con el nuevo PDF? Se conservarán los equipos, estados, fichajes, pausas asignadas, valoraciones, reservas y notas de los trabajadores identificados. Solo se actualizarán sus datos del PDF.');
+    const ok=confirm('Este servicio ya tiene personal. ¿Importar el PDF? Solo se actualizarán los días que contiene. Se conservarán los equipos, estados, fichajes, pausas asignadas, valoraciones, reservas y notas de los trabajadores identificados. Solo se actualizarán sus datos del PDF.');
     if(!ok)return;
   }
 
@@ -15484,6 +15531,15 @@ async function importPdf(file){
     const parsed=await parsePennyWisePdf(file);
     if(state.service?.code!==code)return;
     if(!parsed.workers.length)throw new Error('No se ha encontrado personal con nombre en el PDF.');
+    const dates=[...new Set(parsed.workers.map(w=>w.serviceDate||'SIN FECHA'))];
+    if(targetDay&&!dates.includes(targetDay)){
+      throw new Error('El PDF no contiene personal del '+targetDay+'. Revisa la fecha del documento.');
+    }
+    const documentId=crypto.randomUUID();
+    parsed.pdfDocumentId=documentId;
+    parsed.pdfDocumentDates=dates;
+    for(const block of parsed.blocks||[])block.id=documentId+':'+block.id;
+    for(const worker of parsed.workers)if(worker.blockId)worker.blockId=documentId+':'+worker.blockId;
     parsed.meta.pdfName=file.name;
 
     showPdfStatus(`Detectados ${parsed.workers.length} registros en ${new Set(parsed.workers.map(w=>w.serviceDate)).size} día(s). Guardando…`,'info');
@@ -15493,16 +15549,17 @@ async function importPdf(file){
         const service=result.service;
         const s=result.summary||{};
         if(state.service?.code!==code)return;
-        if(!Array.isArray(service?.workers)||service.workers.length!==parsed.workers.length){
+        if(!Array.isArray(service?.workers)||service.workers.filter(w=>dates.includes(w.serviceDate||'SIN FECHA')).length!==parsed.workers.length){
           showPdfStatus('La importación no ha devuelto todos los trabajadores. No se mostrará como completada; vuelve a abrir el servicio para comprobar los datos.','error');
           return;
         }
         // Apply the roster before uploading the original document. The upload
         // can take long enough for a new attendance mark to be confirmed.
         openServiceData(service);
+        if(getDays().includes(targetDay||dates[0]))setActiveDay(targetDay||dates[0]);
         let pdfStorageError='';
         try{
-          const upload=await fetch('/api/services/'+encodeURIComponent(service.code)+'/pdf',{method:'PUT',headers:{'x-service-code':service.code,'x-pdf-filename':encodeURIComponent(file.name)},body:file});
+          const upload=await fetch('/api/services/'+encodeURIComponent(service.code)+'/pdf?file='+encodeURIComponent(documentId),{method:'PUT',headers:{'x-service-code':service.code,'x-pdf-filename':encodeURIComponent(file.name)},body:file});
           if(!upload.ok)throw new Error((await upload.json()).error||'Error al guardar PDF');
         }catch(error){console.warn('No se pudo guardar el PDF original:',error);pdfStorageError=error.message;}
         if(state.service?.code!==code)return;
@@ -16293,7 +16350,7 @@ function dateId(v){return String(v||'').replace(/\D/g,'')||'NODATE'}
 /* DÍAS + GRUPOS */
 function getDays(){
   if(!state.service)return[];
-  const values=[...new Set(state.service.workers.map(w=>w.serviceDate||'SIN FECHA'))];
+  const values=[...new Set([...(state.service.addedDays||[]),...state.service.workers.map(w=>w.serviceDate||'SIN FECHA')])];
   return values.sort(compareDateStrings);
 }
 
@@ -16324,7 +16381,7 @@ function renderDays(){
   document.getElementById('daysNav').innerHTML=days.map(day=>
     `<button class="day-btn ${state.activeDay===day?'active':''} ${day==='SIN FECHA'?'no-day':''}"
       onclick="setActiveDay('${escapeAttr(day)}')">${escapeHtml(dayLabel(day))}</button>`
-  ).join('');
+  ).join('')+crewAddDayButton();
 }
 
 function setActiveDay(day){
@@ -16407,8 +16464,8 @@ function renderCrewMobileDayShiftV11256(){
     crewMobileShiftV11256='ALL';
   }
   const makeButton=(value,label,count,active,fn)=>'<button type="button" class="crew-mds-pill '+(active?'active':'')+'" onclick="'+fn+'('+JSON.stringify(value).replace(/"/g,'&quot;')+')" aria-pressed="'+active+'">'+escapeHtml(label)+' <span class="crew-mds-count">'+count+'</span></button>';
-  const dayControls=days.length>1?'<div class="crew-mds-line"><span class="crew-mds-label">Día</span>'+
-    days.map(day=>makeButton(day,dayLabel(day),rowsForCrewDayV11256(day),day===state.activeDay,'crewMobileDayShiftChooseDayV11256')).join('')+'</div>':'';
+  const dayControls=(days.length||!state.service.closed)?'<div class="crew-mds-line"><span class="crew-mds-label">Día</span>'+
+    days.map(day=>makeButton(day,dayLabel(day),rowsForCrewDayV11256(day),day===state.activeDay,'crewMobileDayShiftChooseDayV11256')).join('')+crewAddDayButton()+'</div>':'';
   const iconLeft='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
   const iconRight='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
   const index=['ALL',...types].findIndex(w=>normalize(w)===normalize(crewMobileWorkV11259));
@@ -20560,8 +20617,7 @@ function crewExcelSafeSheetName(name,used){
  used.add(title.toLowerCase());
  return title;
 }
-async function downloadClosedServiceExcel(auto=false,returnFile=false){
- const service=state.service;
+async function downloadClosedServiceExcel(auto=false,returnFile=false,service=state.service){
  if(!service||!service.closed){
   if(!auto)alert('Primero debes cerrar el servicio.');
   return;
@@ -21770,5 +21826,7 @@ html body #personnelGroups details.work-group > .table-wrap > table > thead > tr
  }
 }
 </style>
+<link rel="stylesheet" href="/service-tools.css?v=1">
+<script src="/service-tools.js?v=1" defer></script>
 </body>
 </html>

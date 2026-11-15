@@ -179,7 +179,7 @@ test('all browser and Worker scripts have valid JavaScript syntax',()=>{
     if(match[1].trim())assert.doesNotThrow(()=>new Function(match[1]));
   }
   assert.doesNotThrow(()=>new Function(pauseUi));
-  assert.doesNotThrow(()=>new Function(workerApi.replace('export default','const app =').replace('export function','function')));
+  assert.doesNotThrow(()=>new Function(workerApi.replace(/^import .*;\n/,'').replace('export default','const app =').replace('export function','function')));
 });
 
 
@@ -394,4 +394,26 @@ test('creating a scenario cannot replace pending attendance in the current view'
   assert.equal(state.service.workers[0],worker);
   assert.equal(state.service.workers[0].status,'PRESENTE');
   assert.equal(state.service.scenarios[0].id,'S1');
+});
+
+
+test('importing a separate day keeps all earlier workers, check-ins and PDF references',async()=>{
+  const source=section('function crewUniqueWorkerIds','const crewSaveLatest=');
+  const prior={...recoveryWorker,serviceDate:'14/11/2026',status:'PRESENTE',arrivalAt:'08:19'};
+  const today={...prior,serviceDate:'15/11/2026',status:'PENDIENTE',arrivalAt:''};
+  let cloud={code:'123456',workers:[prior],pdfDocuments:{'14/11/2026':'old-pdf'},blocks:[{id:'B1',serviceDate:prior.serviceDate}]};
+  const api=async(code,method='GET',body)=>{
+    if(method==='GET')return {service:structuredClone(cloud)};
+    cloud={...body.service,_syncRevision:'R2'};
+    return {ok:true,revision:'R2',service:cloud};
+  };
+  const persist=new Function('crewApi','crypto','normalize',
+    'let crewSaveQueue=Promise.resolve(),crewLastLocalWrite=0;'+source+';return crewPersist')(
+    api,{randomUUID},s=>String(s||'').trim().toUpperCase());
+  const saved=await persist({code:'123456',workers:[today],blocks:[{id:'new:B1',serviceDate:today.serviceDate}],
+    pdfDocumentId:'new-pdf',pdfDocumentDates:[today.serviceDate]},'roster');
+  assert.deepEqual(saved.workers[0],prior);
+  assert.notEqual(saved.workers[1].id,prior.id);
+  assert.deepEqual(saved.pdfDocuments,{'14/11/2026':'old-pdf','15/11/2026':'new-pdf'});
+  assert.equal(saved.blocks.length,2);
 });

@@ -43,10 +43,10 @@ print(json.dumps(out))
   async first(){return sql([this])[0].results[0]||null;},async all(){return sql([this])[0];},async run(){return sql([this])[0];}};},async batch(items){return sql(items);}};
  try{
   sql([
-   {sql:'CREATE TABLE services(id TEXT PRIMARY KEY,code TEXT,closed INTEGER)'},
+   {sql:"CREATE TABLE services(id TEXT PRIMARY KEY,code TEXT,closed INTEGER,name TEXT DEFAULT '',service_date TEXT DEFAULT '',pdf_name TEXT DEFAULT '',created_at TEXT DEFAULT CURRENT_TIMESTAMP)"},
    {sql:'CREATE TABLE service_snapshots(service_id TEXT PRIMARY KEY,snapshot TEXT,updated_at TEXT)'},
-   {sql:'INSERT INTO services VALUES (?,?,0)',args:['S1','123456']},
-   {sql:'INSERT INTO services VALUES (?,?,0)',args:['S2','654321']},
+   {sql:'INSERT INTO services(id,code,closed) VALUES (?,?,0)',args:['S1','123456']},
+   {sql:'INSERT INTO services(id,code,closed) VALUES (?,?,0)',args:['S2','654321']},
    ...readFileSync(new URL('../db/migrations/0003_device_activity.sql',import.meta.url),'utf8').split(';').filter(s=>s.trim()).map(s=>({sql:s}))
   ]);
   const call=(method,body,device='device_111',code='123456',format='snapshot')=>worker.fetch(new Request('https://example.test/api/services/'+code+'?format='+format+(format==='activity'?'&deviceId='+device:''),{
@@ -132,5 +132,32 @@ print(json.dumps(out))
   assert.deepEqual(concurrent.workers.map(row=>[row.status,row.arrivalAt]),[['PRESENTE','09:00'],['PRESENTE','09:01']]);
   const denied=await worker.fetch(new Request('https://example.test/api/services/123456?format=activity&deviceId=device_111',{headers:{'x-service-code':'654321'}}),{DB});
   assert.equal(denied.status,403);
+  sql(readFileSync(new URL('../db/migrations/0004_manager.sql',import.meta.url),'utf8')
+   .split(';').filter(s=>s.trim()).map(s=>({sql:s})));
+  const initial='test-initial-password';
+  const next='test-rotated-password';
+  const manager=(action,payload,cookie,origin='https://example.test',useSecret=true)=>worker.fetch(
+   new Request('https://example.test/api/manager/'+action,{
+    headers:{origin,'content-type':'application/json',...(cookie?{cookie}:{})},
+    ...(payload?{method:'POST',body:JSON.stringify(payload)}:{})
+   }),{DB,CREW_MANAGER_INITIAL_PASSWORD:useSecret?initial:undefined});
+  const login={username:'franpenny',password:initial};
+  assert.equal((await manager('services')).status,401);
+  assert.equal((await manager('login',login,undefined,'https://foreign.test')).status,403);
+  assert.equal((await manager('login',login,undefined,'https://example.test',false)).status,503);
+  const setup=await manager('login',login);
+  assert.equal(setup.status,200);
+  assert.equal((await setup.json()).setup,true);
+  const setupCookie=setup.headers.get('set-cookie').split(';')[0];
+  assert.equal((await manager('services',undefined,setupCookie)).status,403);
+  const activated=await manager('password',{current:initial,password:next},setupCookie);
+  assert.equal(activated.status,200);
+  const newCookie=activated.headers.get('set-cookie').split(';')[0];
+  assert.equal((await manager('services',undefined,setupCookie)).status,401);
+  const list=await manager('services',undefined,newCookie);
+  assert.equal(list.status,200);
+  assert.equal((await list.json()).services.length,2);
+  assert.equal((await manager('login',login)).status,401);
+  assert.equal((await manager('login',{...login,password:next})).status,200);
  }finally{rmSync(dir,{recursive:true,force:true});}
 });
