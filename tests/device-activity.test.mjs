@@ -148,9 +148,10 @@ print(json.dumps(out))
   assert.equal((await manager('delete-service',target)).status,401);
   assert.equal((await manager('login',login,undefined,'https://foreign.test')).status,403);
   assert.equal((await manager('login',login,undefined,'https://example.test',false)).status,503);
-  const setup=await manager('login',login);
+  const setup=await manager('login',{...login,remember:true});
   assert.equal(setup.status,200);
   assert.equal((await setup.json()).setup,true);
+  assert.doesNotMatch(setup.headers.get('set-cookie'),/Max-Age=/);
   const setupCookie=setup.headers.get('set-cookie').split(';')[0];
   assert.equal((await manager('services',undefined,setupCookie)).status,403);
   assert.equal((await manager('delete-service',target,setupCookie)).status,403);
@@ -163,6 +164,7 @@ print(json.dumps(out))
   const fingerprint=hex(await crypto.subtle.digest('SHA-256',encoder.encode(next)));
   const activated=await manager('password',{newSalt,newProof,newLength:next.length,fingerprint},setupCookie);
   assert.equal(activated.status,200);
+  assert.doesNotMatch(activated.headers.get('set-cookie'),/Max-Age=/);
   const newCookie=activated.headers.get('set-cookie').split(';')[0];
   assert.equal((await manager('services',undefined,setupCookie)).status,401);
   assert.equal((await manager('services',undefined,newCookie,'https://example.test',true,'abcdabcd-abcd-abcd-abcd-abcdabcdabcd')).status,401);
@@ -185,5 +187,21 @@ print(json.dumps(out))
   assert.equal((await call('GET',null,'',target.code)).status,404);
   assert.equal((await call('PUT',{service:snapshot},'device_111',target.code)).status,404);
   assert.ok(sql([{sql:'SELECT deleted_at FROM services WHERE code=?',args:[target.code]}])[0].results[0].deleted_at);
+  const nextPage='abcdabcd-abcd-abcd-abcd-abcdabcdabcd';
+  const remembered=await manager('login',{username:'franpenny',proof:newProof,remember:true});
+  assert.equal(remembered.status,200);
+  assert.match(remembered.headers.get('set-cookie'),/; Max-Age=604800/);
+  const rememberedCookie=remembered.headers.get('set-cookie').split(';')[0];
+  assert.equal((await manager('services',undefined,rememberedCookie,'https://example.test',true,nextPage)).status,200);
+  const rotated=await manager('password',{currentProof:newProof,newSalt:'f'.repeat(32),newProof:'a'.repeat(64),newLength:16},rememberedCookie);
+  assert.equal(rotated.status,200);
+  assert.match(rotated.headers.get('set-cookie'),/; Max-Age=604800/);
+  const rotatedCookie=rotated.headers.get('set-cookie').split(';')[0];
+  assert.equal((await manager('services',undefined,rememberedCookie)).status,401);
+  assert.equal((await manager('services',undefined,rotatedCookie,'https://example.test',true,nextPage)).status,200);
+  const logout=await manager('logout',{},rotatedCookie,'https://example.test',true,nextPage);
+  assert.equal(logout.status,200);
+  assert.match(logout.headers.get('set-cookie'),/; Max-Age=0/);
+  assert.equal((await manager('services',undefined,rotatedCookie)).status,401);
  }finally{rmSync(dir,{recursive:true,force:true});}
 });

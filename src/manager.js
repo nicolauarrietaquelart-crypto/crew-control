@@ -17,7 +17,9 @@ function equal(a,b){
 }
 const response=(value,status=200,headers={})=>Response.json(value,{status,headers:{'cache-control':'no-store',...headers}});
 const error=(message,status)=>response({error:message},status);
-const cookie=(token,maxAge)=>({'set-cookie':sessionName+'='+token+'; Path=/; Secure; HttpOnly; SameSite=Strict'+(maxAge===0?'; Max-Age=0':'')});
+const cookie=(token,maxAge)=>({'set-cookie':sessionName+'='+token+'; Path=/; Secure; HttpOnly; SameSite=Strict'+(maxAge===undefined?'':'; Max-Age='+maxAge)});
+const managerSessionSeconds=8*60*60;
+const rememberedSessionSeconds=7*24*60*60;
 
 const clientSaltPrefix='browser-v1:';
 const validProof=proof=>typeof proof==='string'&&/^[0-9a-f]{64}$/.test(proof);
@@ -42,8 +44,8 @@ export async function manager(request,env,url){
  }
  const page=request.headers.get('x-crew-manager-page')||'';
  if(!/^[a-f0-9-]{36}$/.test(page))return error('Actualiza Crew Control y vuelve a abrir Gestor. Esta ventana usa una versión anterior.',409);
- // A restored browser cookie cannot open a manager session in a new page.
- const sessionDigest=token=>digest(token+':'+page);
+ // Only opted-in tokens can be used across page loads.
+ const sessionDigest=(token,remember)=>digest(remember?'remember:'+token:token+':'+page);
  if(action==='login'&&writes){
   const input=await request.json();
   const password=typeof input.password==='string'?input.password:'';
@@ -59,25 +61,26 @@ export async function manager(request,env,url){
   if(input.username!==username||!correct)return error('Usuario o contraseña incorrectos.',401);
   await db.prepare('DELETE FROM crew_manager_attempts WHERE window_start < ? OR source=?').bind(windowStart,source).run();
   const token=random(32);
-  const seconds=record?28800:600;
+  const remember=Boolean(record)&&input.remember===true;
+  const seconds=record?(remember?rememberedSessionSeconds:managerSessionSeconds):600;
   await db.prepare('DELETE FROM crew_manager_sessions WHERE expires_at <= ?').bind(now).run();
-  await db.prepare('INSERT INTO crew_manager_sessions VALUES(?,?,?)').bind(await sessionDigest(token),now+seconds*1000,record?0:1).run();
-  return response({setup:!record},200,cookie(token,seconds));
+  await db.prepare('INSERT INTO crew_manager_sessions VALUES(?,?,?)').bind(await sessionDigest(token,remember),now+seconds*1000,record?0:1).run();
+  return response({setup:!record},200,cookie(token,remember?seconds:undefined));
  }
 
  const token=request.headers.get('cookie')?.split(';').map(value=>value.trim())
   .find(value=>value.startsWith(sessionName+'='))?.slice(sessionName.length+1);
  if(!/^[a-f0-9]{64}$/.test(token||''))return error('Entra como gestor.',401);
- const tokenHash=await sessionDigest(token);
- const session=await db.prepare('SELECT setup FROM crew_manager_sessions WHERE token_hash=? AND expires_at>?').bind(tokenHash,now).first();
+ const [pageHash,rememberedHash]=await Promise.all([sessionDigest(token,false),sessionDigest(token,true)]);
+ const session=await db.prepare('SELECT token_hash,setup FROM crew_manager_sessions WHERE token_hash IN (?,?) AND expires_at>?').bind(pageHash,rememberedHash,now).first();
  if(!session)return error('Vuelve a entrar como gestor.',401);
  if(action==='logout'&&writes){
-  await db.prepare('DELETE FROM crew_manager_sessions WHERE token_hash=?').bind(tokenHash).run();
+  await db.prepare('DELETE FROM crew_manager_sessions WHERE token_hash=?').bind(session.token_hash).run();
   return response({},200,cookie('',0));
  }
  if(action==='session'&&request.method==='GET')return response({setup:!!session.setup});
  if(action==='password'&&writes){
-  const {current,password,currentProof,newProof,newSalt,newLength,fingerprint}=await request.json();
+  const {current,password,currentProof,newProof,newSalt,newLength,fingerprint,remember:rememberOnSetup}=await request.json();
   const browser=validProof(newProof)&&typeof newSalt==='string'&&/^[a-f0-9]{32}$/.test(newSalt)&&(!session.setup||validProof(fingerprint));
   const length=browser?newLength:typeof password==='string'?password.length:0;
   if(!Number.isInteger(length)||length<12||length>256){
@@ -101,17 +104,19 @@ export async function manager(request,env,url){
   // Store a digest of its output, never the proof accepted at login.
   const salt=browser?clientSaltPrefix+newSalt:random(16);
   const hash=browser?await digest(newProof):await passwordHash(password,salt);
-  const nextToken=random(32),nextHash=await sessionDigest(nextToken);
+  const remember=session.setup?rememberOnSetup===true:session.token_hash===rememberedHash;
+  const seconds=remember?rememberedSessionSeconds:managerSessionSeconds;
+  const nextToken=random(32),nextHash=await sessionDigest(nextToken,remember);
   const change=record?
    db.prepare('UPDATE crew_manager SET salt=?,password_hash=? WHERE id=1 AND password_hash=?').bind(salt,hash,record.password_hash):
    db.prepare('INSERT OR IGNORE INTO crew_manager VALUES(1,?,?)').bind(salt,hash);
   const results=await db.batch([
    change,
    db.prepare('DELETE FROM crew_manager_sessions WHERE EXISTS (SELECT 1 FROM crew_manager WHERE password_hash=?)').bind(hash),
-   db.prepare('INSERT INTO crew_manager_sessions SELECT ?,?,0 WHERE EXISTS (SELECT 1 FROM crew_manager WHERE password_hash=?)').bind(nextHash,now+28800000,hash)
+   db.prepare('INSERT INTO crew_manager_sessions SELECT ?,?,0 WHERE EXISTS (SELECT 1 FROM crew_manager WHERE password_hash=?)').bind(nextHash,now+seconds*1000,hash)
   ]);
   if(!results[0].meta.changes)return error('Vuelve a entrar y repite el cambio.',409);
-  return response({setup:false},200,cookie(nextToken,28800));
+  return response({setup:false},200,cookie(nextToken,remember?seconds:undefined));
  }
  if(session.setup)return error('Cambia la contraseña inicial para ver los servicios.',403);
  if(action==='delete-service'&&writes){

@@ -17,7 +17,31 @@ body:has(#startScreen.hidden) #crewManagerEntry{display:none!important}
 #daysNav .crew-add-day,#crewMobileDayShiftV11256 .crew-add-day{display:inline-grid;place-items:center;flex:0 0 36px;min-width:36px;min-height:34px;border-radius:10px;border:1px solid #ddd;background:#fff;color:#171717;padding:0}
 #daysNav .crew-add-day:hover,#crewMobileDayShiftV11256 .crew-add-day:hover{background:#fff0e2}
 #crewManager{width:min(940px,calc(100vw - 24px));background:#f7f8fa}
-#crewManagerList{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:12px;margin-top:16px}
+#crewManagerList{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));align-content:start;gap:12px;margin-top:16px}
+#crewManager{overscroll-behavior-y:contain}
+#crewManager .crew-remember-session,#startScreen .crew-remember-session{
+ display:flex;align-items:center;gap:8px;min-height:32px;font-size:13px;font-weight:600;cursor:pointer
+}
+#startScreen .crew-remember-session{justify-content:center;margin-top:8px}
+#crewManager .crew-remember-session input,#startScreen .crew-remember-session input{
+ flex:none;width:16px;height:16px;margin:0;padding:0;accent-color:#ff851a;cursor:pointer
+}
+@media(min-height:420px){
+ #crewManager[open]:has(#crewManagerToolbar:not([hidden])):not(:has(#crewManagerPassword:not([hidden]))){
+  display:flex;flex-direction:column;overflow:hidden
+ }
+ #crewManager[open]:has(#crewManagerToolbar:not([hidden])):not(:has(#crewManagerPassword:not([hidden]))) #crewManagerList{
+  min-height:0;overflow:auto;scrollbar-gutter:stable;padding-inline-end:6px;overscroll-behavior-y:contain
+ }
+}
+:is(#crewManager,#crewManagerList)::-webkit-scrollbar{width:12px}
+:is(#crewManager,#crewManagerList)::-webkit-scrollbar-button{display:none}
+:is(#crewManager,#crewManagerList)::-webkit-scrollbar-track{background:#e9ebef;border-radius:8px}
+:is(#crewManager,#crewManagerList)::-webkit-scrollbar-thumb{background:#858d98;border:2px solid #e9ebef;border-radius:8px}
+:is(#crewManager,#crewManagerList)::-webkit-scrollbar-thumb:hover{background:#67717f}
+@supports not selector(::-webkit-scrollbar){
+ #crewManager,#crewManagerList{scrollbar-color:#858d98 #e9ebef}
+}
 #crewManager .crew-manager-card{display:flex;flex-direction:column;min-width:0;margin:0;padding:16px;border:1px solid #dfe2e6;border-radius:14px;background:#fff}
 .crew-manager-card-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;overflow-wrap:anywhere}
 #crewManager .crew-manager-state{flex-shrink:0;margin:0}

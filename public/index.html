@@ -11112,8 +11112,9 @@ if (/iPad/i.test(navigator.userAgent) ||
       <input id="serviceCodeInput" type="text" inputmode="numeric" maxlength="6" placeholder="000000"
         oninput="this.value=this.value.replace(/\D/g,'').slice(0,6)"
         onkeydown="if(event.key==='Enter') openExistingService()">
-      <button class="primary" onclick="openExistingService()">Entrar</button>
+      <button id="openServiceBtn" class="primary" onclick="openExistingService()">Entrar</button>
     </div>
+    <label class="crew-remember-session"><input id="crewRememberService" type="checkbox"> Mantener sesión iniciada</label>
 
     <div class="or">O</div>
 
@@ -11130,6 +11131,7 @@ if (/iPad/i.test(navigator.userAgent) ||
     <form id="crewManagerLogin" hidden>
       <label>Usuario<input name="username" autocomplete="username" required></label>
       <label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label>
+      <label class="crew-remember-session"><input name="remember" type="checkbox"> Mantener sesión iniciada</label>
       <button class="primary">Entrar</button>
     </form>
     <div id="crewManagerToolbar" class="crew-manager-actions" hidden>
@@ -13803,6 +13805,8 @@ function requestDuplicateService(){
 
 /* SERVICIOS */
 function createNewService(){
+  if(crewServiceAccessPending)return;
+  const remember=document.getElementById('crewRememberService').checked;
   const btn=document.getElementById('newServiceBtn');
   btn.disabled=true;btn.textContent='Generando código…';
   showBox('startStatus','Creando servicio…','info');
@@ -13820,7 +13824,7 @@ function createNewService(){
       service.workers=[];
       service.incidents=[];
 
-      openServiceData(service);
+      openServiceFromAccess(service,remember);
     })
     .withFailureHandler(err=>{
       btn.disabled=false;btn.textContent='Generar nuevo código de servicio';
@@ -14162,27 +14166,61 @@ function clearStartScreenState(){
   }
 }
 
-function openExistingService(){
+const CREW_REMEMBERED_SERVICE_KEY='crew-control-remembered-service';
+let crewServiceAccessPending=false;
+
+function openServiceFromAccess(service,remember){
+  openServiceData(service);
+  if(remember)crewWriteLocal(CREW_REMEMBERED_SERVICE_KEY,'',service.code);
+  else forgetServiceAccess();
+}
+
+function forgetServiceAccess(){
+  try{localStorage.removeItem(CREW_REMEMBERED_SERVICE_KEY);}
+  catch(error){console.warn('No se pudo borrar el servicio recordado:',error);}
+}
+
+async function openExistingService(restoring=false){
+  if(crewServiceAccessPending||state.service||document.getElementById('newServiceBtn').disabled)return;
   const code=document.getElementById('serviceCodeInput').value.trim();
+  const remember=document.getElementById('crewRememberService');
   if(!/^\d{6}$/.test(code)){
     showBox('startStatus','Introduce un código de 6 cifras.','error');return;
   }
+  const keepSession=remember.checked;
+  const button=document.getElementById('openServiceBtn');
+  crewServiceAccessPending=true;
+  button.disabled=true;
   showBox('startStatus','Abriendo servicio…','info');
-  backend.run
-    .withSuccessHandler(openServiceData)
-    .withFailureHandler(err=>{
-      // If the device is offline, reopen the last saved roster and overlay
-      // only that device's unacknowledged edits, without claiming a cloud save.
-      const cached=crewReadLocal(CREW_CACHE_PREFIX,code);
-      if(cached?.service?.code===code){
-        openServiceData(cached.service);
-        setSaveState('Modo sin conexión · datos locales','error');
-        crewConnectionFailed(err);
-        return;
+  try{
+    const service=await dispatchBackend('loadService',[code]);
+    if(state.service)return;
+    if(restoring&&document.getElementById('crewManager').open){clearStartScreenState();return;}
+    openServiceFromAccess(service,keepSession);
+  }catch(error){
+    if(state.service)return;
+    if(error.status===403||error.status===404||error.status===410){
+      if(crewReadLocal(CREW_REMEMBERED_SERVICE_KEY,'')===code){
+        forgetServiceAccess();
+        remember.checked=false;
       }
-      showBox('startStatus',errorMessage(err),'error');
-    })
-    .loadService(code);
+      showBox('startStatus','El servicio ya no está disponible.','error');
+      return;
+    }
+    // Only a connection or server error can fall back to the local roster.
+    const cached=(!error.status||error.status>=500)&&crewReadLocal(CREW_CACHE_PREFIX,code);
+    if(cached?.service?.code===code){
+      if(restoring&&document.getElementById('crewManager').open){clearStartScreenState();return;}
+      openServiceFromAccess(cached.service,keepSession);
+      setSaveState('Modo sin conexión · datos locales','error');
+      crewConnectionFailed(error);
+      return;
+    }
+    showBox('startStatus',errorMessage(error),'error');
+  }finally{
+    crewServiceAccessPending=false;
+    button.disabled=false;
+  }
 }
 
 function updateSidebarToggleButton(){
@@ -14439,6 +14477,8 @@ async function closeService(){
 }
 
 function finalizeCloseServiceView(){
+  forgetServiceAccess();
+  document.getElementById('crewRememberService').checked=false;
   clearStartScreenState();
   setMobileOperationalPanelV11234(false);
   restorePersonnelSidebarHome();
@@ -21816,7 +21856,7 @@ document.addEventListener('keydown',event=>{
  }
 }
 </style>
-<link rel="stylesheet" href="/service-tools.css?v=5">
+<link rel="stylesheet" href="/service-tools.css?v=6">
 <script>
 function crewAddDayButton(){
  return state.service?.closed?'':`<button type="button" class="crew-add-day" onclick="crewOpenAddDay()" aria-label="Añadir día" title="Añadir día">
@@ -21868,6 +21908,7 @@ const managerUI={
  list:document.getElementById('crewManagerList')
 };
 let crewManagerPage=crypto.randomUUID();
+let crewManagerRememberSetup=false;
 window.addEventListener('pageshow',event=>{
  if(!event.persisted)return;
  crewManagerPage=crypto.randomUUID();
@@ -21940,7 +21981,11 @@ async function crewRefreshManager(){
  }
 }
 async function crewManagerLogout(){
- try{await crewManagerApi('logout',{});crewManagerView('login');}
+ try{
+  await crewManagerApi('logout',{});
+  crewManagerRememberSetup=false;
+  crewManagerView('login');
+ }
  catch(error){managerUI.status.textContent=error.message;}
 }
 const crewManagerEncoder=new TextEncoder();
@@ -21965,7 +22010,10 @@ function crewManagerForm(form,action,onSuccess){
     managerUI.status.textContent='Guardando contraseña…';
    }
    const {salt}=await crewManagerApi('challenge');
-   if(action==='login')payload.username=payload.username.trim();
+   if(action==='login'){
+    payload.username=payload.username.trim();
+    payload.remember=form.elements.remember.checked;
+   }
    if(action==='login'&&salt){
     payload.proof=await crewManagerProof(payload.password,salt);
     delete payload.password;
@@ -21981,11 +22029,13 @@ function crewManagerForm(form,action,onSuccess){
     payload.newSalt=crewManagerHex(crypto.getRandomValues(new Uint8Array(16)));
     payload.newProof=await crewManagerProof(password,payload.newSalt);
     if(form.dataset.setup==='true'){
+     payload.remember=crewManagerRememberSetup;
      payload.fingerprint=crewManagerHex(new Uint8Array(await crypto.subtle.digest('SHA-256',crewManagerEncoder.encode(password))));
     }
     delete payload.password;
    }
    const result=await crewManagerApi(action,payload);
+   crewManagerRememberSetup=action==='login'&&result.setup&&payload.remember;
    if(action==='password')managerUI.status.textContent='Contraseña guardada. Cargando servicios…';
    form.reset();
    await onSuccess(result);
@@ -22071,6 +22121,12 @@ function crewManagerCard(service){
  heading.append(title,status);
  article.append(heading,details,types,actions);
  return article;
+}
+const crewRememberedService=crewReadLocal(CREW_REMEMBERED_SERVICE_KEY,'');
+if(typeof crewRememberedService==='string'&&/^\d{6}$/.test(crewRememberedService)){
+ document.getElementById('serviceCodeInput').value=crewRememberedService;
+ document.getElementById('crewRememberService').checked=true;
+ void openExistingService(true);
 }
 </script>
 <style>
