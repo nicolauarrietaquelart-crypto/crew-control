@@ -57,10 +57,19 @@ async function crewManagerApi(action,payload){
 }
 function crewManagerView(mode){
  managerUI.login.hidden=mode!=='login';
- managerUI.password.hidden=mode!=='setup';
+ managerUI.password.hidden=true;
+ if(mode==='setup')crewShowManagerPassword(true);
  managerUI.toolbar.hidden=mode!=='services';
  if(mode!=='services')managerUI.list.replaceChildren();
  managerUI.status.textContent=mode==='setup'?'Cambia la contraseña inicial para activar el acceso.':'';
+}
+function crewShowManagerPassword(setup){
+ const form=managerUI.password;
+ form.reset();
+ form.dataset.setup=String(setup);
+ document.getElementById('crewManagerCurrentPassword').hidden=setup;
+ form.elements.current.disabled=setup;
+ form.hidden=false;
 }
 async function crewOpenManager(){
  crewManagerView('loading');
@@ -97,7 +106,15 @@ function crewManagerForm(form,action,onSuccess){
   submit.disabled=true;
   managerUI.status.textContent='';
   try{
-   const result=await crewManagerApi(action,Object.fromEntries(new FormData(form)));
+   const payload=Object.fromEntries(new FormData(form));
+   if(action==='password'){
+    if(payload.password.length<12||payload.password.length>256)throw new Error('La contraseña nueva debe tener entre 12 y 256 caracteres.');
+    if(payload.password!==payload.repeat)throw new Error('Las contraseñas nuevas no coinciden.');
+    delete payload.repeat;
+    managerUI.status.textContent='Guardando contraseña…';
+   }
+   const result=await crewManagerApi(action,payload);
+   if(action==='password')managerUI.status.textContent='Contraseña guardada. Cargando servicios…';
    form.reset();
    await onSuccess(result);
   }catch(error){managerUI.status.textContent=error.message;}

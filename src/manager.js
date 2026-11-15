@@ -61,15 +61,23 @@ export async function manager(request,env,url){
  if(action==='session'&&request.method==='GET')return response({setup:!!session.setup});
  if(action==='password'&&writes){
   const {current,password}=await request.json();
-  if(typeof current!=='string'||current.length>256||
-     typeof password!=='string'||password.length<12||password.length>256||password===current){
-   return error('Usa una contraseña nueva de al menos 12 caracteres.',400);
+  if(typeof password!=='string'||password.length<12||password.length>256){
+   return error('La contraseña nueva debe tener entre 12 y 256 caracteres.',400);
   }
   const record=await db.prepare('SELECT salt,password_hash FROM crew_manager WHERE id=1').first();
-  if(!record&&!env.CREW_MANAGER_INITIAL_PASSWORD)return error('Configura el acceso de gestor en Cloudflare.',503);
-  const correct=record?equal(await passwordHash(current,record.salt),record.password_hash):
-   equal(await digest(current),await digest(env.CREW_MANAGER_INITIAL_PASSWORD));
-  if(!correct)return error('La contraseña actual no coincide.',401);
+  if(session.setup){
+   if(record)return error('La cuenta ya se activó. Vuelve a entrar.',409);
+   if(!env.CREW_MANAGER_INITIAL_PASSWORD)return error('Configura el acceso de gestor en Cloudflare.',503);
+   if(equal(await digest(password),await digest(env.CREW_MANAGER_INITIAL_PASSWORD))){
+    return error('La contraseña nueva debe ser distinta de la inicial.',400);
+   }
+  }else{
+   if(typeof current!=='string'||!current||current.length>256)return error('Escribe tu contraseña actual.',400);
+   if(!record||!equal(await passwordHash(current,record.salt),record.password_hash)){
+    return error('La contraseña actual no coincide.',401);
+   }
+   if(password===current)return error('La contraseña nueva debe ser distinta de la actual.',400);
+  }
   const salt=random(16),hash=await passwordHash(password,salt);
   const nextToken=random(32),nextHash=await digest(nextToken);
   const change=record?

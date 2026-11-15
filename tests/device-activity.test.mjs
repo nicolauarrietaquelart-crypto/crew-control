@@ -150,7 +150,8 @@ print(json.dumps(out))
   assert.equal((await setup.json()).setup,true);
   const setupCookie=setup.headers.get('set-cookie').split(';')[0];
   assert.equal((await manager('services',undefined,setupCookie)).status,403);
-  const activated=await manager('password',{current:initial,password:next},setupCookie);
+  assert.equal((await manager('password',{password:initial},setupCookie)).status,400);
+  const activated=await manager('password',{password:next},setupCookie);
   assert.equal(activated.status,200);
   const newCookie=activated.headers.get('set-cookie').split(';')[0];
   assert.equal((await manager('services',undefined,setupCookie)).status,401);
@@ -159,5 +160,6 @@ print(json.dumps(out))
   assert.equal((await list.json()).services.length,2);
   assert.equal((await manager('login',login)).status,401);
   assert.equal((await manager('login',{...login,password:next})).status,200);
+  assert.equal((await manager('password',{password:'another-manager-password'},newCookie)).status,400);
  }finally{rmSync(dir,{recursive:true,force:true});}
 });
