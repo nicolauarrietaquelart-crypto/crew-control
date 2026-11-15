@@ -17,7 +17,7 @@ function equal(a,b){
 }
 const response=(value,status=200,headers={})=>Response.json(value,{status,headers:{'cache-control':'no-store',...headers}});
 const error=(message,status)=>response({error:message},status);
-const cookie=(token,maxAge)=>({'set-cookie':sessionName+'='+token+'; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age='+maxAge});
+const cookie=(token,maxAge)=>({'set-cookie':sessionName+'='+token+'; Path=/; Secure; HttpOnly; SameSite=Strict'+(maxAge===0?'; Max-Age=0':'')});
 
 const clientSaltPrefix='browser-v1:';
 const validProof=proof=>typeof proof==='string'&&/^[0-9a-f]{64}$/.test(proof);
@@ -40,6 +40,10 @@ export async function manager(request,env,url){
   const record=await db.prepare('SELECT salt FROM crew_manager WHERE id=1').first();
   return response({salt:record?.salt.startsWith(clientSaltPrefix)?record.salt.slice(clientSaltPrefix.length):null});
  }
+ const page=request.headers.get('x-crew-manager-page')||'';
+ if(!/^[a-f0-9-]{36}$/.test(page))return error('Entra como gestor desde esta página.',401);
+ // A restored browser cookie cannot open a manager session in a new page.
+ const sessionDigest=token=>digest(token+':'+page);
  if(action==='login'&&writes){
   const input=await request.json();
   const password=typeof input.password==='string'?input.password:'';
@@ -57,14 +61,14 @@ export async function manager(request,env,url){
   const token=random(32);
   const seconds=record?28800:600;
   await db.prepare('DELETE FROM crew_manager_sessions WHERE expires_at <= ?').bind(now).run();
-  await db.prepare('INSERT INTO crew_manager_sessions VALUES(?,?,?)').bind(await digest(token),now+seconds*1000,record?0:1).run();
+  await db.prepare('INSERT INTO crew_manager_sessions VALUES(?,?,?)').bind(await sessionDigest(token),now+seconds*1000,record?0:1).run();
   return response({setup:!record},200,cookie(token,seconds));
  }
 
  const token=request.headers.get('cookie')?.split(';').map(value=>value.trim())
   .find(value=>value.startsWith(sessionName+'='))?.slice(sessionName.length+1);
  if(!/^[a-f0-9]{64}$/.test(token||''))return error('Entra como gestor.',401);
- const tokenHash=await digest(token);
+ const tokenHash=await sessionDigest(token);
  const session=await db.prepare('SELECT setup FROM crew_manager_sessions WHERE token_hash=? AND expires_at>?').bind(tokenHash,now).first();
  if(!session)return error('Vuelve a entrar como gestor.',401);
  if(action==='logout'&&writes){
@@ -97,7 +101,7 @@ export async function manager(request,env,url){
   // Store a digest of its output, never the proof accepted at login.
   const salt=browser?clientSaltPrefix+newSalt:random(16);
   const hash=browser?await digest(newProof):await passwordHash(password,salt);
-  const nextToken=random(32),nextHash=await digest(nextToken);
+  const nextToken=random(32),nextHash=await sessionDigest(nextToken);
   const change=record?
    db.prepare('UPDATE crew_manager SET salt=?,password_hash=? WHERE id=1 AND password_hash=?').bind(salt,hash,record.password_hash):
    db.prepare('INSERT OR IGNORE INTO crew_manager VALUES(1,?,?)').bind(salt,hash);

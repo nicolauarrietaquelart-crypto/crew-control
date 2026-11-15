@@ -16,3 +16,14 @@ body:has(#startScreen.hidden) #crewManagerEntry{display:none!important}
 #crewAddDay{width:min(420px,calc(100vw - 24px))}
 #daysNav .crew-add-day,#crewMobileDayShiftV11256 .crew-add-day{display:inline-grid;place-items:center;flex:0 0 36px;min-width:36px;min-height:34px;border-radius:10px;border:1px solid #ddd;background:#fff;color:#171717;padding:0}
 #daysNav .crew-add-day:hover,#crewMobileDayShiftV11256 .crew-add-day:hover{background:#fff0e2}
+#crewManager{width:min(940px,calc(100vw - 24px));background:#f7f8fa}
+#crewManagerList{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:12px;margin-top:16px}
+#crewManager .crew-manager-card{display:flex;flex-direction:column;min-width:0;margin:0;padding:16px;border:1px solid #dfe2e6;border-radius:14px;background:#fff}
+.crew-manager-card-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;overflow-wrap:anywhere}
+#crewManager .crew-manager-state{flex-shrink:0;margin:0}
+#crewManager .crew-manager-card p{overflow-wrap:anywhere}
+#crewManager .crew-manager-card .crew-manager-actions{margin-top:auto;padding-top:8px}
+#crewManager .crew-manager-actions>button{min-height:38px;padding:8px 12px;border-radius:9px;border:1px solid #cfd3d9!important;background:#fff!important;color:#171717!important}
+#crewManager .crew-manager-actions>button.primary{background:#ff851a!important;border-color:#ff851a!important;color:#151515!important}
+#crewManager .crew-manager-actions>button:not(.primary):hover{background:#edf0f4!important}
+#crewManager .crew-manager-actions>button.primary:hover{background:#ff9a42!important}

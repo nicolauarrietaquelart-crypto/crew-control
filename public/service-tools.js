@@ -47,13 +47,37 @@ const managerUI={
  toolbar:document.getElementById('crewManagerToolbar'),
  list:document.getElementById('crewManagerList')
 };
+let crewManagerPage=crypto.randomUUID();
+window.addEventListener('pageshow',event=>{
+ if(!event.persisted)return;
+ crewManagerPage=crypto.randomUUID();
+ managerUI.dialog.close();
+ crewManagerView('login');
+});
 async function crewManagerApi(action,payload){
- const response=await fetch('/api/manager/'+action,payload===undefined?{cache:'no-store'}:{
-  method:'POST',cache:'no-store',headers:{'content-type':'application/json'},body:JSON.stringify(payload)
+ const headers={'x-crew-manager-page':crewManagerPage};
+ if(payload!==undefined)headers['content-type']='application/json';
+ const response=await fetch('/api/manager/'+action,{
+  cache:'no-store',headers,...(payload===undefined?{}:{method:'POST',body:JSON.stringify(payload)})
  });
  const data=await response.json();
  if(!response.ok)throw Object.assign(new Error(data.error),{status:response.status});
  return data;
+}
+async function crewManagerCreateService(){
+ const button=document.getElementById('crewManagerCreate');
+ button.disabled=true;
+ managerUI.status.textContent='Creando servicio…';
+ try{
+  const session=await crewManagerApi('session');
+  if(session.setup){crewManagerView('setup');return;}
+  const service=await dispatchBackend('generateNewService',[]);
+  openServiceData(service);
+  managerUI.dialog.close();
+ }catch(error){
+  if(error.status===401)crewManagerView('login');
+  managerUI.status.textContent=error.message;
+ }finally{button.disabled=false;}
 }
 function crewManagerView(mode){
  managerUI.login.hidden=mode!=='login';
@@ -155,6 +179,8 @@ function crewManagerCard(service){
  article.className='crew-manager-card';
  const title=document.createElement('strong');
  title.textContent=service.name||'Servicio '+service.code;
+ const heading=document.createElement('div');
+ heading.className='crew-manager-card-heading';
  const status=document.createElement('span');
  status.className='crew-manager-state';
  status.dataset.closed=String(!!service.closed);
@@ -166,10 +192,10 @@ function crewManagerCard(service){
  types.hidden=!service.types;
  const actions=document.createElement('div');
  actions.className='crew-manager-actions';
- const button=(label,callback)=>{
+ const button=(label,callback,primary=false)=>{
   const element=document.createElement('button');
   element.type='button';
-  element.className='secondary';
+  element.className=primary?'primary':'secondary';
   element.textContent=label;
   element.onclick=async()=>{
    element.disabled=true;
@@ -184,7 +210,7 @@ function crewManagerCard(service){
   openServiceData(loaded);
   managerUI.dialog.close();
  };
- button('Acceder',open);
+ button('Acceder',open,true);
  if(service.closed){
   button('Descargar Excel',async()=>{
    const {service:closed}=await crewApi(service.code);
@@ -211,6 +237,7 @@ function crewManagerCard(service){
   button(service.pdf?'Actualizar PDF':'Importar PDF',()=>input.click());
   actions.append(input);
  }
- article.append(title,status,details,types,actions);
+ heading.append(title,status);
+ article.append(heading,details,types,actions);
  return article;
 }

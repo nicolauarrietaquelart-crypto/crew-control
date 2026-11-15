@@ -136,9 +136,9 @@ print(json.dumps(out))
    .split(';').filter(s=>s.trim()).map(s=>({sql:s})));
   const initial='test-initial-password';
   const next='test-rotated-password';
-  const manager=(action,payload,cookie,origin='https://example.test',useSecret=true)=>worker.fetch(
+  const manager=(action,payload,cookie,origin='https://example.test',useSecret=true,page='12345678-1234-1234-1234-123456789abc')=>worker.fetch(
    new Request('https://example.test/api/manager/'+action,{
-    headers:{origin,'content-type':'application/json',...(cookie?{cookie}:{})},
+    headers:{origin,'content-type':'application/json','x-crew-manager-page':page,...(cookie?{cookie}:{})},
     ...(payload?{method:'POST',body:JSON.stringify(payload)}:{})
    }),{DB,CREW_MANAGER_INITIAL_PASSWORD:useSecret?initial:undefined});
   const login={username:'franpenny',password:initial};
@@ -161,6 +161,7 @@ print(json.dumps(out))
   assert.equal(activated.status,200);
   const newCookie=activated.headers.get('set-cookie').split(';')[0];
   assert.equal((await manager('services',undefined,setupCookie)).status,401);
+  assert.equal((await manager('services',undefined,newCookie,'https://example.test',true,'abcdabcd-abcd-abcd-abcd-abcdabcdabcd')).status,401);
   const list=await manager('services',undefined,newCookie);
   assert.equal(list.status,200);
   assert.equal((await list.json()).services.length,2);
