@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
+import workerApiHandler from '../src/index.js';
 
 const html=readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
 const pauseUi=readFileSync(new URL('../public/pause-return.js',import.meta.url),'utf8');
@@ -12,6 +13,75 @@ function section(start,end){
   assert.ok(a>=0&&b>a,'Source section is missing: '+start);
   return html.slice(a,b);
 }
+
+test('original PDFs round-trip across D1 chunks and legacy PDFs remain readable',async()=>{
+  const code='123456',documentId='f54bbd9e-7367-4d6d-ab37-d4a3260d8ab7';
+  const chunks=[];
+  const oldPdf=[37,80,68,70,45,48];
+  let closed=false;
+  const DB={
+    prepare(sql){
+      return {sql,bind(...values){this.values=values;return this;},
+        async first(){
+          if(sql.includes('FROM services'))return {id:'S',closed:0};
+          if(sql.includes('FROM service_snapshots'))return {closed:Number(closed)};
+          if(sql.includes('FROM service_pdf_documents'))return {filename:'anterior.pdf',content:oldPdf};
+          throw new Error(sql);
+        },
+        async all(){return {results:chunks.map(({filename,content})=>({filename,content:[...content]}))};}
+      };
+    },
+    async batch(statements){
+      assert.match(statements[0].sql,/^DELETE FROM service_pdf_chunks/);
+      chunks.splice(0,chunks.length,...statements.slice(1).map(({values},i)=>{
+        assert.deepEqual(values.slice(0,3),['S',documentId,i]);
+        const content=new Uint8Array(values[4]);
+        assert.ok(content.length<=1000000);
+        return {filename:values[3],content};
+      }));
+    }
+  };
+  const call=(method,body)=>workerApiHandler.fetch(new Request(
+    'https://example.test/api/services/'+code+'/pdf?file='+documentId,
+    {method,body,headers:{'x-service-code':code,'x-pdf-filename':encodeURIComponent('Día 2.pdf')}}
+  ),{DB});
+  assert.deepEqual([...new Uint8Array(await (await call('GET')).arrayBuffer())],oldPdf);
+  assert.equal((await call('PUT',new Uint8Array([37]))).status,400);
+  const original=new Uint8Array(2300123);
+  original.set([37,80,68,70,45]);
+  original[999999]=12;original[1000000]=23;original[original.length-1]=34;
+  assert.equal((await call('PUT',original)).status,200);
+  assert.equal(chunks.length,3);
+  closed=true;
+  assert.equal((await call('PUT',original)).status,409);
+  const restored=await call('GET');
+  assert.match(restored.headers.get('content-disposition'),/D%C3%ADa%202\.pdf/);
+  assert.equal(Buffer.compare(Buffer.from(await restored.arrayBuffer()),original),0);
+});
+
+test('closing waits for pending edits and only generates Excel after the server confirms',async()=>{
+  const close=section('async function performCloseService(){','// Excel de cierre:');
+  const run=async ({offline=false,held=0,flushError}={})=>{
+    const calls=[],app={},state={service:{code:'123456'},metaTimer:1,structureTimer:2};
+    const scope={
+      state,document:{getElementById:()=>app},navigator:{onLine:!offline},crewWorkerFlushPromise:Promise.resolve(),
+      crewHeldCount:()=>held,setSaveState(){},clearTimeout(){},
+      crewFlushServiceChanges:async (...args)=>{calls.push(['flush',...args]);if(flushError)throw flushError;},
+      scheduleMetaSave(){},scheduleStructureSave(){},crewRetryLocalUpdates(){},
+      dispatchBackend:async (name)=>{calls.push(name);return {service:{code:'123456',closed:true}};},
+      crewCacheRoster(){},applyClosedState(){},renderPersonnel(){},renderIncidents(){},renderAudit(){},
+      downloadClosedServiceExcel:async()=>calls.push('excel'),openCrewCloseNotify(){},
+      alert:message=>calls.push(message),errorMessage:error=>error.message
+    };
+    await new Function(...Object.keys(scope),'let crewExitInProgress=false;'+close+'return performCloseService()')(...Object.values(scope));
+    assert.ok(!app.inert);
+    return {calls,state};
+  };
+  assert.deepEqual((await run()).calls,[['flush','123456',true,true],'closeService','excel']);
+  assert.deepEqual((await run({flushError:Error('Pausas pendientes')})).calls,[['flush','123456',true,true],'Pausas pendientes']);
+  assert.match((await run({held:1})).calls[0],/fichajes sin aplicar/);
+  assert.match((await run({offline:true})).calls[0],/Recupera la conexión/);
+});
 function helpers(){
   return new Function('crypto',
     section('function crewUniqueWorkerIds','function crewWorkerIdentityEqual')+

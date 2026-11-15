@@ -11941,7 +11941,6 @@ const state = {
   pendingWorkerUpdates: {},
   workerSaveTimer: null,
   workerSaveInFlight: false,
-  workerSaveCallbacks: []
 };
 
 /* =========================================================
@@ -13210,7 +13209,7 @@ function crewHasOlderAttendance(local,remote){
 }
 
 async function crewCheckRemoteChanges(){
-  if(crewRemoteCheckInFlight||document.hidden||!state.service?.code||state.service.closed)return;
+  if(crewRemoteCheckInFlight||document.hidden||!state.service?.code)return;
   if(Date.now()-crewLastLocalWrite<500||state.workerSaveInFlight)return;
   // Keep fetching server updates even if a dialog or text input is open.
   // Rendering is deferred to avoid destroying an active edit.
@@ -13589,7 +13588,8 @@ async function crewD1Dispatch(method,args){
     const closed=method==='closeService';
     const service=await crewSaveLatest(code,remote=>{
       if(closed&&remote.closed)return remote;
-      return {...remote,closed,closedAt:closed?new Date().toISOString():''};
+      return {...remote,closed,closedAt:closed?new Date().toISOString():'',
+        workers:closed?crewNormalizeClosingReserves(remote):remote.workers};
     },{allowClosed:true});
     return {ok:true,service,closedAt:service.closedAt};
   }
@@ -14431,37 +14431,7 @@ async function closeService(){
       return;
     }
     setSaveState('Sincronizando antes de salir…','saving');
-    // Flush debounced metadata / team edits that would otherwise be cancelled.
-    if(pendingMeta){
-      await dispatchBackend('saveServiceMeta',[code,{
-        serviceName:document.getElementById('serviceName').value.trim(),
-        serviceDate:document.getElementById('serviceDate').value.trim(),
-        venue:document.getElementById('venue').value.trim(),
-        pdfName:state.service.pdfName||'',
-        workOrder:Array.from(state.service.workOrder||[],String)
-      }]);
-    }
-    if(pendingStructure){
-      await dispatchBackend('saveScenariosAndTeams',[code,state.service.scenarios,state.service.teams]);
-    }
-    // Finish in-flight worker writes before starting the last retry.
-    await crewSyncWorkVisibility(code);
-    if(Object.keys(crewVisibilityJournal(code)).length)throw new Error('Hay cambios de visibilidad pendientes');
-    await crewSaveQueue;
-    const batch=Object.values(crewCurrentWorkerJournal(code));
-    if(batch.length){
-      // Use the same per-field timestamp conflict merge as normal saving.
-      const result=await dispatchBackend('saveWorkerChanges',[code,batch]);
-      crewAckJournal(code,batch,result);
-    }
-    if(crewPausePending(code).length){
-      await crewPauseSync();
-      if(crewPausePending(code).length)throw new Error('Turnos de pausa pendientes de sincronizar');
-    }
-    await crewSaveQueue;
-    if(Object.keys(crewCurrentWorkerJournal(code)).length||crewPausePending(code).length){
-      throw new Error('Quedan cambios pendientes de sincronización');
-    }
+    await crewFlushServiceChanges(code,pendingMeta,pendingStructure);
     crewCacheRoster();
     finalizeCloseServiceView();
   }catch(error){
@@ -14473,6 +14443,40 @@ async function closeService(){
   }finally{
     crewExitInProgress=false;
     if(button)button.disabled=false;
+  }
+}
+
+async function crewFlushServiceChanges(code,pendingMeta,pendingStructure){
+  // Flush debounced metadata / team edits that would otherwise be cancelled.
+  if(pendingMeta){
+    await dispatchBackend('saveServiceMeta',[code,{
+      serviceName:document.getElementById('serviceName').value.trim(),
+      serviceDate:document.getElementById('serviceDate').value.trim(),
+      venue:document.getElementById('venue').value.trim(),
+      pdfName:state.service.pdfName||'',
+      workOrder:Array.from(state.service.workOrder||[],String)
+    }]);
+  }
+  if(pendingStructure){
+    await dispatchBackend('saveScenariosAndTeams',[code,state.service.scenarios,state.service.teams]);
+  }
+  // Finish queued writes before retrying any remaining local edits.
+  await crewSyncWorkVisibility(code);
+  if(Object.keys(crewVisibilityJournal(code)).length)throw new Error('Hay cambios de visibilidad pendientes');
+  await crewSaveQueue;
+  const batch=Object.values(crewCurrentWorkerJournal(code));
+  if(batch.length){
+    // Use the same per-field timestamp conflict merge as normal saving.
+    const result=await dispatchBackend('saveWorkerChanges',[code,batch]);
+    crewAckJournal(code,batch,result);
+  }
+  if(crewPausePending(code).length){
+    await crewPauseSync();
+    if(crewPausePending(code).length)throw new Error('Turnos de pausa pendientes de sincronizar');
+  }
+  await crewSaveQueue;
+  if(Object.keys(crewCurrentWorkerJournal(code)).length||crewPausePending(code).length||Object.keys(crewVisibilityJournal(code)).length){
+    throw new Error('Quedan cambios pendientes de sincronización');
   }
 }
 
@@ -14514,10 +14518,13 @@ function copyServiceCode(){
 /* AUTOGUARDADO */
 function scheduleMetaSave(){
   if(!state.service||state.service.closed)return;
+  const code=state.service.code;
   clearTimeout(state.metaTimer);
   setSaveState('Guardando…','saving');
 
   state.metaTimer=setTimeout(()=>{
+    state.metaTimer=null;
+    if(state.service?.code!==code||state.service.closed)return;
     const meta={
       serviceName:document.getElementById('serviceName').value.trim(),
       serviceDate:document.getElementById('serviceDate').value.trim(),
@@ -14527,10 +14534,11 @@ function scheduleMetaSave(){
     };
     backend.run
       .withSuccessHandler(()=>{
+        if(state.service?.code!==code)return;
         Object.assign(state.service,meta);setSaveState('Guardado','saved');
       })
       .withFailureHandler(err=>{console.error(err);setSaveState('Error al guardar','error')})
-      .saveServiceMeta(state.service.code,meta);
+      .saveServiceMeta(code,meta);
   },600);
 }
 
@@ -15053,21 +15061,14 @@ function saveWorkerUpdates(updates){
 
 let crewWorkerFlushPromise=null;
 let crewWorkerBatchInFlight=null;
-function flushPendingWorkerSaves(callback){
-  if(typeof callback==='function'){
-    state.workerSaveCallbacks.push(callback);
-  }
-
+function flushPendingWorkerSaves(){
   if(state.workerSaveInFlight||crewExitInProgress)return;
 
   crewLoadPendingIntoState();
 
   const batch=Object.values(state.pendingWorkerUpdates);
 
-  if(!batch.length){
-    runWorkerSaveCallbacks();
-    return;
-  }
+  if(!batch.length)return;
 
   if(!state.service||state.service.closed){
     crewPendingNotice();
@@ -15103,7 +15104,6 @@ function flushPendingWorkerSaves(callback){
       }else{
         if(!crewHeldNotice(serviceCode))setSaveState('Sincronizado con D1','saved');
       }
-      runWorkerSaveCallbacks();
       // Read the authoritative D1 snapshot after every confirmed batch.
       // This pulls changes made on desktop into tablet/phone (and vice versa).
       if(state.service?.code===serviceCode){
@@ -15123,7 +15123,6 @@ function flushPendingWorkerSaves(callback){
       });
 
       setSaveState(!navigator.onLine?'Sin conexión · fichajes pendientes':'Error al sincronizar · fichajes pendientes','error');
-      state.workerSaveCallbacks=[];
       // Stale IDs must not poison every future sync attempt.
       const conflict=/Identidad del trabajador no coincide|ID de trabajador duplicado en el lote|Conflicto de edición/.test(String(err?.message||''));
       if(navigator.onLine&&conflict){
@@ -15147,13 +15146,6 @@ function flushPendingWorkerSaves(callback){
     });
   crewWorkerFlushPromise=write;
   void write.finally(()=>{if(crewWorkerFlushPromise===write)crewWorkerFlushPromise=null;});
-}
-
-function runWorkerSaveCallbacks(){
-  const callbacks=state.workerSaveCallbacks.splice(0);
-  callbacks.forEach(fn=>{
-    try{fn()}catch(err){console.error(err)}
-  });
 }
 
 function setSaveState(text,cls){
@@ -15584,7 +15576,6 @@ async function importPdf(file,targetDay=''){
     if(!ok)return;
   }
 
-  document.getElementById('pdfFileName').textContent=file.name;
   showPdfStatus('Leyendo fechas, turnos y personal…','info');
 
   try{
@@ -15603,6 +15594,13 @@ async function importPdf(file,targetDay=''){
     for(const worker of parsed.workers)if(worker.blockId)worker.blockId=documentId+':'+worker.blockId;
     parsed.meta.pdfName=file.name;
 
+    // Publish a document reference only after the original is downloadable.
+    const upload=await fetch('/api/services/'+encodeURIComponent(code)+'/pdf?file='+encodeURIComponent(documentId),{
+      method:'PUT',headers:{'x-service-code':code,'x-pdf-filename':encodeURIComponent(file.name)},body:file
+    });
+    if(!upload.ok)throw new Error((await upload.json()).error||'Error al guardar PDF');
+    if(state.service?.code!==code)return;
+
     showPdfStatus(`Detectados ${parsed.workers.length} registros en ${new Set(parsed.workers.map(w=>w.serviceDate)).size} día(s). Guardando…`,'info');
 
     backend.run
@@ -15614,16 +15612,8 @@ async function importPdf(file,targetDay=''){
           showPdfStatus('La importación no ha devuelto todos los trabajadores. No se mostrará como completada; vuelve a abrir el servicio para comprobar los datos.','error');
           return;
         }
-        // Apply the roster before uploading the original document. The upload
-        // can take long enough for a new attendance mark to be confirmed.
         openServiceData(service);
         if(getDays().includes(targetDay||dates[0]))setActiveDay(targetDay||dates[0]);
-        let pdfStorageError='';
-        try{
-          const upload=await fetch('/api/services/'+encodeURIComponent(service.code)+'/pdf?file='+encodeURIComponent(documentId),{method:'PUT',headers:{'x-service-code':service.code,'x-pdf-filename':encodeURIComponent(file.name)},body:file});
-          if(!upload.ok)throw new Error((await upload.json()).error||'Error al guardar PDF');
-        }catch(error){console.warn('No se pudo guardar el PDF original:',error);pdfStorageError=error.message;}
-        if(state.service?.code!==code)return;
         updatePdfPlacementUI();
         // Always show the imported day and clear any filters from a previous service.
         if(state.service.workers.length&&!workersForActiveDay().length){
@@ -15645,14 +15635,13 @@ async function importPdf(file,targetDay=''){
             <span class="import-chip">${s.coordinatorChanged||0} cambios CS</span>
             <span class="import-chip">${s.movedToReserve||0} reservas</span>
           </div>${changedNames}`;
-        if(pdfStorageError)showPdfStatus('Personal importado, pero el PDF original no se ha guardado: '+pdfStorageError,'error');
-        else showPdfStatusHtml(details,'ok');
+        showPdfStatusHtml(details,'ok');
       })
       .withFailureHandler(err=>{if(state.service?.code===code)showPdfStatus(errorMessage(err),'error')})
       .replaceWorkersFromPdf(code,parsed);
 
   }catch(err){
-    console.error(err);showPdfStatus(errorMessage(err),'error');
+    console.error(err);if(state.service?.code===code)showPdfStatus(errorMessage(err),'error');
   }
 }
 
@@ -20530,41 +20519,18 @@ function presentReservesPendingClose(){
   );
 }
 
-function normalizePresentReservesBeforeClose(done){
-  const reserves=presentReservesPendingClose();
-  if(!reserves.length){
-    if(typeof done==='function')done();
-    return;
-  }
-
-  const updates=[];
-
-  reserves.forEach(w=>{
-    const start=w.actualStart||w.inicio||w.arrivalAt||'';
-    const end=clockPlusMinutes(start,180);
-
-    w.especialidad='HAND A';
-    w.actualStart=start;
-    w.actualEnd=end;
-    w.actualPause='00:00';
-    recomputeWorkerMinutes(w);
-
-    updates.push({
-      workerId:w.id,
-      especialidad:'HAND A',
-      actualStart:start,
-      actualEnd:end,
-      actualPause:'00:00'
-    });
-  });
-
-  renderPersonnel();
-  renderStats();
-  updateGroupSummaries();
-
-  saveWorkerUpdates(updates);
-  flushPendingWorkerSaves(()=>{
-    if(typeof done==='function')done();
+function crewNormalizeClosingReserves(service){
+  return service.workers.map(worker=>{
+    if(!worker.included||worker.status!=='PRESENTE'||!worker.isReserve)return worker;
+    const start=worker.actualStart||worker.inicio||worker.arrivalAt||'';
+    const edits={especialidad:'HAND A',actualStart:start,actualEnd:clockPlusMinutes(start,180),actualPause:'00:00'};
+    const times={...worker._fieldTimes};
+    for(const [key,value] of Object.entries(edits)){
+      if(worker[key]!==value)times[key]=Number(times[key]||0)+1;
+    }
+    const reserve={...worker,...edits,_fieldTimes:times,manualSpecialtyOverride:true};
+    recomputeWorkerMinutes(reserve);
+    return reserve;
   });
 }
 
@@ -20599,44 +20565,58 @@ function requestCloseService(){
 
   if(!confirm(msg))return;
 
-  setSaveState('Guardando cambios pendientes…','saving');
-
-  flushPendingWorkerSaves(()=>{
-    normalizePresentReservesBeforeClose(()=>{
-      performCloseService();
-    });
-  });
+  void performCloseService();
 }
 
-function performCloseService(){
-  if(!state.service||state.service.closed)return;
-
+async function performCloseService(){
+  if(crewExitInProgress||!state.service||state.service.closed)return;
+  if(!navigator.onLine){
+    alert('Recupera la conexión para sincronizar los cambios y cerrar el servicio.');
+    return;
+  }
+  crewExitInProgress=true;
   const code=state.service.code;
-  setSaveState('Cerrando servicio…','saving');
-
-  backend.run
-    .withSuccessHandler(result=>{
-      if(state.service?.code!==code)return;
-      // The Excel must reflect the roster confirmed by the closing write,
-      // including attendance just saved by other devices.
-      state.service={...result.service,finalPdfId:'',finalPdfUrl:''};
-      crewCacheRoster();
-      applyClosedState();
-      renderPersonnel();
-      renderIncidents();
-      renderAudit();
-      setSaveState('Guardado','saved');
-      // Export only after the backend confirms a successful close.
-      downloadClosedServiceExcel(true).catch(err=>console.warn('[Excel cierre]',err));
-      openCrewCloseNotify();
-    })
-    .withFailureHandler(err=>{
-      alert(errorMessage(err));
-      setSaveState('Error al cerrar','error');
-    })
-    .closeService(code);
+  const app=document.getElementById('appScreen');
+  app.inert=true;
+  setSaveState('Guardando cambios pendientes…','saving');
+  try{
+    await crewWorkerFlushPromise;
+    if(crewHeldCount(code))throw new Error('Revisa los fichajes sin aplicar antes de cerrar el servicio.');
+    // Send any debounced edits while the service is still writable.
+    const pendingMeta=Boolean(state.metaTimer);
+    const pendingStructure=Boolean(state.structureTimer);
+    clearTimeout(state.metaTimer);
+    clearTimeout(state.structureTimer);
+    state.metaTimer=null;
+    state.structureTimer=null;
+    try{
+      await crewFlushServiceChanges(code,pendingMeta,pendingStructure);
+    }catch(error){
+      if(pendingMeta)scheduleMetaSave();
+      if(pendingStructure)scheduleStructureSave();
+      throw error;
+    }
+    if(crewHeldCount(code))throw new Error('Revisa los fichajes sin aplicar antes de cerrar el servicio.');
+    setSaveState('Cerrando servicio…','saving');
+    const {service}=await dispatchBackend('closeService',[code]);
+    state.service=service;
+    crewCacheRoster();
+    applyClosedState();
+    renderPersonnel();
+    renderIncidents();
+    renderAudit();
+    setSaveState('Guardado','saved');
+    downloadClosedServiceExcel(true).catch(err=>console.warn('[Excel cierre]',err));
+    openCrewCloseNotify();
+  }catch(error){
+    alert(errorMessage(error));
+    setSaveState('Error al cerrar','error');
+  }finally{
+    app.inert=false;
+    crewExitInProgress=false;
+    if(!state.service?.closed)crewRetryLocalUpdates();
+  }
 }
-
 
 // Excel de cierre: una hoja por tipo de servicio, con valores efectivos y previstos.
 // ExcelJS is loaded only on export so normal mobile navigation stays lightweight.

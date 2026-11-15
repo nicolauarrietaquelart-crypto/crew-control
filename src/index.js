@@ -82,21 +82,28 @@ export default {
     if(section==='pdf'){
       const file=url.searchParams.get('file')||'';
       if(file&&!/^[a-f0-9-]{36}$/.test(file))return err('Identificador de PDF no válido',400);
-      await env.DB.prepare('CREATE TABLE IF NOT EXISTS service_pdf_files (service_id TEXT PRIMARY KEY, filename TEXT NOT NULL, content BLOB NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)').run();
       if(m==='PUT'){
-        if(service.closed)return err('Service is closed',409);
-        const bytes=await request.arrayBuffer();
+        const snapshot=await env.DB.prepare("SELECT json_extract(snapshot,'$.closed') closed FROM service_snapshots WHERE service_id=?").bind(service.id).first();
+        if(snapshot?.closed??service.closed)return err('El servicio está cerrado',409);
+        const bytes=new Uint8Array(await request.arrayBuffer());
         if(!bytes.byteLength||bytes.byteLength>8000000)return err('PDF vacío o superior a 8 MB',413);
         const name=str(decodeURIComponent(request.headers.get('x-pdf-filename')||'personal.pdf'),180).replace(/[\\/]/g,'_');
-        if(new Uint8Array(bytes).slice(0,5).some((b,i)=>b!==[37,80,68,70,45][i]))return err('El archivo no es un PDF válido',400);
-        if(file){
-          await env.DB.prepare('INSERT INTO service_pdf_documents(service_id,document_key,filename,content) VALUES(?,?,?,?) ON CONFLICT(service_id,document_key) DO UPDATE SET filename=excluded.filename,content=excluded.content').bind(service.id,file,name,new Uint8Array(bytes)).run();
-          return json({ok:true,filename:name});
+        if(bytes.length<5||bytes.subarray(0,5).some((b,i)=>b!==[37,80,68,70,45][i]))return err('El archivo no es un PDF válido',400);
+        const writes=[env.DB.prepare('DELETE FROM service_pdf_chunks WHERE service_id=? AND document_key=?').bind(service.id,file)];
+        const chunkSize=1000000;
+        for(let offset=0;offset<bytes.length;offset+=chunkSize){
+          writes.push(env.DB.prepare('INSERT INTO service_pdf_chunks(service_id,document_key,position,filename,content) VALUES(?,?,?,?,?)')
+            .bind(service.id,file,offset/chunkSize,name,bytes.slice(offset,offset+chunkSize).buffer));
         }
-        await env.DB.prepare('INSERT INTO service_pdf_files(service_id,filename,content,updated_at) VALUES(?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(service_id) DO UPDATE SET filename=excluded.filename,content=excluded.content,updated_at=CURRENT_TIMESTAMP').bind(service.id,name,new Uint8Array(bytes)).run();
+        await env.DB.batch(writes);
         return json({ok:true,filename:name});
       }
       if(m==='GET'){
+        const {results:chunks}=await env.DB.prepare('SELECT filename,content FROM service_pdf_chunks WHERE service_id=? AND document_key=? ORDER BY position').bind(service.id,file).all();
+        if(chunks.length){
+          return new Response(new Blob(chunks.map(row=>new Uint8Array(row.content))),{headers:{'content-type':'application/pdf','content-disposition':"attachment; filename*=UTF-8''"+encodeURIComponent(chunks[0].filename),'cache-control':'no-store'}});
+        }
+        if(!file)await env.DB.prepare('CREATE TABLE IF NOT EXISTS service_pdf_files (service_id TEXT PRIMARY KEY, filename TEXT NOT NULL, content BLOB NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)').run();
         const row=file?
           await env.DB.prepare('SELECT filename,content FROM service_pdf_documents WHERE service_id=? AND document_key=?').bind(service.id,file).first():
           await env.DB.prepare('SELECT filename,content FROM service_pdf_files WHERE service_id=?').bind(service.id).first();
@@ -155,7 +162,7 @@ export default {
       snapshot._syncRevision=revision;
       snapshot._syncSequence=Number(previous._syncSequence||0)+1;
       const serialized=JSON.stringify(snapshot);
-      if(serialized.length>2000000)return err('Service too large',413);
+      if(new TextEncoder().encode(serialized).byteLength>1900000)return err('El servicio supera el tamaño máximo que se puede guardar',413);
       const changes=deviceChanges(previous,snapshot);
       const deviceId=str(request.headers.get('x-device-id'),100);
       const statements=[];
