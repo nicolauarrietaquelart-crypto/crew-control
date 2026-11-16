@@ -22144,14 +22144,13 @@ html body #personnelGroups details.work-group > .table-wrap > table > thead > tr
  }
  html body.control-sidebar-open #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row]{
   display:grid!important;min-width:0!important;width:100%!important;max-width:100%!important;
-  grid-template-columns:44px repeat(3,minmax(0,1fr))!important;
+  grid-template-columns:repeat(12,minmax(0,1fr))!important;
   grid-template-areas:
-   "status name name name"
-   "status role role role"
-   "schedule schedule phone phone"
-   "team team team vest"
-   "pause pause diet rating";
-  grid-auto-rows:max-content;align-content:start;align-items:center;gap:6px 8px!important;
+   "status status name name name name name name name name name name"
+   "status status role role role role role role role role role role"
+   "schedule schedule schedule schedule phone phone phone phone team team team team"
+   "pause pause pause diet diet diet vest vest vest rating rating rating";
+  grid-auto-rows:max-content;align-content:start;align-items:center;gap:6px 4px!important;
   margin:0!important;padding:12px!important;box-sizing:border-box;
   border:1px solid #e2e4e8!important;border-radius:14px;
   background:#fff!important;
@@ -22169,7 +22168,7 @@ html body #personnelGroups details.work-group > .table-wrap > table > thead > tr
   background:transparent!important;white-space:normal!important;box-sizing:border-box;
  }
  html body.control-sidebar-open #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-check{display:none!important}
- html body.control-sidebar-open #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-status{grid-area:status}
+ html body.control-sidebar-open #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-status{grid-area:status;justify-self:start}
  html body.control-sidebar-open #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-name{grid-area:name;text-align:left!important}
  html body.control-sidebar-open #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-role{grid-area:role;text-align:left!important}
  html body.control-sidebar-open #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-schedule{grid-area:schedule;overflow-wrap:anywhere}
@@ -22192,13 +22191,20 @@ html body #personnelGroups details.work-group > .table-wrap > table > thead > tr
  }
  html body.control-sidebar-open #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-role > *{max-width:100%;overflow-wrap:anywhere}
  html body.control-sidebar-open #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-team > select[data-team-worker]{
-  width:100%!important;min-width:0!important;max-width:100%!important;text-overflow:ellipsis;
+  width:100%!important;min-width:0!important;max-width:100%!important;
+  min-height:36px!important;padding:4px 5px!important;font-size:11px!important;text-overflow:ellipsis;
  }
  html body.control-sidebar-open #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-vest .vest{white-space:normal!important;overflow-wrap:anywhere!important}
  html body.control-sidebar-open #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-phone > a.crew-phone-desktop-v11264{display:none!important}
  html body.control-sidebar-open #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-phone .crew-phone-mobile-v11264{
-  display:flex!important;width:100%!important;min-width:0!important;box-sizing:border-box;
-  gap:5px!important;padding:6px!important;font-size:11px!important;
+  display:flex!important;width:max-content!important;max-width:100%!important;min-width:0!important;
+  min-height:36px!important;box-sizing:border-box;gap:4px!important;padding:4px 5px!important;font-size:11px!important;
+ }
+ html body.control-sidebar-open #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-phone .crew-phone-mobile-v11264 svg{
+  width:14px!important;height:14px!important;flex:0 0 14px!important;
+ }
+ html body.control-sidebar-open #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-phone .crew-phone-mobile-v11264 span{
+  min-width:0;overflow-wrap:anywhere;
  }
 }
 </style>
