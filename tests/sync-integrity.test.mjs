@@ -14,6 +14,18 @@ function section(start,end){
   return html.slice(a,b);
 }
 
+
+test('PDF reference reads the event name and stops before an adjacent field',()=>{
+  const source=section('function extractPdfReference(', 'async function parsePennyWisePdf(');
+  const reference=new Function(source+'return extractPdfReference;')();
+  assert.equal(reference('REFERENCIA: Concierto Barcelona RECINTO: Sala 2'),'Concierto Barcelona');
+  assert.equal(reference('Referencia ： BCN-2784 | FECHA DE SERVICIO: 16/11/2026'),'BCN-2784');
+  assert.equal(reference('REFERENCIA: La Fecha de una Canción'),'La Fecha de una Canción');
+  assert.equal(reference('REFERENCIA: CONTACTO: Producción'),'');
+  assert.equal(reference('REFERENCIA: —'),'');
+  assert.equal(reference('PREFERENCIA: AJUSTE'),'');
+});
+
 test('original PDFs round-trip across D1 chunks and legacy PDFs remain readable',async()=>{
   const code='123456',documentId='f54bbd9e-7367-4d6d-ab37-d4a3260d8ab7';
   const chunks=[];

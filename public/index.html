@@ -6669,8 +6669,7 @@
         font-size:10px!important;
         font-weight:750!important;
       }
-      .mobile-operational-drawer-v11234 .sidebar-link-actions-v129,
-      .mobile-operational-drawer-v11234 #sidebarPdfManager{
+      .mobile-operational-drawer-v11234 .sidebar-link-actions-v129{
         display:none!important;
       }
       .mobile-operational-drawer-v11234.mobile-ops-more-open-v11234 .sidebar-link-actions-v129{
@@ -6679,12 +6678,6 @@
         grid-row:6!important;
         margin:0!important;
         padding:0!important;
-      }
-      .mobile-operational-drawer-v11234.mobile-ops-more-open-v11234 #sidebarPdfManager:not(.hidden){
-        display:block!important;
-        grid-column:1/-1!important;
-        grid-row:7!important;
-        margin:0!important;
       }
       .mobile-operational-drawer-v11234.mobile-ops-more-open-v11234 .sidebar-icon-btn-v124.rate{
         display:flex!important;
@@ -7583,11 +7576,7 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
 </style>
 <style id="crew-pdf-mobile-actions-style">
 .crew-pdf-download{display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
-#crewMobilePdfActions{display:none}
 @media(max-width:900px){
- #crewMobilePdfActions:not(.hidden){display:flex!important;gap:9px;align-items:center;flex-wrap:wrap;padding:10px 12px;margin:8px 0;border:1px solid #e8e8e8;border-radius:13px;background:#fff}
- #crewMobilePdfActions .crew-mobile-pdf-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:1;min-width:110px;min-height:42px;border-radius:10px;background:#f5f5f5;color:#171717;font-size:12px;font-weight:750;text-decoration:none;cursor:pointer;border:0}
- #crewMobilePdfActions .crew-mobile-pdf-button svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
  #crewMobileSettingsV11238 svg{display:block!important;width:23px!important;height:23px!important;stroke:currentColor!important;fill:none!important;stroke-width:2!important;stroke-linecap:round!important;stroke-linejoin:round!important}
 }
 </style><style id="crew-pdf-compact-actions">
@@ -7598,6 +7587,27 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
 #sidebarPdfManager .crew-pdf-action-pair .sidebar-pdf-action-v11227{position:static!important;inset:auto!important;margin:0!important;flex:0 0 auto!important}
 #sidebarPdfManager .crew-pdf-action-pair .crew-pdf-download{width:43px!important;height:43px!important;min-width:43px!important;min-height:43px!important;max-width:43px!important;padding:0!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;aspect-ratio:1!important;border-radius:12px!important}
 #sidebarPdfManager .crew-pdf-action-pair .crew-pdf-download svg{width:19px!important;height:19px!important;flex-shrink:0!important}
+
+#sidebarPdfManager .crew-pdf-action-pair .crew-pdf-download[hidden]{display:none!important}
+#sidebarPdfManager .crew-pdf-upload-icon{display:none}
+body.service-closed #sidebarPdfManager .crew-pdf-download:not([hidden]){
+ pointer-events:auto;opacity:1;
+}
+@media(max-width:900px){
+ #mobileOperationalDrawerV11234 .personnel-sidebar-toolbar-v121>#sidebarPdfManager{
+  display:block!important;width:100%;min-width:0;margin:0!important;
+ }
+ #mobileOperationalDrawerV11234 #sidebarPdfManager .sidebar-pdf-v11227{
+  padding:2px 0!important;border:0!important;background:none!important;box-shadow:none!important;
+ }
+ #mobileOperationalDrawerV11234 #sidebarPdfManager .crew-pdf-action-pair .sidebar-pdf-action-v11227{
+  width:40px!important;min-width:40px!important;max-width:40px!important;height:40px!important;min-height:40px!important;
+  padding:0!important;border:1px solid #e4e4e4!important;border-radius:10px!important;
+  background:#fff!important;color:#171717!important;box-shadow:none!important;
+ }
+ #mobileOperationalDrawerV11234 #sidebarPdfManager .crew-pdf-upload-icon{display:block}
+ #mobileOperationalDrawerV11234 #sidebarPdfManager #crewPdfUploadAction span{display:none}
+}
 </style><style id="crew-mobile-banner-dropdown-fix">
 @media(max-width:900px){
  #mobileOperationalToggleV11234{display:inline-flex!important;align-items:center;justify-content:center;cursor:pointer}
@@ -7715,7 +7725,6 @@ header .crew-pennywise-logo-v11240{display:block;width:clamp(140px,18vw,225px);h
 }
 </style>
 <style id="crew-plan-single-scroll-and-vest">
-@media(max-width:900px){#crewMobilePdfActions,#crewMobilePdfActions:not(.hidden){display:none!important}}
 #scenariosTeamsModal:not(.hidden)>.modal-card{height:auto!important;max-height:min(780px,calc(100dvh - 64px))!important;overflow:hidden!important;display:flex!important;flex-direction:column!important}
 #scenariosTeamsModalBody{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;max-height:none!important;scrollbar-width:thin!important}
 #scenariosTeamsModalBody #crewTeamsPlanningV11263,
@@ -10630,6 +10639,7 @@ html body .personnel-sidebar-toolbar-v121>.crew-search-reveal{
  overflow:hidden!important;pointer-events:none!important;margin:0!important;
  transition:max-height .22s ease,opacity .18s ease,visibility .18s ease!important;
 }
+html body .personnel-sidebar-toolbar-v121>.crew-search-reveal:not(.is-open){display:none!important}
 html body .personnel-sidebar-toolbar-v121>.crew-search-reveal.is-open{
  max-height:65px!important;opacity:1!important;visibility:visible!important;
  pointer-events:auto!important;
@@ -11199,10 +11209,6 @@ if (/iPad/i.test(navigator.userAgent) ||
           <input id="venue" type="text" oninput="scheduleMetaSave()"></div>
       </div>
 
-      <div id="crewMobilePdfActions" class="hidden" style="display:none!important">
-  <label class="crew-mobile-pdf-button" for="pdfInput"><svg viewBox="0 0 24 24"><path d="M12 16V4m-5 5 5-5 5 5M4 17v4h16v-4"/></svg>Resubir PDF</label>
-  <button type="button" class="crew-mobile-pdf-button" onclick="downloadServicePdf()"><svg viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></svg>Descargar PDF</button>
-</div>
       <div id="initialPdfUploadPanel" class="initial-pdf-upload-v11228">
         <div id="initialPdfDropZone" class="upload initial-pdf-dropzone-v11228">
           <strong>Cargar PDF de personal</strong>
@@ -11343,8 +11349,11 @@ if (/iPad/i.test(navigator.userAgent) ||
               <span id="pdfFileName" style="display:none">Sin PDF</span>
             </div>
             <div class="crew-pdf-action-pair">
-              <label class="sidebar-pdf-action-v11227" for="pdfInput" title="Resubir PDF">↻ PDF</label>
-              <button type="button" class="sidebar-pdf-action-v11227 crew-pdf-download" onclick="downloadServicePdf()" title="Descargar PDF original" aria-label="Descargar PDF original"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></svg></button>
+              <button type="button" id="crewPdfUploadAction" class="sidebar-pdf-action-v11227" onclick="document.getElementById('pdfInput').click()" title="Cargar PDF" aria-label="Cargar PDF">
+                <svg class="crew-pdf-upload-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m-5 5 5-5 5 5M4 17v4h16v-4"/></svg>
+                <span>Cargar PDF</span>
+              </button>
+              <button type="button" id="crewPdfDownloadAction" class="sidebar-pdf-action-v11227 crew-pdf-download" hidden onclick="downloadServicePdf()" title="Descargar PDF original" aria-label="Descargar PDF original"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></svg></button>
             </div>
           </div>
           <div id="pdfStatus" class="status-box sidebar-pdf-status-v11227"></div>
@@ -14264,8 +14273,14 @@ function updatePdfPlacementUI(){
 
   if(initial)initial.classList.toggle('hidden',hasPdf);
   if(sidebar)sidebar.classList.toggle('hidden',!hasPdf);
-  const mobile=document.getElementById('crewMobilePdfActions');
-  if(mobile)mobile.classList.toggle('hidden',!state.service);
+  const upload=document.getElementById('crewPdfUploadAction');
+  const download=document.getElementById('crewPdfDownloadAction');
+  const label=hasPdf?'Actualizar PDF':'Cargar PDF';
+  upload.disabled=Boolean(state.service?.closed);
+  upload.setAttribute('aria-label',label);
+  upload.title=label;
+  upload.querySelector('span').textContent=label;
+  download.hidden=!hasPdf;
 }
 
 function clearPdfSidebarStatus(){
@@ -15645,6 +15660,15 @@ async function importPdf(file,targetDay=''){
   }
 }
 
+function extractPdfReference(line){
+  const match=line.match(/\bREFERENCIA\s*[:：]\s*(.*)$/iu);
+  if(!match)return '';
+  const value=match[1]
+    .split(/(?:^|\s+)(?:M[ÓO]VIL|CONTACTO|RECINTO|FECHA(?:\s+(?:DE\s+)?SERVICIO)?|DIRECCI[ÓO]N|TEL[ÉE]FONO|TRABAJO)\s*[:：]/iu)[0]
+    .replace(/\s*[|;]\s*$/,'').trim();
+  return /^(?:SERVICIO|REFERENCIA|N[º°.]|[-–—]+)$/iu.test(value)?'':value;
+}
+
 async function parsePennyWisePdf(file){
   const data=await file.arrayBuffer();
   const pdf=await pdfjsLib.getDocument({data}).promise;
@@ -15669,19 +15693,6 @@ async function parsePennyWisePdf(file){
     }));
 
     const lines=groupItemsIntoLines(items);
-    // Read reference by PDF text geometry, not by a merged whole-line string.
-    // Headers often place the next field in the same visual row.
-    if(pageNumber===1 && !meta.reference){
-      for(const row of lines){
-        const ordered=row.slice().sort((a,b)=>a.x-b.x);
-        const idx=ordered.findIndex(i=>/\\bREFERENCIA\\s*[:：]/i.test(i.text));
-        if(idx<0)continue;
-        const label=ordered[idx], inline=label.text.replace(/^.*?\\bREFERENCIA\\s*[:：]\\s*/i,'').trim();
-        const tail=ordered.slice(idx+1).filter(i=>i.x>=label.x).map(i=>i.text);
-        const candidate=[inline,...tail].join(' ').split(/\\s+(?:M[ÓO]VIL|CONTACTO|RECINTO|FECHA|DIRECCI[ÓO]N|TEL[ÉE]FONO)\\s*[:：]/i)[0].trim();
-        if(candidate && candidate.length<150){meta.reference=candidate;break;}
-      }
-    }
     const pageLayout=detectPdfColumnLayout(lines,width);
     // The MÓVIL heading can be on a different baseline from the main table
     // headings. Detect it independently on every page.
@@ -15708,12 +15719,8 @@ async function parsePennyWisePdf(file){
         }
       }
 
+      if(!meta.reference)meta.reference=extractPdfReference(lineText);
       if(pageNumber===1){
-        if(!meta.reference&&/\\bREFERENCIA\\s*[:：]/i.test(lineText)){
-          const match=lineText.match(/\\bREFERENCIA\\s*[:：]\\s*(.*)$/i);
-          const raw=(match?.[1]||'').split(/\\s+(?:M[ÓO]VIL|CONTACTO|RECINTO|FECHA|DIRECCI[ÓO]N|TEL[ÉE]FONO)\\s*[:：]/i)[0].trim();
-          if(raw && !/^(?:SERVICIO|REFERENCIA|N[º°.]|[-–—])$/i.test(raw))meta.reference=raw;
-        }
         if(!meta.venue&&upper.includes('RECINTO:')){
           meta.venue=extractBetween(lineText,'RECINTO:',['DIRECCIÓN:','DIRECCION:','TELÉFONO:','TELEFONO:']);
         }
@@ -20464,6 +20471,7 @@ if(document.readyState==='loading'){
 function applyClosedState(){
   const closed=Boolean(state.service&&state.service.closed);
   document.body.classList.toggle('service-closed',closed);
+  updatePdfPlacementUI();
 
   const banner=document.getElementById('closedBanner');
   banner.classList.toggle('show',closed);
