@@ -14128,10 +14128,6 @@ function restorePersonnelSidebarHome(){
   }
 }
 
-function updateControlSidebarTop(){
-  // v11.2.15: sidebar is portaled to body and fixed by CSS.
-}
-
 function updateFloatingCrewHeaderV11233(){
   const banner=document.querySelector('body > header');
   if(!banner)return;
@@ -14150,16 +14146,9 @@ window.addEventListener('scroll',()=>{
 window.addEventListener('load',updateFloatingCrewHeaderV11233);
 updateFloatingCrewHeaderV11233();
 
-window.addEventListener('scroll',()=>{
-  if(document.body.classList.contains('control-sidebar-open')){
-    updateControlSidebarTop();
-  }
-},{passive:true});
-
 window.addEventListener('resize',()=>{
   if(document.body.classList.contains('control-sidebar-open')){
     syncPersonnelSidebarPlacement();
-    updateControlSidebarTop();
     updateSidebarToggleButton();
   }
 });
@@ -14330,7 +14319,6 @@ function openServiceData(service){
   }
   clearStartScreenState();
   document.body.classList.add('control-sidebar-open');
-  updateControlSidebarTop();
   clearPdfSidebarStatus();
   const initialPdfStatus=document.getElementById('initialPdfStatus');
   if(initialPdfStatus){initialPdfStatus.innerHTML='';initialPdfStatus.className='status-box';}
@@ -17069,7 +17057,9 @@ function renderPersonnel(light=false){
   renderHiddenWorkTypesBar();
 
   if(!visibleEntries.length){
-    host.innerHTML='<div class="empty">Todos los tipos de servicio de este día están ocultos.</div>';
+    const message='Todos los tipos de servicio de este día están ocultos.';
+    if(host.textContent!==message)host.innerHTML='<div class="empty">'+message+'</div>';
+    renderOperationalAlerts();
     return;
   }
 
@@ -17257,13 +17247,6 @@ function renderPersonnel(light=false){
     }
   }
 
-  // Restaurar selects.
-  workers.forEach(w=>{
-    const teamSelect=document.querySelector(`[data-team-worker="${cssEscape(w.id)}"]`);
-    const statusSelect=document.querySelector(`[data-status-worker="${cssEscape(w.id)}"]`);
-    if(teamSelect)teamSelect.value=w.teamId||'';
-    if(statusSelect)statusSelect.value=w.status||'PENDIENTE';
-  });
   updateSelectedCounter();
   refreshAllGroupSelectionButtons();
   renderOperationalAlerts();
@@ -17542,20 +17525,11 @@ function setWorkTeamFilter(trabajo,teamId){
 
   const filtered=filteredRowsForWork(trabajo,rows);
 
-  const sorted=sortedRowsForWork(trabajo,filtered);
-
   body.innerHTML=filtered.length
     ? rowsGroupedByEntryHtml(trabajo,filtered)
     : '<tr><td colspan="11" class="empty" style="padding:14px">No hay personal en este equipo.</td></tr>';
 
-  // Restaurar valores de los selects de las filas recién creadas.
-  sorted.forEach(w=>{
-    const teamSelect=document.querySelector(`[data-team-worker="${cssEscape(w.id)}"]`);
-    const statusSelect=document.querySelector(`[data-status-worker="${cssEscape(w.id)}"]`);
 
-    if(teamSelect)teamSelect.value=w.teamId||'';
-    if(statusSelect)statusSelect.value=w.status||'PENDIENTE';
-  });
 }
 
 function allRequirementsForWork(trabajo){
@@ -18642,11 +18616,12 @@ function workerRowHtml(w){
     const teams=state.service.teams.filter(t=>t.scenarioId===s.id);
     if(!teams.length)return;
     options+=`<optgroup label="${escapeAttr(s.name)}">`;
-    teams.forEach(t=>options+=`<option value="${escapeAttr(t.id)}">${escapeHtml(t.name)}</option>`);
+    teams.forEach(t=>options+=`<option value="${escapeAttr(t.id)}"${String(t.id)===String(w.teamId)?' selected':''}>${escapeHtml(t.name)}</option>`);
     options+='</optgroup>';
   });
 
-  const statusClass='status-'+String(w.status||'PENDIENTE').replace(/\s+/g,'-');
+  const status=w.status||'PENDIENTE';
+  const statusClass='status-'+String(status).replace(/\s+/g,'-');
   const avg=workerRatingAverage(w);
   const incidentCount=(state.service.incidents||[]).filter(i=>i.workerId===w.id).length;
   const rating=avg?`<span class="rating-mini">★ ${avg.toFixed(1)}</span>${incidentCount?`<span class="incident-count" title="${incidentCount} incidencia(s)">${incidentCount}</span>`:''}`:(incidentCount?`<span class="incident-count">${incidentCount}</span>`:'—');
@@ -18666,10 +18641,10 @@ function workerRowHtml(w){
     <td class="mobile-status">
       <select data-status-worker="${escapeAttr(w.id)}" class="status ${statusClass}"
         onchange="changeWorkerStatus('${escapeAttr(w.id)}',this.value)">
-        <option value="PENDIENTE">NO CONTACTADO</option>
-        <option value="CONTACTADO">CONTACTADO</option>
-        <option value="PRESENTE">PRESENTE</option>
-        <option value="NO PRESENTADO">NO PRESENTADO</option>
+        <option value="PENDIENTE"${status==='PENDIENTE'?' selected':''}>NO CONTACTADO</option>
+        <option value="CONTACTADO"${status==='CONTACTADO'?' selected':''}>CONTACTADO</option>
+        <option value="PRESENTE"${status==='PRESENTE'?' selected':''}>PRESENTE</option>
+        <option value="NO PRESENTADO"${status==='NO PRESENTADO'?' selected':''}>NO PRESENTADO</option>
       </select>
     </td>
 
@@ -19391,10 +19366,6 @@ function refreshWorkerRow(id){
   const w=state.service.workers.find(x=>x.id===id);
   if(!row||!w)return;
   row.outerHTML=workerRowHtml(w);
-  const teamSelect=document.querySelector(`[data-team-worker="${cssEscape(id)}"]`);
-  const statusSelect=document.querySelector(`[data-status-worker="${cssEscape(id)}"]`);
-  if(teamSelect)teamSelect.value=w.teamId||'';
-  if(statusSelect)statusSelect.value=w.status||'PENDIENTE';
 }
 
 
@@ -19972,26 +19943,6 @@ function operationalWorkTypesForDay(){
 }
 
 
-function operationalTimesForCurrentWork(){
-  if(!state.service)return[];
-
-  const times=[...new Set(
-    state.service.workers
-      .filter(w=>
-        (w.serviceDate||'SIN FECHA')===state.activeDay &&
-        w.included &&
-        operationalWorkMatches(w.trabajo||'SIN TIPO')
-      )
-      .map(w=>workerEntryTime(w))
-  )];
-
-  return times.sort((a,b)=>{
-    if(a==='SIN HORA')return 1;
-    if(b==='SIN HORA')return -1;
-    return clockToMinutes(a)-clockToMinutes(b);
-  });
-}
-
 function updateOperationalTimeArrows(){
   const host=document.getElementById('operationalTimeFilters');
   const previous=document.getElementById('operationalTimePrevious');
@@ -20008,59 +19959,63 @@ function scrollOperationalTimes(direction){
 }
 function renderOperationalTimeFilters(){
   const host=document.getElementById('operationalTimeFilters');
-  if(!host)return;
+  if(!host||!state.service)return;
 
-  const times=operationalTimesForCurrentWork();
-
+  const counts=new Map();
+  let total=0;
+  for(const worker of state.service.workers){
+    if(!worker.included||(worker.serviceDate||'SIN FECHA')!==state.activeDay||
+       !operationalWorkMatches(worker.trabajo||'SIN TIPO'))continue;
+    const time=workerEntryTime(worker);
+    counts.set(time,(counts.get(time)||0)+1);
+    total++;
+  }
+  const times=[...counts.keys()].sort((a,b)=>{
+    if(a==='SIN HORA')return 1;
+    if(b==='SIN HORA')return -1;
+    return clockToMinutes(a)-clockToMinutes(b);
+  });
+  host.classList.toggle('hidden-v1210',!times.length);
+  if(!counts.has(state.operationalTimeFilter))state.operationalTimeFilter='ALL';
   if(!times.length){
-    state.operationalTimeFilter='ALL';
-    host.innerHTML='';
-    host.classList.add('hidden-v1210');
+    if(host.children.length)host.replaceChildren();
+    delete host.dataset.timeSignature;
     updateScopeSelectButton();
     return;
   }
 
-  host.classList.remove('hidden-v1210');
-
-  if(
-    state.operationalTimeFilter!=='ALL' &&
-    !times.includes(state.operationalTimeFilter)
-  ){
-    state.operationalTimeFilter='ALL';
+  const signature=JSON.stringify(times);
+  let updateArrows=false;
+  if(host.dataset.timeSignature!==signature||host.children.length!==times.length+1){
+    const previousScroll=host.scrollLeft;
+    host.innerHTML=['ALL',...times].map(time=>`<button type="button"
+      class="operational-time-chip-v1210"
+      onclick="setOperationalTimeFilter('${escapeJsString(time)}')">
+      ${escapeHtml(time==='ALL'?'Todas':time)} <span></span>
+    </button>`).join('');
+    host.scrollLeft=previousScroll;
+    host.dataset.timeSignature=signature;
+    updateArrows=true;
   }
 
-  const previousScroll=host.scrollLeft;
-  host.innerHTML=['ALL',...times].map(time=>{
-    const active=time==='ALL'?!crewOpSelectedTimes.size:crewOpSelectedTimes.has(time);
-    const label=time==='ALL'?'Todas':time;
-    const count=time==='ALL'
-      ? state.service.workers.filter(w=>
-          w.included &&
-          (w.serviceDate||'SIN FECHA')===state.activeDay &&
-          operationalWorkMatches(w.trabajo||'SIN TIPO')
-        ).length
-      : state.service.workers.filter(w=>
-          w.included &&
-          (w.serviceDate||'SIN FECHA')===state.activeDay &&
-          operationalWorkMatches(w.trabajo||'SIN TIPO') &&
-          workerEntryTime(w)===time
-        ).length;
-
-    return `<button type="button"
-      class="operational-time-chip-v1210 ${active?'active':''}"
-      onclick="setOperationalTimeFilter('${escapeJsString(time)}')">
-      ${escapeHtml(label)}
-      <span>${count}</span>
-    </button>`;
-  }).join('');
-
-  host.scrollLeft=previousScroll;
+  [...host.children].forEach((button,index)=>{
+    const time=times[index-1];
+    const active=index===0?!crewOpSelectedTimes.size:crewOpSelectedTimes.has(time);
+    button.classList.toggle('active',active);
+    if(button.getAttribute('aria-pressed')!==String(active))button.setAttribute('aria-pressed',String(active));
+    const badge=button.lastElementChild;
+    const count=String(index===0?total:counts.get(time));
+    if(badge.textContent!==count){
+      badge.textContent=count;
+      updateArrows=true;
+    }
+  });
   if(!host.dataset.timeScrollListener){
     host.addEventListener('scroll',updateOperationalTimeArrows,{passive:true});
     if(typeof ResizeObserver!=='undefined')new ResizeObserver(updateOperationalTimeArrows).observe(host);
     host.dataset.timeScrollListener='1';
   }
-  requestAnimationFrame(updateOperationalTimeArrows);
+  if(updateArrows)requestAnimationFrame(updateOperationalTimeArrows);
   updateScopeSelectButton();
 }
 
@@ -20068,9 +20023,6 @@ function setOperationalTimeFilter(time){
   crewOpToggle(crewOpSelectedTimes,time||'ALL');
   state.operationalTimeFilter='ALL';
   renderPersonnel(true);
-  renderOperationalTimeFilters();
-  renderOperationalDashboard();
-  renderOperationalAlerts(false);
   // Do not scroll the page behind an open mobile menu.
   if(!mobileOperationalPanelIsOpenV11235()){
     focusOperationalWorkBlock(state.operationalWorkFilter,state.operationalTimeFilter);
@@ -20188,9 +20140,6 @@ function setOperationalWorkFilter(work){
   crewOpToggle(crewOpSelectedWorks,work||'ALL');
   state.operationalWorkFilter='ALL';state.operationalTimeFilter='ALL';
   renderPersonnel(true);
-  renderOperationalWorkFilters();
-  renderOperationalDashboard();
-  renderOperationalAlerts(false);
   // Keep the mobile control panel open while selecting work/time.
   if(!mobileOperationalPanelIsOpenV11235()){
     focusOperationalWorkBlock(state.operationalWorkFilter,'ALL');
@@ -20339,10 +20288,10 @@ function renderOperationalDashboard(){
   updateSidebarUtilityBadges();
 }
 
-function renderOperationalAlerts(refreshDashboard=true){
+function renderOperationalAlerts(){
   if(!state.service)return;
 
-  renderOperationalWorkFilters();
+  renderOperationalDashboard();
 
   const workers=operationalWorkersForSummary();
 
@@ -20410,7 +20359,6 @@ function renderOperationalAlerts(refreshDashboard=true){
     if(host.innerHTML!==markup)host.innerHTML=markup;
   }
 
-  if(refreshDashboard)renderOperationalDashboard();
 }
 
 
@@ -22244,6 +22192,39 @@ html body #personnelGroups details.work-group > .table-wrap > table > thead > tr
  html body.control-sidebar-open #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-phone .crew-phone-mobile-v11264{
   display:flex!important;width:100%!important;min-width:0!important;box-sizing:border-box;
   gap:5px!important;padding:6px!important;font-size:11px!important;
+ }
+}
+</style>
+<style id="crew-desktop-motion">
+@media(min-width:901px){
+ body.control-sidebar-open:not(.control-mode) main.wrap{transition:none!important}
+ body.control-sidebar-open:not(.control-mode) > header,
+ body.control-sidebar-open:not(.control-mode) > .personnel-sidebar-v121{
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+ }
+ body.control-sidebar-open:not(.control-mode) > .personnel-sidebar-v121.personnel-sidebar-portal-v1215{
+  will-change:auto;
+ }
+}
+@media(min-width:901px) and (prefers-reduced-motion:no-preference){
+ body:not(.control-mode) #appScreen:not(.hidden){
+  animation:crewDesktopSurfaceIn 180ms cubic-bezier(.2,.7,.3,1) both!important;
+ }
+ body.control-sidebar-open:not(.control-mode) > .personnel-sidebar-v121.personnel-sidebar-portal-v1215{
+  transition:transform 190ms cubic-bezier(.2,.7,.3,1),opacity 140ms ease-out!important;
+ }
+ body:not(.control-mode) .modal:not(.hidden){
+  animation:crewFadeIn 140ms ease-out both!important;
+ }
+ body:not(.control-mode) .modal:not(.hidden) > .modal-card{
+  animation:crewDesktopSurfaceIn 180ms cubic-bezier(.2,.7,.3,1) both!important;
+ }
+ body:not(.control-mode) #personnelGroups .work-group-head .work-group-arrow{
+  transition:transform 150ms cubic-bezier(.2,.7,.3,1)!important;
+ }
+ @keyframes crewDesktopSurfaceIn{
+  from{opacity:0;transform:translateY(5px)}
+  to{opacity:1;transform:translateY(0)}
  }
 }
 </style>
