@@ -8,7 +8,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>Crew Control v11.2.38 | Gestión de personal</title>
+  <title>Crew Control v11.2.39 | Gestión de personal</title>
   
   <style>
     :root{
@@ -11086,7 +11086,15 @@ if (/iPad/i.test(navigator.userAgent) ||
 #teamMembersList .crew-team-member-grid .team-member-name{grid-column:2;grid-row:1;display:flex;flex-direction:column;align-items:flex-start;min-width:0;text-align:left;padding:0;white-space:normal;overflow-wrap:anywhere}
 #teamMembersList .crew-team-member-grid .team-member-name strong{white-space:normal}
 #teamMembersList .crew-team-member-grid .team-member-time{grid-column:2;grid-row:2;text-align:left}
-#teamMembersList .crew-team-member-grid .team-member-phone{grid-column:3;grid-row:1 / 3}
+#teamMembersList .crew-team-member-grid{align-items:start}
+#teamMembersList .crew-team-member-grid .team-member-phone{grid-column:3;grid-row:1 / 3;min-width:36px;min-height:36px;padding:0;border:0;box-shadow:none}
+#teamMembersList .team-member-phone[aria-expanded="true"]{background:#eee5d9}
+#teamMembersList .team-member-contact{grid-column:1 / -1;grid-row:3;display:grid;gap:8px;padding:8px;margin-top:3px;border-radius:9px;background:#f6f7f8}
+#teamMembersList .team-member-contact[hidden]{display:none}
+#teamMembersList .team-member-contact-number{color:#17191c;font-size:.87rem;overflow-wrap:anywhere}
+#teamMembersList .team-member-contact-actions{display:flex;flex-wrap:wrap;gap:6px}
+#teamMembersList .team-member-contact-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:4px 10px;border-radius:8px;background:#e9ebee;color:#17191c;font-size:.78rem;font-weight:750;text-decoration:none}
+#teamMembersList .team-member-contact-actions .team-member-whatsapp{background:#e1f3e7;color:#155731}
 @media(max-width:620px){#teamMembersList .crew-team-member-grid{grid-template-columns:minmax(0,1fr)}}
 #crewManager .crew-manager-days{display:grid;gap:6px}
 #crewManager .crew-manager-days:empty{display:none}
@@ -17855,6 +17863,10 @@ function renderTeamMembersModal(){
 }
 
 function teamMemberCardHtml(w){
+  const phone=normalizePhone(w.movil);
+  const digits=phone.replace(/\D/g,'');
+  const internationalPhone=digits.length===9&&!phone.startsWith('+')?'34'+digits:digits;
+  const contactId='team-contact-'+encodeURIComponent(w.id);
   const arrival=w.arrivalAt?`Llegó ${escapeHtml(w.arrivalAt)}`:'';
   return `<div class="team-member-card">
     <select class="status ${statusClassName(w.status)}"
@@ -17869,12 +17881,25 @@ function teamMemberCardHtml(w){
       <span>${escapeHtml(w.especialidad||'')}${arrival?' · '+arrival:''}</span>
     </button>
     <span class="team-member-time">${escapeHtml(w.inicio||w.hLlam||'—')}</span>
-    ${w.movil
-      ? `<a class="team-member-phone" href="tel:${escapeAttr(w.movil)}" title="Llamar">
-          <svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-3 2c1 3 3 5 6 6l2-3 5 2v4c0 1-1 2-2 2C10 22 2 14 2 5c0-1 1-1 3-1Z"></path></svg>
-        </a>`
-      : '<span></span>'}
+    ${internationalPhone?`
+      <button type="button" class="team-member-phone" aria-expanded="false" aria-controls="${escapeAttr(contactId)}"
+        aria-label="Opciones de contacto de ${escapeAttr(w.personal)}" onclick="toggleTeamMemberContact(this)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-3 2c1 3 3 5 6 6l2-3 5 2v4c0 1-1 2-2 2C10 22 2 14 2 5c0-1 1-1 3-1Z"></path></svg>
+      </button>
+      <div id="${escapeAttr(contactId)}" class="team-member-contact" hidden>
+        <strong class="team-member-contact-number">${escapeHtml(w.movil)}</strong>
+        <div class="team-member-contact-actions">
+          <a href="tel:+${internationalPhone}">Llamar</a>
+          <a class="team-member-whatsapp" href="https://wa.me/${internationalPhone}" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+        </div>
+      </div>`:''}
   </div>`;
+}
+
+function toggleTeamMemberContact(button){
+  const panel=document.getElementById(button.getAttribute('aria-controls'));
+  panel.hidden=!panel.hidden;
+  button.setAttribute('aria-expanded',String(!panel.hidden));
 }
 
 function statusClassName(status){
