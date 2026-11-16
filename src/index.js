@@ -45,12 +45,36 @@ export function deviceChanges(before,after){
   }
  }
  for(const worker of before.workers||[])if(!current.has(String(worker.id)))changes.push({person:str(worker.personal,200),field:'workerRemoved'});
- for(const key of ['serviceName','serviceDate','venue','closed','teams','scenarios','incidents','requirements','pauseShifts','workOrder','hiddenWorkTypes']){
+ for(const key of ['serviceName','serviceDate','venue','closed','closedDays','teams','scenarios','incidents','requirements','pauseShifts','workOrder','hiddenWorkTypes']){
   if(JSON.stringify(before[key])===JSON.stringify(after[key]))continue;
   changes.push({field:key,...(Array.isArray(after[key])?{after:'Actualizado'}:{before:value(before[key]),after:value(after[key])})});
  }
  return changes;
 }
+function dayKey(value){
+ const date=String(value||'SIN FECHA');
+ const match=date.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+ return match?match[1].padStart(2,'0')+'/'+match[2].padStart(2,'0')+'/'+match[3]:date;
+}
+
+export function closedDayChanged(previous,next){
+ const closed=previous.closedDays||{};
+ const keys=new Set(Object.keys(closed));
+ if(!keys.size)return false;
+ if([...keys].some(day=>next.closedDays?.[day]!==closed[day]))return true;
+ for(const field of ['workers','pauseShifts','requirements','incidents','blocks']){
+  const scoped=service=>(Array.isArray(service[field])?service[field]:[])
+   .filter(entry=>keys.has(dayKey(entry?.serviceDate)));
+  if(JSON.stringify(scoped(previous))!==JSON.stringify(scoped(next)))return true;
+ }
+ const scopedKeys=(service,field,keyOf)=>Object.entries(service[field]||{})
+  .filter(([key])=>keys.has(dayKey(keyOf(key)))).sort(([a],[b])=>a.localeCompare(b));
+ for(const [field,keyOf] of [['pdfDocuments',key=>key],['staffingLinkedWorks',key=>key.split('|')[0]]]){
+  if(JSON.stringify(scopedKeys(previous,field,keyOf))!==JSON.stringify(scopedKeys(next,field,keyOf)))return true;
+ }
+ return false;
+}
+
 export default {
  async fetch(request,env){
   const url=new URL(request.url),p=url.pathname,m=request.method;
@@ -83,8 +107,12 @@ export default {
       const file=url.searchParams.get('file')||'';
       if(file&&!/^[a-f0-9-]{36}$/.test(file))return err('Identificador de PDF no válido',400);
       if(m==='PUT'){
-        const snapshot=await env.DB.prepare("SELECT json_extract(snapshot,'$.closed') closed FROM service_snapshots WHERE service_id=?").bind(service.id).first();
+        const snapshot=await env.DB.prepare("SELECT json_extract(snapshot,'$.closed') closed, json_extract(snapshot,'$.pdfDocuments') pdfDocuments, json_extract(snapshot,'$.closedDays') closedDays FROM service_snapshots WHERE service_id=?").bind(service.id).first();
         if(snapshot?.closed??service.closed)return err('El servicio está cerrado',409);
+        const closedDays=JSON.parse(snapshot?.closedDays||'{}');
+        if(file&&Object.entries(JSON.parse(snapshot?.pdfDocuments||'{}')).some(([day,id])=>id===file&&closedDays[dayKey(day)])){
+          return err('El PDF pertenece a un día cerrado.',422);
+        }
         const bytes=new Uint8Array(await request.arrayBuffer());
         if(!bytes.byteLength||bytes.byteLength>8000000)return err('PDF vacío o superior a 8 MB',413);
         const name=str(decodeURIComponent(request.headers.get('x-pdf-filename')||'personal.pdf'),180).replace(/[\\/]/g,'_');
@@ -154,6 +182,7 @@ export default {
       const oldRow=await env.DB.prepare('SELECT snapshot FROM service_snapshots WHERE service_id=?').bind(service.id).first();
       const previous=oldRow?.snapshot?JSON.parse(oldRow.snapshot):{};
       if(String(previous._syncRevision||'')!==expected)return snapshotConflict();
+      if(closedDayChanged(previous,snapshot))return err('Hay cambios en un día cerrado. Actualiza el servicio; los cambios pendientes se conservan en el dispositivo.',422);
       if(!attendanceVersionsAreValid(previous,snapshot)){
         return err('El servicio contiene fichajes de una versión anterior. Recarga el servicio antes de volver a guardar.',422);
       }

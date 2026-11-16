@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
-import workerApiHandler from '../src/index.js';
+import workerApiHandler, {closedDayChanged} from '../src/index.js';
 
 const html=readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
 const pauseUi=readFileSync(new URL('../public/pause-return.js',import.meta.url),'utf8');
@@ -72,24 +72,26 @@ test('original PDFs round-trip across D1 chunks and legacy PDFs remain readable'
 });
 
 test('closing waits for pending edits and only generates Excel after the server confirms',async()=>{
-  const close=section('async function performCloseService(){','// Excel de cierre:');
-  const run=async ({offline=false,held=0,flushError}={})=>{
+  const close=section('async function performCloseService(','// Excel de cierre:');
+  const run=async ({offline=false,held=0,flushError,day=''}={})=>{
     const calls=[],app={},state={service:{code:'123456'},metaTimer:1,structureTimer:2};
     const scope={
       state,document:{getElementById:()=>app},navigator:{onLine:!offline},crewWorkerFlushPromise:Promise.resolve(),
       crewHeldCount:()=>held,setSaveState(){},clearTimeout(){},
       crewFlushServiceChanges:async (...args)=>{calls.push(['flush',...args]);if(flushError)throw flushError;},
       scheduleMetaSave(){},scheduleStructureSave(){},crewRetryLocalUpdates(){},
-      dispatchBackend:async (name)=>{calls.push(name);return {service:{code:'123456',closed:true}};},
+      dispatchBackend:async (name,args)=>{calls.push([name,args]);return {service:{code:'123456',closed:!day}};},
       crewCacheRoster(){},applyClosedState(){},renderPersonnel(){},renderIncidents(){},renderAudit(){},
-      downloadClosedServiceExcel:async()=>calls.push('excel'),openCrewCloseNotify(){},
+      downloadClosedServiceExcel:async (_auto,_notify,_service,exportDay)=>calls.push(['excel',exportDay]),openCrewCloseNotify(){},
       alert:message=>calls.push(message),errorMessage:error=>error.message
     };
-    await new Function(...Object.keys(scope),'let crewExitInProgress=false;'+close+'return performCloseService()')(...Object.values(scope));
+    await new Function(...Object.keys(scope),'let crewExitInProgress=false;'+close+'return performCloseService('+JSON.stringify(day)+')')(...Object.values(scope));
     assert.ok(!app.inert);
     return {calls,state};
   };
-  assert.deepEqual((await run()).calls,[['flush','123456',true,true],'closeService','excel']);
+  assert.deepEqual((await run()).calls,[['flush','123456',true,true],['closeService',['123456']],['excel','']]);
+  const day='14/11/2026';
+  assert.deepEqual((await run({day})).calls,[['flush','123456',true,true],['closeService',['123456',day]],['excel',day]]);
   assert.deepEqual((await run({flushError:Error('Pausas pendientes')})).calls,[['flush','123456',true,true],'Pausas pendientes']);
   assert.match((await run({held:1})).calls[0],/fichajes sin aplicar/);
   assert.match((await run({offline:true})).calls[0],/Recupera la conexión/);
@@ -544,4 +546,20 @@ test('a confirmed newer attendance choice resolves the old warning and preserves
   assert.equal(written.get('held:').OLD.status,undefined);
   assert.equal(written.get('held:').OLD.arrivalAt,undefined);
   assert.equal(written.get('held:').OLD.teamId,'audio');
+});
+
+test('closing one day protects its records and PDF while other days remain editable',()=>{
+ const day='01/11/2026',openDay='02/11/2026';
+ const closed={closedDays:{[day]:'2026-11-01T22:00:00Z'},
+   workers:[{id:'A',serviceDate:'1/11/2026',status:'PRESENTE'},{id:'B',serviceDate:openDay,status:'PENDIENTE'}],
+   pdfDocuments:{[day]:{id:'final'}}};
+ const openDayEdited=structuredClone(closed);
+ openDayEdited.workers[1].status='PRESENTE';
+ openDayEdited.pdfDocuments[openDay]={id:'draft'};
+ assert.equal(closedDayChanged(closed,openDayEdited),false);
+ const workerEdited=structuredClone(closed);
+ workerEdited.workers[0].status='PENDIENTE';
+ assert.equal(closedDayChanged(closed,workerEdited),true);
+ assert.equal(closedDayChanged(closed,{...closed,closedDays:{}}),true);
+ assert.equal(closedDayChanged(closed,{...closed,pdfDocuments:{}}),true);
 });

@@ -134,11 +134,20 @@ export async function manager(request,env,url){
    COALESCE(NULLIF(json_extract(p.snapshot,'$.serviceDate'),''),s.service_date) date,
    COALESCE(json_extract(p.snapshot,'$.pdfName'),s.pdf_name) pdf,
    COALESCE(json_array_length(p.snapshot,'$.workers'),0) workers,
-   (SELECT group_concat(DISTINCT json_extract(value,'$.trabajo')) FROM json_each(p.snapshot,'$.workers')) types
+   (SELECT group_concat(DISTINCT json_extract(value,'$.trabajo')) FROM json_each(p.snapshot,'$.workers')) types,
+   (SELECT json_group_array(day) FROM (
+     SELECT COALESCE(NULLIF(json_extract(value,'$.serviceDate'),''),'SIN FECHA') day FROM json_each(p.snapshot,'$.workers')
+     UNION SELECT value FROM json_each(p.snapshot,'$.addedDays')
+   )) days,
+   json_extract(p.snapshot,'$.closedDays') closedDays,
+   json_extract(p.snapshot,'$.pdfDocuments') pdfDocuments
    FROM services s LEFT JOIN service_snapshots p ON p.service_id=s.id
    WHERE s.deleted_at IS NULL
    ORDER BY COALESCE(p.updated_at,s.created_at) DESC,s.code`).all();
-  return response({services:results});
+  return response({services:results.map(service=>({
+   ...service,days:JSON.parse(service.days||'[]'),closedDays:JSON.parse(service.closedDays||'{}'),
+   pdfDays:Object.keys(JSON.parse(service.pdfDocuments||'{}')),pdfDocuments:undefined
+  }))});
  }
  return error('Acción de gestor no disponible.',404);
 }
