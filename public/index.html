@@ -8,7 +8,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>Crew Control v11.2.39 | Gestión de personal</title>
+  <title>Crew Control v11.2.40 | Gestión de personal</title>
   
   <style>
     :root{
@@ -152,7 +152,7 @@
     .mini-btn{min-height:28px;padding:4px 7px;font-size:10px}
     .group-bulk-btn{min-height:27px!important;padding:4px 7px!important;font-size:9px!important;border-radius:6px!important}
     .bulk-modal-grid{display:grid;grid-template-columns:1fr;gap:8px}
-    .schedule-real{display:block;color:var(--green);font-size:10px;font-weight:800;margin-top:2px}
+    .schedule-real{display:block;color:var(--green);font-weight:800}
     .rating-mini{font-size:11px;font-weight:800;color:#8a6500;white-space:nowrap}
     .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
     .modal.hidden{display:none!important}
@@ -4421,8 +4421,7 @@
       }
 
       td.mobile-schedule .schedule-real{
-        margin-top:3px!important;
-        font-size:10px!important;
+        font-size:11px!important;
         line-height:1.35!important;
         font-weight:850!important;
       }
@@ -5116,11 +5115,11 @@
         line-height:1.15!important;
       }
 
-      td.mobile-schedule .schedule-planned{
+      td.mobile-schedule .schedule-planned,
+      td.mobile-schedule .schedule-real{
         font-size:10px!important;
       }
 
-      td.mobile-schedule .schedule-real,
       td.mobile-schedule .hours-chip{
         font-size:9px!important;
         line-height:1.22!important;
@@ -11093,7 +11092,8 @@ if (/iPad/i.test(navigator.userAgent) ||
 #teamMembersList .team-member-contact[hidden]{display:none}
 #teamMembersList .team-member-contact-number{color:#17191c;font-size:.87rem;overflow-wrap:anywhere}
 #teamMembersList .team-member-contact-actions{display:flex;flex-wrap:wrap;gap:6px}
-#teamMembersList .team-member-contact-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:4px 10px;border-radius:8px;background:#e9ebee;color:#17191c;font-size:.78rem;font-weight:750;text-decoration:none}
+#teamMembersList .team-member-contact-actions a{display:inline-flex;align-items:center;justify-content:center;min-width:40px;min-height:40px;border-radius:8px;background:#e9ebee;color:#17191c;text-decoration:none}
+#teamMembersList .team-member-contact-actions svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 #teamMembersList .team-member-contact-actions .team-member-whatsapp{background:#e1f3e7;color:#155731}
 @media(max-width:620px){#teamMembersList .crew-team-member-grid{grid-template-columns:minmax(0,1fr)}}
 #crewManager .crew-manager-days{display:grid;gap:6px}
@@ -17867,6 +17867,8 @@ function teamMemberCardHtml(w){
   const digits=phone.replace(/\D/g,'');
   const internationalPhone=digits.length===9&&!phone.startsWith('+')?'34'+digits:digits;
   const contactId='team-contact-'+encodeURIComponent(w.id);
+  const phoneIcon='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-3 2c1 3 3 5 6 6l2-3 5 2v4c0 1-1 2-2 2C10 22 2 14 2 5c0-1 1-1 3-1Z"></path></svg>';
+  const whatsappIcon='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a9 9 0 0 1-13.4 7.8L3 21l1.7-4.6A9 9 0 1 1 21 11.5Z"/><path d="M8.5 8.5c.4 3.4 3.1 6.1 6.5 6.5l1.5-1.5-2.4-1.3-1.1 1a7 7 0 0 1-2.7-2.7l1-1.1L10 7Z"/></svg>';
   const arrival=w.arrivalAt?`Llegó ${escapeHtml(w.arrivalAt)}`:'';
   return `<div class="team-member-card">
     <select class="status ${statusClassName(w.status)}"
@@ -17884,13 +17886,14 @@ function teamMemberCardHtml(w){
     ${internationalPhone?`
       <button type="button" class="team-member-phone" aria-expanded="false" aria-controls="${escapeAttr(contactId)}"
         aria-label="Opciones de contacto de ${escapeAttr(w.personal)}" onclick="toggleTeamMemberContact(this)">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-3 2c1 3 3 5 6 6l2-3 5 2v4c0 1-1 2-2 2C10 22 2 14 2 5c0-1 1-1 3-1Z"></path></svg>
+        ${phoneIcon}
       </button>
       <div id="${escapeAttr(contactId)}" class="team-member-contact" hidden>
         <strong class="team-member-contact-number">${escapeHtml(w.movil)}</strong>
         <div class="team-member-contact-actions">
-          <a href="tel:+${internationalPhone}">Llamar</a>
-          <a class="team-member-whatsapp" href="https://wa.me/${internationalPhone}" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+          <a href="tel:+${internationalPhone}" title="Llamar" aria-label="Llamar a ${escapeAttr(w.personal)}">${phoneIcon}</a>
+          <a class="team-member-whatsapp" href="https://wa.me/${internationalPhone}" target="_blank" rel="noopener noreferrer"
+            title="WhatsApp" aria-label="Abrir WhatsApp de ${escapeAttr(w.personal)}">${whatsappIcon}</a>
         </div>
       </div>`:''}
   </div>`;
@@ -18785,30 +18788,14 @@ function workerRowHtml(w){
   </tr>`;
 }
 
-function scheduleValueHtml(planned,actual){
-  const base=escapeHtml(planned||'—');
-  if(!actual||actual===planned)return base;
-  return `${base}<span class="schedule-real">Real ${escapeHtml(actual)}</span>`;
-}
-
-
 function scheduleRangeHtml(w){
-  const plannedStart=normalizeTime(w.inicio)||'—';
-  const plannedEnd=normalizeTime(w.fin)||'—';
-  const planned=`<span class="schedule-planned">${escapeHtml(plannedStart)} – ${escapeHtml(plannedEnd)}</span>`;
-
-  const realStart=normalizeTime(w.actualStart)||'';
-  const realEnd=normalizeTime(w.actualEnd)||'';
-  const hasReal=Boolean(realStart||realEnd);
-
-  if(!hasReal){
-    return planned+overnightBadge(w.inicio,w.fin);
-  }
-
-  const real=`${escapeHtml(realStart||plannedStart)} – ${escapeHtml(realEnd||plannedEnd)}`;
-  return `${planned}<span class="schedule-real">Real ${real}</span>${overnightBadge(realStart||w.inicio,realEnd||w.fin)}`;
+  const plannedStart=normalizeTime(w.inicio);
+  const plannedEnd=normalizeTime(w.fin);
+  const start=normalizeTime(w.actualStart)||plannedStart;
+  const end=normalizeTime(w.actualEnd)||plannedEnd;
+  const modified=start!==plannedStart||end!==plannedEnd;
+  return `<span class="${modified?'schedule-real':'schedule-planned'}">${escapeHtml(start||'—')} – ${escapeHtml(end||'—')}</span>${overnightBadge(start,end)}`;
 }
-
 
 function hoursSummaryHtml(w){
   const planned=Number(w.plannedMinutes||0);
