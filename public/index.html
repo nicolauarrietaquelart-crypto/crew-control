@@ -8,7 +8,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>Crew Control v11.2.40 | Gestión de personal</title>
+  <title>Crew Control v11.2.41 | Gestión de personal</title>
   
   <style>
     :root{
@@ -11096,9 +11096,6 @@ if (/iPad/i.test(navigator.userAgent) ||
 #teamMembersList .team-member-contact-actions svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 #teamMembersList .team-member-contact-actions .team-member-whatsapp{background:#e1f3e7;color:#155731}
 @media(max-width:620px){#teamMembersList .crew-team-member-grid{grid-template-columns:minmax(0,1fr)}}
-#crewManager .crew-manager-days{display:grid;gap:6px}
-#crewManager .crew-manager-days:empty{display:none}
-#crewManager .crew-manager-day{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:6px 9px;background:#f4f5f7;border-radius:9px}
 #crewCloseScope .crew-close-actions{display:flex;gap:8px;flex-wrap:wrap}
 body.service-closed #crewAddDay input{pointer-events:auto;opacity:1}
 body.crew-day-closed #initialPdfUploadPanel .file-button{pointer-events:none;opacity:.55}
@@ -11163,8 +11160,13 @@ body.crew-day-closed #initialPdfUploadPanel .file-button{pointer-events:none;opa
   </section>
 
   <button type="button" id="crewManagerEntry" class="secondary" onclick="crewOpenManager()" aria-label="Acceso de gestor" title="Acceso de gestor"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="m11 12 8-8 2 2-2 2 1 1-2 2-1-1-4 4"/></svg></button>
-  <dialog id="crewManager" class="crew-tool-dialog">
-    <div class="crew-tool-head"><h2>Gestor de servicios</h2><button type="button" class="secondary" onclick="this.closest('dialog').close()" aria-label="Cerrar">×</button></div>
+  <dialog id="crewManager" class="crew-tool-dialog" aria-labelledby="crewManagerTitle">
+    <div class="crew-tool-head">
+      <h2 id="crewManagerTitle">Gestor de servicios</h2>
+      <button type="button" class="crew-manager-close secondary" onclick="this.closest('dialog').close()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
     <p id="crewManagerStatus" role="status"></p>
     <form id="crewManagerLogin" hidden>
       <label>Usuario<input name="username" autocomplete="username" required></label>
@@ -21916,7 +21918,7 @@ document.addEventListener('keydown',event=>{
  }
 }
 </style>
-<link rel="stylesheet" href="/service-tools.css?v=6">
+<link rel="stylesheet" href="/service-tools.css?v=7">
 <script>
 function crewAddDayButton(){
  return state.service?.closed?'':`<button type="button" class="crew-add-day" onclick="crewOpenAddDay()" aria-label="Añadir día" title="Añadir día">
@@ -22120,19 +22122,30 @@ crewManagerForm(managerUI.password,'password',crewRefreshManager);
 function crewManagerCard(service){
  const article=document.createElement('article');
  article.className='crew-manager-card';
- const title=document.createElement('strong');
+ const title=document.createElement('h3');
  title.textContent=service.name||'Servicio '+service.code;
  const heading=document.createElement('div');
  heading.className='crew-manager-card-heading';
- const status=document.createElement('span');
- status.className='crew-manager-state';
- status.dataset.closed=String(!!service.closed);
- status.textContent=service.closed?'Cerrado':'Abierto';
+ const stateBadge=closed=>{
+  const badge=document.createElement('span');
+  badge.className='crew-manager-state';
+  badge.dataset.closed=String(Boolean(closed));
+  badge.textContent=closed?'Cerrado':'Abierto';
+  return badge;
+ };
+ const days=[...new Map((service.days||[]).map(day=>[crewDayKey(day),day])).values()].sort(compareDateStrings);
  const details=document.createElement('p');
- details.textContent=[service.code,service.date,service.workers+' registros',service.pdf].filter(Boolean).join(' · ');
- const types=document.createElement('p');
- types.textContent=service.types?.split(',').join(' · ')||'';
- types.hidden=!service.types;
+ details.className='crew-manager-meta';
+ const count=Number(service.workers)||0;
+ details.textContent=[
+  service.name?service.code:'',
+  service.date&&!days.some(day=>crewDayKey(day)===crewDayKey(service.date))?service.date:'',
+  count+' '+(count===1?'registro':'registros')
+ ].filter(Boolean).join(' · ');
+ const pdf=document.createElement('p');
+ pdf.className='crew-manager-filename';
+ pdf.textContent=service.pdf||'';
+ pdf.hidden=!service.pdf;
  const actions=document.createElement('div');
  actions.className='crew-manager-actions';
  const button=(label,callback,style='secondary',parent=actions)=>{
@@ -22189,7 +22202,6 @@ function crewManagerCard(service){
   };
   return input;
  };
- const days=[...new Map((service.days||[]).map(day=>[crewDayKey(day),day])).values()].sort(compareDateStrings);
  if(!service.closed&&!days.length){
   const input=createUpload();
   button(service.pdf?'Actualizar PDF':'Importar PDF',()=>input.click());
@@ -22200,9 +22212,12 @@ function crewManagerCard(service){
  for(const day of days){
   const entry=document.createElement('div');
   entry.className='crew-manager-day';
-  const label=document.createElement('span');
+  const label=document.createElement('div');
+  label.className='crew-manager-day-label';
+  const date=document.createElement('strong');
+  date.textContent=day;
   const closed=crewDayClosed(service,day);
-  label.textContent=day+' · '+(closed?'Cerrado':'Abierto');
+  label.append(date,stateBadge(closed));
   entry.append(label);
   dayList.append(entry);
   if(closed)button('Descargar Excel',()=>download(day),'crew-manager-export',entry);
@@ -22219,8 +22234,8 @@ function crewManagerCard(service){
   article.remove();
   managerUI.status.textContent='Servicio eliminado.';
  },'crew-manager-delete');
- heading.append(title,status);
- article.append(heading,details,types,actions,dayList);
+ heading.append(title,stateBadge(service.closed));
+ article.append(heading,details,pdf,actions,dayList);
  return article;
 }
 const crewRememberedService=crewReadLocal(CREW_REMEMBERED_SERVICE_KEY,'');
