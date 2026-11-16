@@ -22263,5 +22263,40 @@ html body #personnelGroups details.work-group > .table-wrap > table > thead > tr
 }
 #personnelGroups .shift-clock-icon svg{stroke:#111}
 </style>
+<style id="crew-desktop-worker-row-outline">
+@media(min-width:901px){
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row],
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row].worker-row-selected{
+  position:relative!important;
+  isolation:isolate;
+  background:transparent!important;
+  box-shadow:none!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row]::after,
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row].worker-row-selected::after{
+  content:""!important;
+  display:block!important;
+  position:absolute;
+  inset:3px 5px;
+  z-index:-1;
+  pointer-events:none;
+  box-sizing:border-box;
+  border:1px solid #e0e3e8;
+  border-radius:12px;
+  background:#fff;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row].excluded::after{background:#fafafa}
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row]:hover:not(.worker-row-selected)::after{
+  border-color:#cfd5df;
+  background:#fff9f3;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row].worker-row-selected::after{
+  border-color:#eda86a;
+  background:linear-gradient(90deg,#ffe6ce,#fff5eb 55%,#fff);
+  box-shadow:inset 4px 0 #f58220;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row].worker-row-selected > td:first-child{box-shadow:none!important}
+}
+</style>
 </body>
 </html>
