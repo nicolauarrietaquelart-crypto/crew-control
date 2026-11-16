@@ -414,8 +414,6 @@
     .shift-clock-icon{display:grid;place-items:center;width:18px;height:18px;border-radius:6px;background:#fff}
     .shift-clock-icon svg{width:12px;height:12px;fill:none;stroke:#555;stroke-width:2;stroke-linecap:round}
     .shift-present{margin-left:auto;color:#187643;font-weight:800}
-    .shift-chevron{font-size:13px;transition:transform .15s ease}
-    .shift-divider-btn.collapsed .shift-chevron{transform:rotate(-90deg)}
     .shift-row-hidden{display:none!important}
 
     .team-members-card{max-width:760px}
@@ -17362,6 +17360,7 @@ function rowsGroupedByEntryHtml(trabajo,rows){
             <button type="button"
               class="shift-select-v121 shift-select-left-v1211 ${allSelected?'active':''}"
               data-shift-select-key="${escapeAttr(key)}"
+              aria-pressed="${allSelected}"
               onclick="event.preventDefault();event.stopPropagation();toggleSelectEntryTime('${escapeJsString(trabajo)}','${escapeJsString(time)}')"
               title="${allSelected?'Quitar de la selección':'Seleccionar'} a los ${groupRows.length} trabajadores de ${escapeAttr(time)}">
               <span class="shift-select-check-v1211">${allSelected?'✓':'☐'}</span>
@@ -17385,8 +17384,6 @@ function rowsGroupedByEntryHtml(trabajo,rows){
               </span>
               <strong>${escapeHtml(time)}</strong>
               <span>${groupRows.length}</span>
-              
-              <span class="shift-chevron">⌄</span>
             </button>
           </div>
         </td>
@@ -18837,6 +18834,7 @@ function refreshShiftSelectionButton(trabajo,time){
   const allSelected=rows.length>0 && selected===rows.length;
 
   btn.classList.toggle('active',allSelected);
+  btn.setAttribute('aria-pressed',String(allSelected));
 
   const check=btn.querySelector('.shift-select-check-v1211');
   if(check)check.textContent=allSelected?'✓':'☐';
@@ -22227,6 +22225,29 @@ html body #personnelGroups details.work-group > .table-wrap > table > thead > tr
   to{opacity:1;transform:translateY(0)}
  }
 }
+</style>
+<style id="crew-orange-shift-buttons">
+#personnelGroups .shift-divider-controls-v1211 > :is(.shift-divider-btn,.shift-select-left-v1211){
+  background:#ff851f!important;
+  border-color:#dd6d0c!important;
+  color:#111!important;
+  -webkit-text-fill-color:#111!important;
+}
+#personnelGroups .shift-divider-controls-v1211 > :is(.shift-divider-btn,.shift-select-left-v1211):hover,
+#personnelGroups .shift-divider-controls-v1211 > .shift-select-left-v1211.active{
+  background:#f27916!important;
+  border-color:#c66110!important;
+}
+#personnelGroups .shift-select-v121 .shift-selected-count-v121,
+#personnelGroups .shift-select-v121 .shift-select-check-v1211{
+  color:#111!important;
+  -webkit-text-fill-color:#111!important;
+}
+#personnelGroups .shift-select-v121 .shift-select-check-v1211{
+  background:#fff2e7!important;
+  border-color:#8f480f!important;
+}
+#personnelGroups .shift-clock-icon svg{stroke:#111}
 </style>
 </body>
 </html>
