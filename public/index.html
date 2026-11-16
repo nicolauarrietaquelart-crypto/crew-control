@@ -17166,7 +17166,7 @@ function renderPersonnel(light=false){
       ${workTeamFilterHtml(trabajo,includedRows)}
       <div class="table-wrap" style="display:block;width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:auto;overscroll-behavior-x:contain">
         <table style="display:table;table-layout:fixed;width:100%;min-width:957px;max-width:none;flex-shrink:0;transform:none">
-          <colgroup><col style="--crew-column-base:30px;width:var(--crew-column-width,3.125000000%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:70px;width:var(--crew-column-width,7.291666667%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:170px;width:var(--crew-column-width,17.708333333%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:90px;width:var(--crew-column-width,9.375000000%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:90px;width:var(--crew-column-width,9.375000000%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:70px;width:var(--crew-column-width,7.291666667%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:70px;width:var(--crew-column-width,7.291666667%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:90px;width:var(--crew-column-width,9.375000000%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:110px;width:var(--crew-column-width,11.458333333%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:80px;width:var(--crew-column-width,8.333333333%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:90px;width:var(--crew-column-width,9.375000000%)!important;min-width:0!important;max-width:none!important"></colgroup>
+          <colgroup><col style="--crew-column-base:10px;width:var(--crew-column-width,1.041666667%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:70px;width:var(--crew-column-width,7.291666667%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:170px;width:var(--crew-column-width,17.708333333%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:90px;width:var(--crew-column-width,9.375000000%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:90px;width:var(--crew-column-width,9.375000000%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:70px;width:var(--crew-column-width,7.291666667%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:70px;width:var(--crew-column-width,7.291666667%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:90px;width:var(--crew-column-width,9.375000000%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:130px;width:var(--crew-column-width,13.541666667%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:80px;width:var(--crew-column-width,8.333333333%)!important;min-width:0!important;max-width:none!important"><col style="--crew-column-base:90px;width:var(--crew-column-width,9.375000000%)!important;min-width:0!important;max-width:none!important"></colgroup>
           <thead><tr>
             <th></th>
             <th scope="col" class="sortable-th">${sortHeaderHtml(trabajo,'estado','Estado')}</th>
@@ -22302,6 +22302,27 @@ html body #personnelGroups details.work-group > .table-wrap > table > thead > tr
   box-shadow:inset 4px 0 #f58220;
  }
  html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row].worker-row-selected > td:first-child{box-shadow:none!important}
+}
+</style>
+<style id="crew-desktop-column-content-centering">
+@media(min-width:901px){
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td:not(.mobile-check){
+  text-align:center!important;vertical-align:middle!important;padding-inline:5px!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-status > select.status[data-status-worker]{
+  display:block!important;margin-inline:auto!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] .crew-desktop-name-line{
+  justify-content:center!important;
+ }
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] .crew-desktop-name-line > .worker-open,
+ html body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-role > .role{
+  text-align:center!important;
+ }
+ html body:not(.control-mode) #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row] > td.mobile-team > select[data-team-worker]{
+  display:block!important;width:100%!important;max-width:100%!important;
+  margin-inline:auto!important;
+ }
 }
 </style>
 </body>
