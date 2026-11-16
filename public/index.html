@@ -11866,7 +11866,7 @@ if (/iPad/i.test(navigator.userAgent) ||
         </div>
 
         <div class="modal-actions crew-staffing-actions">
-          <button type="button" class="secondary" onclick="randomlyAssignHandsToTeams()">Equipos Aleatorios</button><div class="crew-assign-personnel"><button type="button" class="secondary" onclick="crewToggleAssignPersonnel()">Asignar personal</button><div id="crewAssignPersonnelDropdown" class="crew-assign-personnel-menu" hidden></div></div>
+          <button type="button" class="secondary" onclick="randomlyAssignHandsToTeams()">Equipos Aleatorios</button><div class="crew-assign-personnel"><button type="button" id="crewAssignPersonnelToggle" class="secondary" aria-controls="crewAssignPersonnelDropdown" aria-expanded="false" onclick="crewToggleAssignPersonnel()">Asignar personal</button><div id="crewAssignPersonnelDropdown" class="crew-assign-personnel-menu" hidden></div></div>
           <button class="secondary" onclick="clearStaffingPlan()">Quitar objetivos</button>
           <button class="primary" onclick="closeStaffingModal()">Cerrar</button>
         </div>
@@ -18357,13 +18357,22 @@ function crewRenderAssignPersonnel(){
  host.innerHTML='<label>Copiar equipos desde</label><select id="crewAssignPersonnelSource"><option value="">Seleccionar tipo de servicio…</option>'+works.map(w=>'<option value="'+escapeAttr(w)+'">'+escapeHtml(w)+'</option>').join('')+'</select><button type="button" class="primary" onclick="crewAssignPersonnelFromWork()">Asignar</button>';
 }
 function crewToggleAssignPersonnel(){
- crewRenderAssignPersonnel();const el=document.getElementById('crewAssignPersonnelDropdown');if(el)el.hidden=!el.hidden;
+ const dropdown=document.getElementById('crewAssignPersonnelDropdown');
+ if(!dropdown)return;
+ if(dropdown.hidden)crewRenderAssignPersonnel();
+ dropdown.hidden=!dropdown.hidden;
+ document.getElementById('crewAssignPersonnelToggle')?.setAttribute('aria-expanded',String(!dropdown.hidden));
 }
 function crewAssignPersonnelFromWork(){
  if(!state.service||state.service.closed)return;
  const source=document.getElementById('crewAssignPersonnelSource')?.value;
  const targets=new Set(crewStaffingWorks().map(normalize));
  if(!source){alert('Selecciona un tipo de servicio de origen.');return}
+ const dropdown=document.getElementById('crewAssignPersonnelDropdown');
+ const toggle=document.getElementById('crewAssignPersonnelToggle');
+ if(dropdown)dropdown.hidden=true;
+ toggle?.setAttribute('aria-expanded','false');
+ toggle?.focus();
  const rows=state.service.workers||[],day=state.activeDay,teams=state.service.teams||[];
  const phone=w=>String(w.movil||'').replace(/\D/g,''),name=w=>normalize(w.personal||'');
  const special=v=>/\b(CREW[\s_-]*HEAD|FORK[\s_-]*LIFT(?:ER)?|CARRETILLERO|RESERVAS?|RESERVE)\b/.test(normalize(v||''));
@@ -18393,11 +18402,11 @@ function crewAssignPersonnelFromWork(){
   if(w.teamId===team.id&&String(w.scenarioId||'')===String(team.scenarioId||''))return;
   w.teamId=team.id;w.scenarioId=team.scenarioId||'';
   updates.push({workerId:w.id,teamId:team.id,scenarioId:w.scenarioId});
-  refreshWorkerRow(w.id);
  });
- if(updates.length){saveWorkerUpdates(updates);renderWorkers();renderOperationalAlerts()}
- const dropdown=document.getElementById('crewAssignPersonnelDropdown');
- if(dropdown)dropdown.hidden=true;
+ if(updates.length){
+  saveWorkerUpdates(updates);
+  renderPersonnel(true);
+ }
  renderStaffingRows();
  alert(updates.length+' personas asignadas desde '+source+'. Los trabajadores de Reserva, Forklifter y Crew Head mantienen su equipo original en cada tipo de servicio.');
 }
@@ -19368,7 +19377,7 @@ function refreshWorkerRow(id){
 
 
 function updateStaffingChipFast(trabajo,teamId){
-  if(crewStaffingGroupFor(state.activeDay,trabajo).length>1){renderWorkers();return;}
+  if(crewStaffingGroupFor(state.activeDay,trabajo).length>1){renderPersonnel(true);return;}
   if(!teamId||!state.service)return;
 
   const details=[...document.querySelectorAll('.work-group')]
@@ -22227,13 +22236,15 @@ html body #personnelGroups details.work-group > .table-wrap > table > thead > tr
 }
 </style>
 <style id="crew-graphite-shift-buttons">
-#personnelGroups .shift-divider-controls-v1211 > :is(.shift-divider-btn,.shift-select-left-v1211){
+#personnelGroups .shift-divider-controls-v1211 > :is(.shift-divider-btn,.shift-select-left-v1211),
+#personnelGroups .shift-divider-controls-v1211 > .mobile-shift-sort > .mobile-shift-sort-toggle{
   background:linear-gradient(155deg,#f1f2f4,#c3c7cd)!important;
   border-color:#aab0b8!important;
   color:#111!important;
   -webkit-text-fill-color:#111!important;
 }
-#personnelGroups .shift-divider-controls-v1211 > :is(.shift-divider-btn,.shift-select-left-v1211):hover{
+#personnelGroups .shift-divider-controls-v1211 > :is(.shift-divider-btn,.shift-select-left-v1211):hover,
+#personnelGroups .shift-divider-controls-v1211 > .mobile-shift-sort > .mobile-shift-sort-toggle:is(:hover,[aria-expanded="true"]){
   background:linear-gradient(155deg,#eaecf0,#b2b8c1)!important;
   border-color:#969eaa!important;
 }
