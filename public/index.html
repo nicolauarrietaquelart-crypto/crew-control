@@ -8,7 +8,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>Crew Control v11.2.42 | Gestión de personal</title>
+  <title>Crew Control v11.2.43 | Gestión de personal</title>
   
   <style>
     :root{
@@ -153,6 +153,7 @@
     .group-bulk-btn{min-height:27px!important;padding:4px 7px!important;font-size:9px!important;border-radius:6px!important}
     .bulk-modal-grid{display:grid;grid-template-columns:1fr;gap:8px}
     .schedule-real{display:block;color:var(--green);font-weight:800}
+    .pdf-roster-note{display:block;font-size:10px;font-weight:650;color:#8b5c15;line-height:1.3;margin-top:3px;white-space:normal}
     .rating-mini{font-size:11px;font-weight:800;color:#8a6500;white-space:nowrap}
     .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
     .modal.hidden{display:none!important}
@@ -11101,6 +11102,23 @@ body.service-closed #crewAddDay input{pointer-events:auto;opacity:1}
 body.crew-day-closed #initialPdfUploadPanel .file-button{pointer-events:none;opacity:.55}
 #crewNotifyWholeClose[hidden],#crewReopenWholeService[hidden],#crewCloseCurrentDay[hidden]{display:none}
 </style>
+<style id="crew-pdf-missing-review-style">
+#crewPdfMissingReview{width:min(640px,calc(100vw - 24px));padding:20px}
+#crewPdfMissingReview h2{font-size:20px;margin:0}
+#crewPdfMissingReview>p{font-size:13px;color:#666;line-height:1.5}
+.crew-pdf-review-list{display:grid;gap:8px;margin:16px 0}
+.crew-pdf-review-person{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid #e1e3e7;border-radius:12px}
+.crew-pdf-review-person>div:first-child{min-width:0}
+.crew-pdf-review-person strong{display:block;font-size:13px;overflow-wrap:anywhere}
+.crew-pdf-review-person small{display:block;color:#666;font-size:11px;margin-top:4px}
+.crew-pdf-review-options{display:flex;gap:6px;flex-shrink:0}
+#crewPdfMissingReview button{min-height:36px;padding:6px 10px;font-size:12px;border-radius:9px}
+#crewPdfMissingReview .crew-pdf-review-options button{border:1px solid #ddd;background:#f7f8fa;color:#222}
+#crewPdfMissingReview button[data-decision="keep"][aria-pressed="true"]{background:#def2e5;border-color:#69a97e;color:#175a2c}
+#crewPdfMissingReview button[data-decision="remove"][aria-pressed="true"]{background:#fde4e4;border-color:#ce7575;color:#8e2424}
+.crew-pdf-review-footer{display:flex;justify-content:flex-end;gap:8px;padding-top:8px}
+@media(max-width:460px){.crew-pdf-review-person{align-items:flex-start;flex-direction:column}.crew-pdf-review-options{align-self:stretch}.crew-pdf-review-options button{flex:1}}
+</style>
 </head>
 <body>
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
@@ -13120,6 +13138,7 @@ function crewArrivalAlreadyRecorded(worker,change){
 }
 const crewPersist=(service,mode='general')=>{
   if(!service?.code)return Promise.reject(new Error('Servicio no seleccionado'));
+  const missingDecisions=new Map();
   crewLastLocalWrite=Date.now();
   const save=async()=>{
     const code=service.code;
@@ -13179,20 +13198,27 @@ const crewPersist=(service,mode='general')=>{
             id=freshId();
           }
           usedIds.add(id);
-          if(!current)return {...imported,id,status:'PENDIENTE',arrivalAt:'',actualStart:'',actualEnd:'',_fieldTimes:{}};
+          if(!current)return {...imported,id,pdfRosterMissing:false,status:'PENDIENTE',arrivalAt:'',actualStart:'',actualEnd:'',_fieldTimes:{}};
           const merged={...current};
           for(const field of factualFields){
             if(Object.prototype.hasOwnProperty.call(imported,field))merged[field]=imported[field];
           }
-          return {...merged,id};
+          return {...merged,id,pdfRosterMissing:false};
         });
         const unmatched=remoteRows.filter(w=>w.included!==false&&!claimed.has(w)&&crewHasAttendance(w));
-        if(unmatched.length){
-          const names=unmatched.slice(0,4).map(w=>w.personal).join(', ');
-          throw new Error('PDF sin aplicar: '+unmatched.length+' registro(s) con fichaje no se pueden identificar con seguridad ('+names+'). Revisa que aparezcan en el PDF o exclúyelos del servicio si los quieres retirar.');
+        // Recheck changed workers after a concurrent write before deleting them.
+        const unreviewed=unmatched.filter(worker=>!missingDecisions.has(JSON.stringify(worker)));
+        if(unreviewed.length){
+          const decisions=await crewReviewPdfMissingWorkers(unreviewed);
+          for(const worker of unreviewed){
+            const decision=decisions.get(String(worker.id));
+            if(!['keep','remove'].includes(decision))throw new Error('Falta decidir si conservar o eliminar personal.');
+            missingDecisions.set(JSON.stringify(worker),decision);
+          }
         }
-        // Extra defense against future importers that supply malformed IDs.
-        const unique=crewUniqueWorkerIds(workers);
+        const retained=unmatched.filter(worker=>missingDecisions.get(JSON.stringify(worker))==='keep')
+          .map(worker=>({...worker,pdfRosterMissing:true}));
+        const unique=crewUniqueWorkerIds([...workers,...retained]);
         workers=[...otherDays,...unique.workers];
       }
       let next;
@@ -13208,7 +13234,7 @@ const crewPersist=(service,mode='general')=>{
           pdfDocuments:{...(remote.pdfDocuments||{}),...Object.fromEntries(
             (service.pdfDocumentDates||[]).map(day=>[day,service.pdfDocumentId]))},
           blocks:Array.isArray(service.blocks)?
-            [...(remote.blocks||[]).filter(b=>!(service.workers||[]).some(w=>w.serviceDate===b.serviceDate)),...service.blocks]:
+            [...(remote.blocks||[]).filter(b=>!(service.workers||[]).some(w=>w.serviceDate===b.serviceDate)||workers.some(w=>w.pdfRosterMissing&&w.blockId===b.id)),...service.blocks]:
             remote.blocks||[],
           serviceDate:service.serviceDate||remote.serviceDate||'',
           venue:service.venue||remote.venue||''};
@@ -13482,12 +13508,6 @@ async function crewD1Dispatch(method,args){
     // Repair duplicate/empty IDs from the PDF and the previously imported list.
     // Keep the first matched row's ID; subsequent rows receive fresh UUIDs.
     const uniqueWorkers=crewUniqueWorkerIds(workers);
-    const removed=previous.length-matched;
-    // Do not destroy existing data if a parser/template change suddenly stops
-    // recognising most of a previously populated roster.
-    if(previous.length>=5 && matched===0 && added>0){
-      throw new Error('No se ha podido identificar ningún trabajador anterior. Importación cancelada para proteger los equipos, fichajes y valoraciones. Revisa el formato del PDF.');
-    }
     const next={...old,...(parsed.meta||{}),
       serviceName:(parsed.targetDay&&old.serviceName)||String(parsed.meta?.reference||'').trim()||old.serviceName||'',
       serviceDate:(parsed.targetDay&&old.serviceDate)||parsed.meta?.serviceDate||old.serviceDate||'',
@@ -13496,7 +13516,11 @@ async function crewD1Dispatch(method,args){
       workers:uniqueWorkers.workers,teams,blocks:parsed.blocks||[],pdfDocumentId:parsed.pdfDocumentId,pdfDocumentDates:parsed.pdfDocumentDates,code};
     const saved=await crewPersist(next,'roster');
     const duplicateIdsCorrected=uniqueWorkers.repaired;
-    return {service:saved,summary:{matched,added,removed,scheduleChanged,pauseChanged,dietChanged,coordinatorChanged,movedToReserve,changedNames,duplicateIdsCorrected}};
+    const retainedWorkers=saved.workers.filter(w=>w.pdfRosterMissing&&dates.has(w.serviceDate||'SIN FECHA'));
+    const retained=retainedWorkers.length;
+    const retainedNames=retainedWorkers.map(w=>w.personal);
+    const removed=Math.max(0,previous.length-matched-retained);
+    return {service:saved,summary:{matched,added,removed,retained,retainedNames,scheduleChanged,pauseChanged,dietChanged,coordinatorChanged,movedToReserve,changedNames,duplicateIdsCorrected}};
   }
   if(method==='duplicateServiceSetup'){
     const newCode=String(crypto.getRandomValues(new Uint32Array(1))[0]%1000000).padStart(6,'0');
@@ -15634,6 +15658,55 @@ async function downloadServicePdf(){
   }catch(error){alert(error.message)}
 }
 /* PDF */
+function crewReviewPdfMissingWorkers(workers){
+  return new Promise((resolve,reject)=>{
+    const dialog=document.createElement('dialog');
+    dialog.id='crewPdfMissingReview';
+    dialog.className='crew-tool-dialog';
+    dialog.setAttribute('aria-labelledby','crewPdfMissingReviewTitle');
+    dialog.innerHTML=`<h2 id="crewPdfMissingReviewTitle">Revisar personal del PDF</h2>
+      <p>No se han podido enlazar estas personas con el nuevo PDF. Elige qué hacer con cada una antes de aplicar la actualización.</p>
+      <div class="crew-pdf-review-list"></div>
+      <div class="crew-pdf-review-footer">
+        <button type="button" class="secondary" data-review-cancel>Cancelar</button>
+        <button type="button" class="primary" data-review-apply disabled>Aplicar PDF</button>
+      </div>`;
+    const decisions=new Map();
+    const submit=dialog.querySelector('[data-review-apply]');
+    const list=dialog.querySelector('.crew-pdf-review-list');
+    for(const worker of workers){
+      const row=document.createElement('div');
+      row.className='crew-pdf-review-person';
+      row.innerHTML=`<div><strong>${escapeHtml(worker.personal)}</strong>
+        <small>${escapeHtml([worker.serviceDate,worker.trabajo,worker.inicio,worker.status].filter(Boolean).join(' · '))}</small></div>
+        <div class="crew-pdf-review-options" role="group" aria-label="Decisión para ${escapeAttr(worker.personal)}">
+          <button type="button" data-decision="keep" aria-pressed="false">Conservar</button>
+          <button type="button" data-decision="remove" aria-pressed="false">Eliminar</button>
+        </div>`;
+      row.querySelectorAll('[data-decision]').forEach(button=>{
+        button.onclick=()=>{
+          decisions.set(String(worker.id),button.dataset.decision);
+          row.querySelectorAll('[data-decision]').forEach(option=>option.setAttribute('aria-pressed',String(option===button)));
+          submit.disabled=decisions.size!==workers.length;
+        };
+      });
+      list.append(row);
+    }
+    const cancel=()=>dialog.close('cancel');
+    dialog.querySelector('[data-review-cancel]').onclick=cancel;
+    dialog.addEventListener('cancel',event=>{event.preventDefault();cancel();});
+    submit.onclick=()=>{if(decisions.size===workers.length)dialog.close('apply');};
+    dialog.addEventListener('close',()=>{
+      const applied=dialog.returnValue==='apply';
+      dialog.remove();
+      if(applied)resolve(decisions);
+      else reject(new Error('Importación cancelada. Se conserva el personal anterior.'));
+    },{once:true});
+    document.body.append(dialog);
+    dialog.showModal();
+  });
+}
+
 let crewPdfImportInFlight=false;
 async function importPdf(file,targetDay=''){
   if(!state.service||state.service.closed||crewPdfImportInFlight)return;
@@ -15699,7 +15772,7 @@ async function importPdf(file,targetDay=''){
     const service=result.service;
     const s=result.summary||{};
     if(state.service?.code!==code)return;
-    if(!Array.isArray(service?.workers)||service.workers.filter(w=>dates.includes(w.serviceDate||'SIN FECHA')).length!==parsed.workers.length){
+    if(!Array.isArray(service?.workers)||service.workers.filter(w=>!w.pdfRosterMissing&&dates.includes(w.serviceDate||'SIN FECHA')).length!==parsed.workers.length){
       throw new Error('La importación no ha devuelto todos los trabajadores. Vuelve a abrir el servicio para comprobar los datos.');
     }
     openServiceData(service);
@@ -15719,12 +15792,13 @@ async function importPdf(file,targetDay=''){
         <span class="import-chip">${s.matched||0} conservados</span>
         <span class="import-chip">${s.added||0} nuevos</span>
         <span class="import-chip">${s.removed||0} eliminados</span>
+        ${s.retained?`<span class="import-chip">${s.retained} con fichaje fuera del PDF</span>`:''}
         <span class="import-chip">${s.scheduleChanged||0} horarios cambiados</span>
         <span class="import-chip">${s.pauseChanged||0} pausas cambiadas</span>
         <span class="import-chip">${s.dietChanged||0} dietas cambiadas</span>
         <span class="import-chip">${s.coordinatorChanged||0} cambios CS</span>
         <span class="import-chip">${s.movedToReserve||0} reservas</span>
-      </div>${changedNames}`;
+      </div>${s.retained?`<div class="hint">Se conservan con su fichaje fuera del último PDF: ${escapeHtml((s.retainedNames||[]).join(', '))}.</div>`:''}${changedNames}`;
     showPdfStatusHtml(details,'ok');
     imported=true;
 
@@ -17919,6 +17993,7 @@ function teamMemberCardHtml(w){
     <button class="team-member-name" onclick="closeTeamMembersModal();openWorkerModal('${escapeAttr(w.id)}')">
       <strong>${escapeHtml(w.personal)}</strong>
       <span>${escapeHtml(w.especialidad||'')}${arrival?' · '+arrival:''}</span>
+      ${w.pdfRosterMissing?'<span class="pdf-roster-note">Fuera del último PDF</span>':''}
     </button>
     <span class="team-member-time">${escapeHtml(w.inicio||w.hLlam||'—')}</span>
     ${internationalPhone?`
@@ -18801,6 +18876,7 @@ function workerRowHtml(w){
 
     <td class="worker-name mobile-name">
       <div class="crew-desktop-name-line"><button class="worker-open" onclick="openWorkerModal('${escapeAttr(w.id)}')">${escapeHtml(w.personal)}</button><span class="crew-desktop-name-badges">${reserve}${w.isCoordinator?'<span class="coordinator-badge">CS · COORD.</span>':''}</span></div>
+      ${w.pdfRosterMissing?'<span class="pdf-roster-note">Fuera del último PDF</span>':''}
     </td>
 
     <td class="mobile-role"><span class="role">${escapeHtml(w.especialidad)}</span>${reserve}${w.isCoordinator?'<span class="coordinator-badge">CS · COORD.</span>':''}</td>

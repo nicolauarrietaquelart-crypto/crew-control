@@ -440,7 +440,7 @@ test('a pre-write polling snapshot is rejected after a newer write acknowledgeme
   await assert.rejects(poll,{status:425});
 });
 
-test('PDF reimport preserves confirmed attendance and refuses an unmatched check-in',async()=>{
+test('PDF reimport preserves unmatched check-ins while applying the revised roster',async()=>{
   const source=section('function crewUniqueWorkerIds','const crewSaveLatest=');
   const attendance={...recoveryWorker,code:'123456',status:'PRESENTE',arrivalAt:'08:04',_fieldTimes:{status:3,arrivalAt:2}};
   let cloud={code:'123456',_syncRevision:'R1',workers:[attendance]};
@@ -449,17 +449,28 @@ test('PDF reimport preserves confirmed attendance and refuses an unmatched check
     cloud={...body.service,_syncRevision:'R2'};
     return {ok:true,revision:'R2',service:cloud};
   };
-  const persist=new Function('crewApi','crypto','normalize',
+  const persist=new Function('crewApi','crypto','normalize','crewReviewPdfMissingWorkers',
     'let crewSaveQueue=Promise.resolve(),crewLastLocalWrite=0;'+source+';return crewPersist')(
-    api,{randomUUID},s=>String(s||'').trim().toUpperCase());
+    api,{randomUUID},s=>String(s||'').trim().toUpperCase(),
+    async workers=>new Map(workers.map(w=>[String(w.id),'keep'])));
   const parsed={...attendance,id:'FROM_PDF',personal:'Chris corregido',status:'PENDIENTE',arrivalAt:'',_fieldTimes:{}};
   const saved=await persist({code:'123456',workers:[parsed]},'roster');
   assert.equal(saved.workers[0].id,'NEW');
   assert.equal(saved.workers[0].status,'PRESENTE');
   assert.equal(saved.workers[0].arrivalAt,'08:04');
   assert.deepEqual(saved.workers[0]._fieldTimes,{status:3,arrivalAt:2});
-  await assert.rejects(persist({code:'123456',workers:[{...parsed,personal:'Pau',movil:'600333333'}]},'roster'),/PDF sin aplicar/);
-  assert.equal(cloud.workers[0].status,'PRESENTE');
+  const revised=await persist({code:'123456',workers:[{...parsed,personal:'Pau',movil:'600333333'}]},'roster');
+  const retained=revised.workers.find(w=>w.id==='NEW');
+  assert.equal(retained.pdfRosterMissing,true);
+  assert.equal(retained.status,'PRESENTE');
+  assert.equal(retained.arrivalAt,'08:04');
+  assert.equal(revised.workers.find(w=>w.personal==='Pau').status,'PENDIENTE');
+  assert.notEqual(revised.workers.find(w=>w.personal==='Pau').id,retained.id);
+  const restored=await persist({code:'123456',workers:[parsed]},'roster');
+  assert.equal(restored.workers.length,1);
+  assert.equal(restored.workers[0].id,'NEW');
+  assert.equal(restored.workers[0].pdfRosterMissing,false);
+  assert.equal(restored.workers[0].status,'PRESENTE');
 });
 
 test('creating a scenario cannot replace pending attendance in the current view',()=>{
@@ -491,9 +502,10 @@ test('importing a separate day keeps all earlier workers, check-ins and PDF refe
     cloud={...body.service,_syncRevision:'R2'};
     return {ok:true,revision:'R2',service:cloud};
   };
-  const persist=new Function('crewApi','crypto','normalize',
+  const persist=new Function('crewApi','crypto','normalize','crewReviewPdfMissingWorkers',
     'let crewSaveQueue=Promise.resolve(),crewLastLocalWrite=0;'+source+';return crewPersist')(
-    api,{randomUUID},s=>String(s||'').trim().toUpperCase());
+    api,{randomUUID},s=>String(s||'').trim().toUpperCase(),
+    async workers=>new Map(workers.map(w=>[String(w.id),'keep'])));
   const saved=await persist({code:'123456',workers:[today],blocks:[{id:'new:B1',serviceDate:today.serviceDate}],
     pdfDocumentId:'new-pdf',pdfDocumentDates:[today.serviceDate]},'roster');
   assert.deepEqual(saved.workers[0],prior);
@@ -605,9 +617,10 @@ test('a verified worker can move work type on PDF update without losing check-in
     cloud={...body.service,_syncRevision:'R2'};
     return {ok:true,revision:'R2',service:cloud};
   };
-  const persist=new Function('crewApi','crypto','normalize',
+  const persist=new Function('crewApi','crypto','normalize','crewReviewPdfMissingWorkers',
     'let crewSaveQueue=Promise.resolve(),crewLastLocalWrite=0;'+source+';return crewPersist')(
-    api,{randomUUID},s=>String(s||'').trim().toUpperCase());
+    api,{randomUUID},s=>String(s||'').trim().toUpperCase(),
+    async workers=>new Map(workers.map(w=>[String(w.id),'keep'])));
   const revised={...worker,id:'PDF_CHANGED',trabajo:'TECNICA',inicio:'09:00',status:'PENDIENTE',arrivalAt:''};
   const saved=await persist({code:'123456',workers:[revised]},'roster');
   assert.equal(saved.workers[0].id,worker.id);
@@ -618,7 +631,10 @@ test('a verified worker can move work type on PDF update without losing check-in
   assert.equal(saved.workers[0].teamId,'audio');
   assert.equal(saved.workers[0].notes,'Conservar');
   assert.deepEqual(saved.workers[0]._fieldTimes,{status:2});
-  await assert.rejects(persist({code:'123456',workers:[{...revised,movil:'600222333'}]},'roster'),/PDF sin aplicar/);
+  const phoneChanged=await persist({code:'123456',workers:[{...revised,movil:'600222333'}]},'roster');
+  assert.equal(phoneChanged.workers.length,2);
+  assert.equal(phoneChanged.workers.find(w=>w.id===worker.id).pdfRosterMissing,true);
+  assert.equal(phoneChanged.workers.find(w=>w.movil==='600222333').status,'PENDIENTE');
 });
 
 test('PDF import waits for pending edits and the roster receipt, and prevents overlapping imports',async()=>{
@@ -658,4 +674,75 @@ test('PDF import waits for pending edits and the roster receipt, and prevents ov
   assert.equal(app.inert,false);
   assert.equal(state.service,service);
   assert.equal(calls.at(-1),'PDF importado y guardado');
+});
+
+
+test('five unmatched checked-in people survive a revised PDF with teams, shifts and notes intact',async()=>{
+  const source=section('function crewUniqueWorkerIds','const crewSaveLatest=');
+  const originals=Array.from({length:5},(_,index)=>({...recoveryWorker,id:'W'+index,
+    personal:'Persona '+index,movil:'60000000'+index,serviceDate:'17/11/2026',
+    status:'PRESENTE',arrivalAt:'07:55',teamId:'T1',notes:'Conservar '+index,
+    blockId:'OLD',_fieldTimes:{status:2,arrivalAt:1}}));
+  let cloud={code:'123456',workers:originals,blocks:[{id:'OLD',serviceDate:'17/11/2026'}],
+    pauseShifts:[{id:'P',workerIds:['W0','W1'],returnStatuses:{W0:'PRESENTE'}}]};
+  const api=async(code,method='GET',body)=>{
+    if(method==='GET')return {service:structuredClone(cloud)};
+    cloud={...body.service,_syncRevision:'R2'};
+    return {ok:true,revision:'R2',service:cloud};
+  };
+  const persist=new Function('crewApi','crypto','normalize','crewReviewPdfMissingWorkers',
+    'let crewSaveQueue=Promise.resolve(),crewLastLocalWrite=0;'+source+';return crewPersist')(
+    api,{randomUUID},s=>String(s||'').trim().toUpperCase(),
+    async workers=>new Map(workers.map(w=>[String(w.id),'keep'])));
+  const revised={...originals[0],personal:'Persona Nueva',movil:'611000000',id:'W0'};
+  const saved=await persist({code:'123456',workers:[revised],blocks:[{id:'NEW',serviceDate:'17/11/2026'}]},'roster');
+  assert.equal(saved.workers.length,6);
+  assert.equal(new Set(saved.workers.map(w=>w.id)).size,6);
+  for(const old of originals)assert.deepEqual(saved.workers.find(w=>w.id===old.id),{...old,pdfRosterMissing:true});
+  assert.equal(saved.workers.find(w=>w.personal==='Persona Nueva').status,'PENDIENTE');
+  assert.deepEqual(saved.pauseShifts,[{id:'P',workerIds:['W0','W1'],returnStatuses:{W0:'PRESENTE'}}]);
+  assert.deepEqual(saved.blocks.map(b=>b.id),['OLD','NEW']);
+});
+
+test('PDF review removes only chosen rows, cancels without saving and rechecks concurrent edits',async()=>{
+  const source=section('function crewUniqueWorkerIds','const crewSaveLatest=');
+  const a={...recoveryWorker,id:'A',personal:'Persona A',serviceDate:'17/11/2026',status:'PRESENTE',arrivalAt:'08:00'};
+  const b={...a,id:'B',personal:'Persona B',movil:'600000002'};
+  const imported={...a,id:'NEW',personal:'Persona Nueva',movil:'600000003'};
+  const setup=(review,conflict=false)=>{
+    let cloud={code:'123456',workers:[a,b],pauseShifts:[{id:'P',workerIds:['A','B']}],incidents:[{id:'I',workerId:'B'}]};
+    let writes=0;
+    const api=async(code,method='GET',body)=>{
+      if(method==='GET')return {service:structuredClone(cloud)};
+      writes++;
+      if(conflict&&writes===1){
+        cloud.workers=cloud.workers.map(w=>w.id==='B'?{...w,notes:'Cambió en otro dispositivo'}:w);
+        throw Object.assign(new Error('Conflicto'),{status:409});
+      }
+      cloud=body.service;
+      return {service:cloud};
+    };
+    const persist=new Function('crewApi','crypto','normalize','crewReviewPdfMissingWorkers',
+      'let crewSaveQueue=Promise.resolve(),crewLastLocalWrite=0;'+source+';return crewPersist')(
+      api,{randomUUID},s=>String(s||'').trim().toUpperCase(),review);
+    return {run:()=>persist({code:'123456',workers:[imported]},'roster'),writes:()=>writes};
+  };
+  const mixed=setup(async workers=>new Map(workers.map(w=>[w.id,w.id==='A'?'keep':'remove'])));
+  const saved=await mixed.run();
+  assert.ok(saved.workers.some(w=>w.id==='A'&&w.pdfRosterMissing));
+  assert.ok(!saved.workers.some(w=>w.id==='B'));
+  assert.deepEqual(saved.pauseShifts[0].workerIds,['A']);
+  assert.equal(saved.incidents[0].workerId,'');
+  const cancelled=setup(async()=>{throw new Error('Importación cancelada');});
+  await assert.rejects(cancelled.run(),/cancelada/);
+  assert.equal(cancelled.writes(),0);
+  const reviewed=[];
+  const concurrent=setup(async workers=>{
+    reviewed.push(workers.map(w=>w.id));
+    return new Map(workers.map(w=>[w.id,w.notes?'keep':'remove']));
+  },true);
+  const updated=await concurrent.run();
+  assert.deepEqual(reviewed,[['A','B'],['B']]);
+  assert.ok(!updated.workers.some(w=>w.id==='A'));
+  assert.equal(updated.workers.find(w=>w.id==='B').notes,'Cambió en otro dispositivo');
 });
