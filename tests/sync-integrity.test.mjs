@@ -467,7 +467,8 @@ test('PDF reimport preserves unmatched check-ins while applying the revised rost
   assert.equal(revised.workers.find(w=>w.personal==='Pau').status,'PENDIENTE');
   assert.notEqual(revised.workers.find(w=>w.personal==='Pau').id,retained.id);
   const restored=await persist({code:'123456',workers:[parsed]},'roster');
-  assert.equal(restored.workers.length,1);
+  assert.equal(restored.workers.length,2);
+  assert.equal(restored.workers.find(w=>w.personal==='Pau').pdfRosterMissing,true);
   assert.equal(restored.workers[0].id,'NEW');
   assert.equal(restored.workers[0].pdfRosterMissing,false);
   assert.equal(restored.workers[0].status,'PRESENTE');
@@ -745,4 +746,63 @@ test('PDF review removes only chosen rows, cancels without saving and rechecks c
   assert.deepEqual(reviewed,[['A','B'],['B']]);
   assert.ok(!updated.workers.some(w=>w.id==='A'));
   assert.equal(updated.workers.find(w=>w.id==='B').notes,'Cambió en otro dispositivo');
+});
+
+test('reference cleanup leaves closed-day pauses byte-for-byte intact when their workers remain',()=>{
+  const {crewPruneWorkerReferences}=helpers();
+  const snapshot={closedDays:{'17/11/2026':'2026-11-17T22:00:00Z'},
+    workers:[{id:'A',serviceDate:'17/11/2026'},{id:'B',serviceDate:'18/11/2026'}],
+    pauseShifts:[{id:'P',serviceDate:'17/11/2026',workerIds:['A']}],incidents:[]};
+  const cleaned=crewPruneWorkerReferences(snapshot);
+  assert.deepEqual(cleaned.pauseShifts,snapshot.pauseShifts);
+  assert.equal(closedDayChanged(snapshot,cleaned),false);
+});
+
+test('PDF removal review includes pending workers with assignments and notes',async()=>{
+  const source=section('function crewUniqueWorkerIds','const crewSaveLatest=');
+  const pending={...recoveryWorker,status:'PENDIENTE',arrivalAt:'',teamId:'AUDIO',notes:'Asignación manual'};
+  let cloud={code:'123456',workers:[pending]};
+  let reviewed=[];
+  const api=async(code,method='GET',body)=>{
+    if(method==='GET')return {service:structuredClone(cloud)};
+    cloud=body.service;
+    return {service:cloud};
+  };
+  const persist=new Function('crewApi','crypto','normalize','crewReviewPdfMissingWorkers',
+    'let crewSaveQueue=Promise.resolve(),crewLastLocalWrite=0;'+source+';return crewPersist')(
+    api,{randomUUID},s=>String(s||'').trim().toUpperCase(),async workers=>{
+      reviewed=workers;
+      return new Map(workers.map(w=>[String(w.id),'keep']));
+    });
+  const saved=await persist({code:'123456',workers:[{...pending,id:'NEWPERSON',personal:'Otro trabajador',movil:'611222333'}]},'roster');
+  assert.equal(reviewed.length,1);
+  assert.deepEqual(saved.workers.find(w=>w.id===pending.id),{...pending,pdfRosterMissing:true});
+});
+
+test('a late manager refresh cannot replace a newer list or restore the list after logout',async()=>{
+  const source=section('async function crewRefreshManager(){','async function crewManagerLogout(){');
+  let releaseOld;
+  const old=new Promise(resolve=>{releaseOld=resolve;});
+  const responses=[old,Promise.resolve({services:[{code:'NEW'}]})];
+  const rendered=[],views=[];
+  const scope={crewManagerApi:()=>responses.shift(),crewManagerView:mode=>views.push(mode),
+    managerUI:{status:{},list:{replaceChildren:fragment=>rendered.push(fragment.children)}},
+    document:{createDocumentFragment:()=>({children:[],append(value){this.children.push(value);}})},
+    crewManagerCard:service=>service.code,crewApplyManagerFilters:()=>{}};
+  const ui=new Function(...Object.keys(scope),
+    'let crewManagerRequestVersion=0,crewManagerServices=[];'+source+
+    ';return {refresh:crewRefreshManager,invalidate(){crewManagerRequestVersion++;}};')(...Object.values(scope));
+  const first=ui.refresh();
+  await ui.refresh();
+  releaseOld({services:[{code:'OLD'}]});
+  await first;
+  assert.deepEqual(rendered,[['NEW']]);
+  let releaseLoggedOut;
+  responses.push(new Promise(resolve=>{releaseLoggedOut=resolve;}));
+  const afterLogout=ui.refresh();
+  ui.invalidate();
+  releaseLoggedOut({services:[{code:'EXPIRED'}]});
+  await afterLogout;
+  assert.deepEqual(rendered,[['NEW']]);
+  assert.deepEqual(views,['services']);
 });

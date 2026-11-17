@@ -8,7 +8,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>Crew Control v11.2.44 | Gestión de personal</title>
+  <title>Crew Control v11.2.45 | Gestión de personal</title>
   
   <style>
     :root{
@@ -11207,7 +11207,22 @@ body.crew-day-closed #initialPdfUploadPanel .file-button{pointer-events:none;opa
       <small>Mínimo 12 caracteres y distinta de la inicial o actual.</small>
       <button class="primary">Guardar contraseña</button>
     </form>
+    <div id="crewManagerFilters" class="crew-manager-filters" hidden>
+      <label for="crewManagerSearch">Buscar servicio
+        <input id="crewManagerSearch" type="search" placeholder="Nombre, código, fecha o PDF" oninput="crewApplyManagerFilters()">
+      </label>
+      <label for="crewManagerStateFilter">Estado
+        <select id="crewManagerStateFilter" onchange="crewApplyManagerFilters()">
+          <option value="ALL">Todos</option>
+          <option value="OPEN">Abiertos</option>
+          <option value="CLOSED">Cerrados</option>
+          <option value="CLOSED_DAYS">Con días cerrados</option>
+        </select>
+      </label>
+      <span id="crewManagerResults" role="status"></span>
+    </div>
     <div id="crewManagerList"></div>
+    <p id="crewManagerNoMatches" hidden>No hay servicios que coincidan con la búsqueda.</p>
   </dialog>
   <dialog id="crewAddDay" class="crew-tool-dialog">
     <div class="crew-tool-head"><h2>Añadir día</h2><button type="button" class="secondary" onclick="this.closest('dialog').close()" aria-label="Cerrar">×</button></div>
@@ -11373,6 +11388,7 @@ body.crew-day-closed #initialPdfUploadPanel .file-button{pointer-events:none;opa
           <option value="NO PRESENTADO">No presentados</option>
           <option value="RESERVA">Reservas</option>
           <option value="SIN_EQUIPO">Sin equipo</option>
+          <option value="FUERA_PDF">Fuera del último PDF</option>
         </select>
           <button type="button" class="sidebar-link-btn-v129 crew-inline-teams-btn" onclick="openScenariosTeamsModal()" title="Escenarios y equipos">
             <span class="icon"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="6" rx="1.5"/><path d="M17.5 15v6M14.5 18h6"/></svg></span><span class="label">Equipos</span><span id="sidebarTeamsCount" class="sidebar-utility-badge-v1210">0</span>
@@ -13108,11 +13124,13 @@ function crewPruneWorkerReferences(snapshot,ambiguousIds=new Set()){
   const invalid=id=>ambiguousIds.has(String(id))||!validIds.has(String(id));
   return {...snapshot,
     pauseShifts:(snapshot.pauseShifts||[]).map(shift=>{
+      if(!(shift.workerIds||[]).some(invalid)&&!Object.keys(shift.returnStatuses||{}).some(invalid))return shift;
       const returnStatuses={...(shift.returnStatuses||{})};
       for(const id of Object.keys(returnStatuses)){
         if(invalid(id))delete returnStatuses[id];
       }
-      return {...shift,workerIds:(shift.workerIds||[]).filter(id=>!invalid(id)),returnStatuses};
+      return {...shift,workerIds:(shift.workerIds||[]).filter(id=>!invalid(id)),
+        ...(shift.returnStatuses?{returnStatuses}:{})};
     }),
     incidents:(snapshot.incidents||[]).map(incident=>
       incident.workerId&&invalid(incident.workerId)?{...incident,workerId:''}:incident)
@@ -13129,9 +13147,6 @@ function crewWorkerIdentityEqual(a,b,includeWork=true){
 }
 function crewCanonicalWorkerPhone(value){
   return String(value||'').replace(/\D/g,'').replace(/^00(?=\d{10,15}$)/,'').replace(/^34(?=\d{9}$)/,'');
-}
-function crewHasAttendance(worker){
-  return ['PRESENTE','NO PRESENTADO','CONTACTADO'].includes(worker.status)||Boolean(worker.arrivalAt);
 }
 function crewArrivalAlreadyRecorded(worker,change){
   // Two devices marking the same arrival keep the first confirmed time.
@@ -13207,7 +13222,7 @@ const crewPersist=(service,mode='general')=>{
           }
           return {...merged,id,pdfRosterMissing:false};
         });
-        const unmatched=remoteRows.filter(w=>w.included!==false&&!claimed.has(w)&&crewHasAttendance(w));
+        const unmatched=remoteRows.filter(w=>w.included!==false&&!claimed.has(w));
         // Recheck changed workers after a concurrent write before deleting them.
         const unreviewed=unmatched.filter(worker=>!missingDecisions.has(JSON.stringify(worker)));
         if(unreviewed.length){
@@ -13567,8 +13582,7 @@ async function crewD1Dispatch(method,args){
     const result=await response.json();
     if(!response.ok)throw new Error(result.error||'No se pudo crear el servicio');
     const createdService=crewEnsureDefaultStructure((await crewApi(code)).service);
-    await crewPersist(createdService);
-    return createdService;
+    return crewPersist(createdService);
   }
   if(method==='saveServiceMeta'){
     // Never submit stale worker, attendance, pause or incident data with metadata.
@@ -15803,13 +15817,13 @@ async function importPdf(file,targetDay=''){
         <span class="import-chip">${s.matched||0} conservados</span>
         <span class="import-chip">${s.added||0} nuevos</span>
         <span class="import-chip">${s.removed||0} eliminados</span>
-        ${s.retained?`<span class="import-chip">${s.retained} con fichaje fuera del PDF</span>`:''}
+        ${s.retained?`<span class="import-chip">${s.retained} fuera del PDF</span>`:''}
         <span class="import-chip">${s.scheduleChanged||0} horarios cambiados</span>
         <span class="import-chip">${s.pauseChanged||0} pausas cambiadas</span>
         <span class="import-chip">${s.dietChanged||0} dietas cambiadas</span>
         <span class="import-chip">${s.coordinatorChanged||0} cambios CS</span>
         <span class="import-chip">${s.movedToReserve||0} reservas</span>
-      </div>${s.retained?`<div class="hint">Se conservan con su fichaje fuera del último PDF: ${escapeHtml((s.retainedNames||[]).join(', '))}.</div>`:''}${changedNames}`;
+      </div>${s.retained?`<div class="hint">Se conservan con sus datos fuera del último PDF: ${escapeHtml((s.retainedNames||[]).join(', '))}.</div>`:''}${changedNames}`;
     showPdfStatusHtml(details,'ok');
     imported=true;
 
@@ -16758,6 +16772,7 @@ function workersForActiveDay(){
     if(window.matchMedia('(max-width: 900px)').matches && crewMobileWorkV11259!=='ALL' && normalize(w.trabajo||'SIN TIPO')!==normalize(crewMobileWorkV11259))return false;
     if(window.matchMedia('(max-width: 900px)').matches && crewMobileShiftV11256!=='ALL' && workerEntryTime(w)!==crewMobileShiftV11256)return false;
 
+    if(quickFilter==='FUERA_PDF'&&!w.pdfRosterMissing)return false;
     if(quickFilter==='RESERVA'&&!w.isReserve)return false;
     if(quickFilter==='SIN_EQUIPO'&&(w.teamId||workHasNoTeams(w.trabajo)))return false;
     if(
@@ -22041,7 +22056,7 @@ document.addEventListener('keydown',event=>{
  }
 }
 </style>
-<link rel="stylesheet" href="/service-tools.css?v=7">
+<link rel="stylesheet" href="/service-tools.css?v=8">
 <script>
 function crewAddDayButton(){
  return state.service?.closed?'':`<button type="button" class="crew-add-day" onclick="crewOpenAddDay()" aria-label="Añadir día" title="Añadir día">
@@ -22096,6 +22111,8 @@ document.getElementById('crewAddDayForm').addEventListener('submit',async event=
  finally{button.disabled=false;}
 });
 
+let crewManagerServices=[];
+let crewManagerRequestVersion=0;
 const managerUI={
  dialog:document.getElementById('crewManager'),
  status:document.getElementById('crewManagerStatus'),
@@ -22142,7 +22159,13 @@ function crewManagerView(mode){
  managerUI.password.hidden=true;
  if(mode==='setup')crewShowManagerPassword(true);
  managerUI.toolbar.hidden=mode!=='services';
- if(mode!=='services')managerUI.list.replaceChildren();
+ document.getElementById('crewManagerFilters').hidden=mode!=='services';
+ if(mode!=='services'){
+  crewManagerRequestVersion++;
+  crewManagerServices=[];
+  managerUI.list.replaceChildren();
+  document.getElementById('crewManagerNoMatches').hidden=true;
+ }
  managerUI.status.textContent=mode==='setup'?'Cambia la contraseña inicial para activar el acceso.':'';
 }
 function crewShowManagerPassword(setup){
@@ -22165,19 +22188,48 @@ async function crewOpenManager(){
   if(error.status!==401)managerUI.status.textContent=error.message;
  }
 }
+function crewManagerServiceMatches(service,query,filter){
+ const search=normalize(query);
+ const text=normalize([service.name,service.code,service.date,service.pdf,...(service.days||[])].filter(Boolean).join(' '));
+ if(search&&!text.includes(search))return false;
+ if(filter==='OPEN'&&service.closed)return false;
+ if(filter==='CLOSED'&&!service.closed)return false;
+ if(filter==='CLOSED_DAYS'&&!service.closed&&!Object.keys(service.closedDays||{}).length)return false;
+ return true;
+}
+function crewApplyManagerFilters(){
+ const query=document.getElementById('crewManagerSearch').value;
+ const filter=document.getElementById('crewManagerStateFilter').value;
+ const services=new Map(crewManagerServices.map(service=>[service.code,service]));
+ let visible=0;
+ for(const card of managerUI.list.children){
+  const service=services.get(card.dataset.serviceCode);
+  card.hidden=!service||!crewManagerServiceMatches(service,query,filter);
+  if(!card.hidden)visible++;
+ }
+ document.getElementById('crewManagerResults').textContent=visible+' de '+crewManagerServices.length+' servicios';
+ document.getElementById('crewManagerNoMatches').hidden=visible>0||!crewManagerServices.length;
+}
 async function crewRefreshManager(){
+ const request=++crewManagerRequestVersion;
  try{
   const {services}=await crewManagerApi('services');
+  if(request!==crewManagerRequestVersion)return;
   crewManagerView('services');
-  managerUI.list.replaceChildren();
+  crewManagerServices=services;
+  const fragment=document.createDocumentFragment();
+  for(const service of services)fragment.append(crewManagerCard(service));
+  managerUI.list.replaceChildren(fragment);
   if(!services.length)managerUI.status.textContent='Todavía no hay servicios.';
-  for(const service of services)managerUI.list.append(crewManagerCard(service));
+  crewApplyManagerFilters();
  }catch(error){
+  if(request!==crewManagerRequestVersion)return;
   if(error.status===401)crewManagerView('login');
   managerUI.status.textContent=error.message;
  }
 }
 async function crewManagerLogout(){
+ crewManagerRequestVersion++;
  try{
   await crewManagerApi('logout',{});
   crewManagerRememberSetup=false;
@@ -22245,6 +22297,7 @@ crewManagerForm(managerUI.password,'password',crewRefreshManager);
 function crewManagerCard(service){
  const article=document.createElement('article');
  article.className='crew-manager-card';
+ article.dataset.serviceCode=service.code;
  const title=document.createElement('h3');
  title.textContent=service.name||'Servicio '+service.code;
  const heading=document.createElement('div');
@@ -22355,9 +22408,16 @@ function crewManagerCard(service){
   if(!confirm('¿Eliminar «'+title.textContent+'» ('+service.code+')? Se quitará de la lista y su código dejará de dar acceso al servicio.'))return;
   await crewManagerApi('delete-service',{code:service.code});
   article.remove();
+  crewManagerServices=crewManagerServices.filter(item=>item.code!==service.code);
+  crewApplyManagerFilters();
   managerUI.status.textContent='Servicio eliminado.';
  },'crew-manager-delete');
- heading.append(title,stateBadge(service.closed));
+ const badge=stateBadge(service.closed);
+ if(!service.closed&&Object.keys(service.closedDays||{}).length){
+  badge.textContent='Cierre parcial';
+  badge.dataset.closed='partial';
+ }
+ heading.append(title,badge);
  article.append(heading,details,pdf,actions,dayList);
  return article;
 }
