@@ -8,7 +8,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>Crew Control v11.2.43 | Gestión de personal</title>
+  <title>Crew Control v11.2.44 | Gestión de personal</title>
   
   <style>
     :root{
@@ -11106,6 +11106,8 @@ body.crew-day-closed #initialPdfUploadPanel .file-button{pointer-events:none;opa
 #crewPdfMissingReview{width:min(640px,calc(100vw - 24px));padding:20px}
 #crewPdfMissingReview h2{font-size:20px;margin:0}
 #crewPdfMissingReview>p{font-size:13px;color:#666;line-height:1.5}
+.crew-pdf-review-bulk{display:flex;flex-wrap:wrap;gap:8px}
+#crewPdfMissingReview [data-review-all="remove"]{background:#fff1f1;color:#8e2424;border:1px solid #e5c0c0}
 .crew-pdf-review-list{display:grid;gap:8px;margin:16px 0}
 .crew-pdf-review-person{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid #e1e3e7;border-radius:12px}
 .crew-pdf-review-person>div:first-child{min-width:0}
@@ -15666,6 +15668,10 @@ function crewReviewPdfMissingWorkers(workers){
     dialog.setAttribute('aria-labelledby','crewPdfMissingReviewTitle');
     dialog.innerHTML=`<h2 id="crewPdfMissingReviewTitle">Revisar personal del PDF</h2>
       <p>No se han podido enlazar estas personas con el nuevo PDF. Elige qué hacer con cada una antes de aplicar la actualización.</p>
+      <div class="crew-pdf-review-bulk" role="group" aria-label="Decidir para todo el personal de la lista">
+        <button type="button" class="secondary" data-review-all="keep">Conservar todos</button>
+        <button type="button" class="secondary" data-review-all="remove">Eliminar todos</button>
+      </div>
       <div class="crew-pdf-review-list"></div>
       <div class="crew-pdf-review-footer">
         <button type="button" class="secondary" data-review-cancel>Cancelar</button>
@@ -15692,6 +15698,11 @@ function crewReviewPdfMissingWorkers(workers){
       });
       list.append(row);
     }
+    dialog.querySelectorAll('[data-review-all]').forEach(button=>{
+      button.onclick=()=>{
+        list.querySelectorAll('[data-decision="'+button.dataset.reviewAll+'"]').forEach(option=>option.click());
+      };
+    });
     const cancel=()=>dialog.close('cancel');
     dialog.querySelector('[data-review-cancel]').onclick=cancel;
     dialog.addEventListener('cancel',event=>{event.preventDefault();cancel();});
