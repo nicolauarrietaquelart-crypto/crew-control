@@ -8,7 +8,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>Crew Control v11.2.41 | Gestión de personal</title>
+  <title>Crew Control v11.2.42 | Gestión de personal</title>
   
   <style>
     :root{
@@ -13098,13 +13098,13 @@ function crewPruneWorkerReferences(snapshot,ambiguousIds=new Set()){
       incident.workerId&&invalid(incident.workerId)?{...incident,workerId:''}:incident)
   };
 }
-function crewWorkerIdentityEqual(a,b){
+function crewWorkerIdentityEqual(a,b,includeWork=true){
   const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .trim().toUpperCase().replace(/\s+/g,' ');
   const phone=crewCanonicalWorkerPhone;
   return norm(a.personal)&&norm(a.personal)===norm(b.personal)&&
     norm(a.serviceDate)===norm(b.serviceDate)&&
-    norm(a.trabajo)===norm(b.trabajo)&&
+    (!includeWork||norm(a.trabajo)===norm(b.trabajo))&&
     (!phone(a.movil)||!phone(b.movil)||phone(a.movil)===phone(b.movil));
 }
 function crewCanonicalWorkerPhone(value){
@@ -13160,7 +13160,13 @@ const crewPersist=(service,mode='general')=>{
           const renamed=matches.length===0&&phone.length>=9&&imported.serviceDate&&imported.trabajo&&imported.inicio&&imported.fin?
             available.filter(w=>w.serviceDate===imported.serviceDate&&normalize(w.trabajo)===normalize(imported.trabajo)&&
               crewCanonicalWorkerPhone(w.movil)===phone&&sameShift(w)):[];
-          const candidates=matches.length>1?matches.filter(sameShift):matches.length?matches:renamed;
+          // A person can move to a different work type in a revised PDF.
+          // Require both their full name and mobile, and a unique row that day.
+          const relocated=!matches.length&&!renamed.length&&phone.length>=9?
+            available.filter(w=>crewWorkerIdentityEqual(w,imported,false)&&
+              crewCanonicalWorkerPhone(w.movil)===phone):[];
+          const candidates=matches.length>1?matches.filter(sameShift):matches.length?matches:
+            renamed.length?renamed:relocated;
           const exact=matches.length?candidates.filter(w=>String(w.id||'')===String(imported.id||'')&&remoteCounts.get(String(w.id))===1):[];
           // Do not copy a different row's attendance if same-name matches are ambiguous.
           const current=exact.length===1?exact[0]:candidates.length===1?candidates[0]:null;
@@ -13257,7 +13263,7 @@ function crewHasOlderAttendance(local,remote){
 }
 
 async function crewCheckRemoteChanges(){
-  if(crewRemoteCheckInFlight||document.hidden||!state.service?.code)return;
+  if(crewRemoteCheckInFlight||crewPdfImportInFlight||document.hidden||!state.service?.code)return;
   if(Date.now()-crewLastLocalWrite<500||state.workerSaveInFlight)return;
   // Keep fetching server updates even if a dialog or text input is open.
   // Rendering is deferred to avoid destroying an active edit.
@@ -13277,7 +13283,7 @@ async function crewCheckRemoteChanges(){
        crewLastLocalWrite>checkStarted||state.service?._syncRevision!==localRevision)return;
     const response=await crewApi(code);
     const remote=response.service;
-    if(!remote||state.service?.code!==code)return;
+    if(!remote||crewPdfImportInFlight||state.service?.code!==code)return;
     if(state.workerSaveInFlight||
        crewLastLocalWrite>checkStarted||state.service?._syncRevision!==localRevision)return;
     if(crewHasOlderAttendance(state.service,remote))return;
@@ -13383,7 +13389,8 @@ async function crewD1Dispatch(method,args){
   if(method==='replaceWorkersFromPdf'){
     // Finish earlier worker edits before taking the import snapshot.
     await crewSaveQueue;
-    const parsed=args[1]||{},old=state.service||{};
+    const parsed=args[1]||{},old=(await crewApi(code)).service;
+    if(!old||old.closed)throw new Error('El servicio no está disponible para importar.');
     const incoming=Array.isArray(parsed.workers)?parsed.workers:[];
     if(!incoming.length)throw new Error('El PDF no contiene trabajadores válidos; no se ha modificado el servicio.');
 
@@ -15210,7 +15217,8 @@ function setSaveState(text,cls){
   const el=document.getElementById('saveState');
   const code=state.service?.code;
   if(code&&cls==='saved'){
-    if(state.workerSaveInFlight||Object.keys(crewCurrentWorkerJournal(code)).length||crewPausePending(code).length||Object.keys(crewVisibilityJournal(code)).length){
+    if(crewPdfImportInFlight){text='Importando PDF…';cls='saving';}
+    else if(state.workerSaveInFlight||Object.keys(crewCurrentWorkerJournal(code)).length||crewPausePending(code).length||Object.keys(crewVisibilityJournal(code)).length){
       text='Cambios pendientes de sincronizar';cls='saving';
     }else if(crewHeldCount(code)){
       text=crewHeldMessage(code);cls='error';
@@ -15626,17 +15634,30 @@ async function downloadServicePdf(){
   }catch(error){alert(error.message)}
 }
 /* PDF */
+let crewPdfImportInFlight=false;
 async function importPdf(file,targetDay=''){
-  if(!state.service||state.service.closed)return;
+  if(!state.service||state.service.closed||crewPdfImportInFlight)return;
   const code=state.service.code;
   if(state.service.workers.length){
     const ok=confirm('Este servicio ya tiene personal. ¿Importar el PDF? Solo se actualizarán los días que contiene. Se conservarán los equipos, estados, fichajes, pausas asignadas, valoraciones, reservas y notas de los trabajadores identificados. Solo se actualizarán sus datos del PDF.');
     if(!ok)return;
   }
 
-  showPdfStatus('Leyendo fechas, turnos y personal…','info');
+  crewPdfImportInFlight=true;
+  const app=document.getElementById('appScreen');
+  let imported=false;
+  app.inert=true;
+  showPdfStatus('Guardando cambios pendientes antes de importar…','info');
+  setSaveState('Importando PDF…','saving');
 
   try{
+    await crewWorkerFlushPromise;
+    await crewFlushServiceChanges(code,Boolean(state.metaTimer),Boolean(state.structureTimer));
+    clearTimeout(state.metaTimer);
+    clearTimeout(state.structureTimer);
+    state.metaTimer=null;
+    state.structureTimer=null;
+    showPdfStatus('Leyendo fechas, turnos y personal…','info');
     await ensurePdfJs();
     const parsed=await parsePennyWisePdf(file);
     if(state.service?.code!==code)return;
@@ -15644,6 +15665,8 @@ async function importPdf(file,targetDay=''){
     const existingDays=new Map(crewServiceDays(state.service).map(day=>[crewDayKey(day),day]));
     const fileDay=value=>existingDays.get(crewDayKey(value))||crewDayKey(value);
     for(const worker of parsed.workers)worker.serviceDate=worker.serviceDate?fileDay(worker.serviceDate):'';
+    for(const block of parsed.blocks||[])block.serviceDate=block.serviceDate?fileDay(block.serviceDate):'';
+    if(parsed.meta.serviceDate)parsed.meta.serviceDate=fileDay(parsed.meta.serviceDate);
     if(targetDay){
       const key=crewDayKey(targetDay);
       targetDay=existingDays.get(key)||key;
@@ -15672,45 +15695,49 @@ async function importPdf(file,targetDay=''){
 
     showPdfStatus(`Detectados ${parsed.workers.length} registros en ${new Set(parsed.workers.map(w=>w.serviceDate)).size} día(s). Guardando…`,'info');
 
-    backend.run
-      .withSuccessHandler(async result=>{
-        const service=result.service;
-        const s=result.summary||{};
-        if(state.service?.code!==code)return;
-        if(!Array.isArray(service?.workers)||service.workers.filter(w=>dates.includes(w.serviceDate||'SIN FECHA')).length!==parsed.workers.length){
-          showPdfStatus('La importación no ha devuelto todos los trabajadores. No se mostrará como completada; vuelve a abrir el servicio para comprobar los datos.','error');
-          return;
-        }
-        openServiceData(service);
-        if(getDays().includes(targetDay||dates[0]))setActiveDay(targetDay||dates[0]);
-        updatePdfPlacementUI();
-        // Always show the imported day and clear any filters from a previous service.
-        if(state.service.workers.length&&!workersForActiveDay().length){
-          state.activeDay=state.service.workers[0].serviceDate||'SIN FECHA';
-          renderPersonnel();
-        }
-        const changedNames=(s.changedNames||[]).length
-          ? `<div class="hint" style="margin-top:8px"><strong>Horarios modificados:</strong> ${escapeHtml((s.changedNames||[]).join(', '))}</div>`
-          : '';
-        const details=`
-          <div><strong>${s.matched||s.removed?'PDF actualizado.':'PDF cargado correctamente.'}</strong></div>
-          <div class="import-summary">
-            <span class="import-chip">${s.matched||0} conservados</span>
-            <span class="import-chip">${s.added||0} nuevos</span>
-            <span class="import-chip">${s.removed||0} eliminados</span>
-            <span class="import-chip">${s.scheduleChanged||0} horarios cambiados</span>
-            <span class="import-chip">${s.pauseChanged||0} pausas cambiadas</span>
-            <span class="import-chip">${s.dietChanged||0} dietas cambiadas</span>
-            <span class="import-chip">${s.coordinatorChanged||0} cambios CS</span>
-            <span class="import-chip">${s.movedToReserve||0} reservas</span>
-          </div>${changedNames}`;
-        showPdfStatusHtml(details,'ok');
-      })
-      .withFailureHandler(err=>{if(state.service?.code===code)showPdfStatus(errorMessage(err),'error')})
-      .replaceWorkersFromPdf(code,parsed);
+    const result=await dispatchBackend('replaceWorkersFromPdf',[code,parsed]);
+    const service=result.service;
+    const s=result.summary||{};
+    if(state.service?.code!==code)return;
+    if(!Array.isArray(service?.workers)||service.workers.filter(w=>dates.includes(w.serviceDate||'SIN FECHA')).length!==parsed.workers.length){
+      throw new Error('La importación no ha devuelto todos los trabajadores. Vuelve a abrir el servicio para comprobar los datos.');
+    }
+    openServiceData(service);
+    if(getDays().includes(targetDay||dates[0]))setActiveDay(targetDay||dates[0]);
+    updatePdfPlacementUI();
+    // Always show the imported day and clear any filters from a previous service.
+    if(state.service.workers.length&&!workersForActiveDay().length){
+      state.activeDay=state.service.workers[0].serviceDate||'SIN FECHA';
+      renderPersonnel();
+    }
+    const changedNames=(s.changedNames||[]).length
+      ? `<div class="hint" style="margin-top:8px"><strong>Horarios modificados:</strong> ${escapeHtml((s.changedNames||[]).join(', '))}</div>`
+      : '';
+    const details=`
+      <div><strong>${s.matched||s.removed?'PDF actualizado.':'PDF cargado correctamente.'}</strong></div>
+      <div class="import-summary">
+        <span class="import-chip">${s.matched||0} conservados</span>
+        <span class="import-chip">${s.added||0} nuevos</span>
+        <span class="import-chip">${s.removed||0} eliminados</span>
+        <span class="import-chip">${s.scheduleChanged||0} horarios cambiados</span>
+        <span class="import-chip">${s.pauseChanged||0} pausas cambiadas</span>
+        <span class="import-chip">${s.dietChanged||0} dietas cambiadas</span>
+        <span class="import-chip">${s.coordinatorChanged||0} cambios CS</span>
+        <span class="import-chip">${s.movedToReserve||0} reservas</span>
+      </div>${changedNames}`;
+    showPdfStatusHtml(details,'ok');
+    imported=true;
 
   }catch(err){
-    console.error(err);if(state.service?.code===code)showPdfStatus(errorMessage(err),'error');
+    console.error(err);
+    if(state.service?.code===code){
+      showPdfStatus(errorMessage(err),'error');
+      setSaveState('PDF sin aplicar · '+errorMessage(err),'error');
+    }
+  }finally{
+    crewPdfImportInFlight=false;
+    app.inert=false;
+    if(imported&&state.service?.code===code)setSaveState('PDF importado y guardado','saved');
   }
 }
 
@@ -15732,6 +15759,7 @@ async function parsePennyWisePdf(file){
 
   let currentBlock=null,currentServiceDate='',blockSeq=0;
   let previousMobileLayout=null,previousMobilePageWidth=0;
+  let previousColumnLayout=null,previousColumnPageWidth=0;
 
   for(let pageNumber=1;pageNumber<=pdf.numPages;pageNumber++){
     const page=await pdf.getPage(pageNumber);
@@ -15747,7 +15775,13 @@ async function parsePennyWisePdf(file){
     }));
 
     const lines=groupItemsIntoLines(items);
-    const pageLayout=detectPdfColumnLayout(lines,width);
+    const detectedLayout=detectPdfColumnLayout(lines,width);
+    if(detectedLayout){
+      previousColumnLayout=detectedLayout;
+      previousColumnPageWidth=width;
+    }
+    const pageLayout=detectedLayout||
+      (previousColumnLayout&&Math.abs(width-previousColumnPageWidth)<2?previousColumnLayout:null);
     // The MÓVIL heading can be on a different baseline from the main table
     // headings. Detect it independently on every page.
     const pageMobileLayout=detectPdfMobileHeaderLayout(lines,width);
@@ -15766,7 +15800,7 @@ async function parsePennyWisePdf(file){
 
       // Cada FECHA SERVICIO actualiza el día vigente para los bloques siguientes.
       if(upper.includes('FECHA SERVICIO:')){
-        const match=lineText.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
+        const match=lineText.match(/FECHA\s+SERVICIO:\s*(\d{1,2}\/\d{1,2}\/\d{4})(?!\d)/i);
         if(match){
           currentServiceDate=match[1];
           if(!meta.serviceDate)meta.serviceDate=currentServiceDate;
@@ -16008,7 +16042,9 @@ async function parsePennyWisePdf(file){
     w.blockLabel=b?b.label:w.trabajo;
   });
 
-  return {meta,workers};
+  const firstWorkerDay=workers.find(w=>w.serviceDate)?.serviceDate;
+  if(firstWorkerDay)meta.serviceDate=firstWorkerDay;
+  return {meta,workers,blocks};
 }
 
 

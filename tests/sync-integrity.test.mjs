@@ -563,3 +563,99 @@ test('closing one day protects its records and PDF while other days remain edita
  assert.equal(closedDayChanged(closed,{...closed,closedDays:{}}),true);
  assert.equal(closedDayChanged(closed,{...closed,pdfDocuments:{}}),true);
 });
+
+test('PDF continuation pages keep the table columns and use the actual service day',async()=>{
+  const source=section('function extractPdfReference(', 'function crewDayKey(');
+  const item=(str,x,y,width=35)=>({str,width,transform:[1,0,0,1,x,y]});
+  const header=[['NOMBRE',70],['ESPECIALIDAD',280],['H.LLAM.',470],['INICIO',530],
+    ['FIN',590],['PAUSA',650],['N.DIETA',710],['CS',765],['TELÉFONO',810],['MÓVIL',890]]
+    .map(([label,x])=>item(label,x,800));
+  const row=(number,name,pause)=>[
+    item(String(number),15,760,8),item(name,70,760,160),item('HAND B',280,760),
+    ...['07:45','08:00','18:00',pause,'1:00'].map((value,i)=>item(value,470+i*60,760)),
+    item('600000123',890,760,58)
+  ];
+  const pages=[[
+    item('FECHA SERVICIO: 15-21/11/2026',20,960,200),
+    item('FECHA SERVICIO: 17/11/2026',20,900,200),
+    item('TRABAJO: TECNICA',470,850,180),...header,...row(1,'PERSONA PRIMERA','1:00')
+  ],row(2,'PERSONA SEGUNDA','2:00')];
+  const pdfjsLib={getDocument:()=>({promise:Promise.resolve({numPages:2,getPage:async number=>({
+    getViewport:()=>({width:1000}),getTextContent:async()=>({items:pages[number-1]})
+  })})})};
+  const normalize=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
+  const parse=new Function('pdfjsLib','normalize',source+'return parsePennyWisePdf;')(pdfjsLib,normalize);
+  const parsed=await parse({arrayBuffer:async()=>new ArrayBuffer(0)});
+  assert.equal(parsed.meta.serviceDate,'17/11/2026');
+  assert.equal(parsed.workers.length,2);
+  assert.equal(parsed.workers[1].personal,'PERSONA SEGUNDA');
+  assert.equal(parsed.workers[1].nDieta,1);
+  assert.equal(parsed.workers[1].pausa,'02:00');
+  assert.equal(parsed.workers[1].movil,'600000123');
+  assert.equal(parsed.blocks.length,1);
+});
+
+test('a verified worker can move work type on PDF update without losing check-in or assignments',async()=>{
+  const source=section('function crewUniqueWorkerIds','const crewSaveLatest=');
+  const worker={...recoveryWorker,serviceDate:'17/11/2026',trabajo:'LOCAL',status:'PRESENTE',
+    arrivalAt:'07:55',teamId:'audio',notes:'Conservar',_fieldTimes:{status:2}};
+  let cloud={code:'123456',workers:[worker]};
+  const api=async(code,method='GET',body)=>{
+    if(method==='GET')return {service:structuredClone(cloud)};
+    cloud={...body.service,_syncRevision:'R2'};
+    return {ok:true,revision:'R2',service:cloud};
+  };
+  const persist=new Function('crewApi','crypto','normalize',
+    'let crewSaveQueue=Promise.resolve(),crewLastLocalWrite=0;'+source+';return crewPersist')(
+    api,{randomUUID},s=>String(s||'').trim().toUpperCase());
+  const revised={...worker,id:'PDF_CHANGED',trabajo:'TECNICA',inicio:'09:00',status:'PENDIENTE',arrivalAt:''};
+  const saved=await persist({code:'123456',workers:[revised]},'roster');
+  assert.equal(saved.workers[0].id,worker.id);
+  assert.equal(saved.workers[0].trabajo,'TECNICA');
+  assert.equal(saved.workers[0].inicio,'09:00');
+  assert.equal(saved.workers[0].status,'PRESENTE');
+  assert.equal(saved.workers[0].arrivalAt,'07:55');
+  assert.equal(saved.workers[0].teamId,'audio');
+  assert.equal(saved.workers[0].notes,'Conservar');
+  assert.deepEqual(saved.workers[0]._fieldTimes,{status:2});
+  await assert.rejects(persist({code:'123456',workers:[{...revised,movil:'600222333'}]},'roster'),/PDF sin aplicar/);
+});
+
+test('PDF import waits for pending edits and the roster receipt, and prevents overlapping imports',async()=>{
+  const source=section('let crewPdfImportInFlight=false;', 'function extractPdfReference(');
+  let releaseFlush,releaseSave;
+  const flush=new Promise(resolve=>{releaseFlush=resolve;});
+  const save=new Promise(resolve=>{releaseSave=resolve;});
+  const worker={id:'W1',serviceDate:'17/11/2026',personal:'Persona Prueba'};
+  const service={code:'123456',workers:[worker]};
+  const state={service:{code:'123456',workers:[]}},app={inert:false},calls=[];
+  const noop=()=>{};
+  const scope={state,document:{getElementById:()=>app},confirm:()=>true,showPdfStatus:noop,
+    setSaveState:message=>calls.push(message),crewWorkerFlushPromise:Promise.resolve(),
+    crewFlushServiceChanges:()=>flush,ensurePdfJs:noop,clearTimeout,
+    parsePennyWisePdf:async()=>{calls.push('parse');return {meta:{},workers:[{...worker}],blocks:[]};},
+    crewServiceDays:()=>[],crewDayKey:day=>day,crewDayClosed:()=>false,
+    crypto:{randomUUID},fetch:async()=>({ok:true}),
+    dispatchBackend:async()=>{calls.push('save');return save;},
+    openServiceData:s=>{state.service=s;},getDays:()=>[worker.serviceDate],setActiveDay:noop,
+    updatePdfPlacementUI:noop,workersForActiveDay:()=>[worker],renderPersonnel:noop,
+    escapeHtml:x=>x,showPdfStatusHtml:noop,errorMessage:e=>e.message};
+  const importPdf=new Function(...Object.keys(scope),source+'return importPdf;')(...Object.values(scope));
+  let completed=false;
+  const pending=importPdf({name:'personal.pdf'}).then(()=>{completed=true;});
+  await new Promise(setImmediate);
+  assert.equal(app.inert,true);
+  assert.ok(!calls.includes('parse'));
+  releaseFlush();
+  await new Promise(setImmediate);
+  assert.equal(calls.filter(x=>x==='parse').length,1);
+  assert.ok(calls.includes('save'));
+  assert.equal(completed,false);
+  await importPdf({name:'segundo.pdf'});
+  assert.equal(calls.filter(x=>x==='parse').length,1);
+  releaseSave({service,summary:{added:1}});
+  await pending;
+  assert.equal(app.inert,false);
+  assert.equal(state.service,service);
+  assert.equal(calls.at(-1),'PDF importado y guardado');
+});
