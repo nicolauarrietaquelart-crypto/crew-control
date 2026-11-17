@@ -30,6 +30,41 @@ async function checkPassword(record,password,proof){
  return typeof password==='string'&&password.length<=256&&equal(await passwordHash(password,record.salt),record.password_hash);
 }
 
+function managerDayKey(value){
+ const day=String(value||'SIN FECHA');
+ const date=day.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+ return date?date[1].padStart(2,'0')+'/'+date[2].padStart(2,'0')+'/'+date[3]:day;
+}
+
+export function serviceWithoutDay(service,day){
+ const key=managerDayKey(day);
+ const days=[...(service.addedDays||[]),...(service.workers||[]).map(worker=>worker.serviceDate||'SIN FECHA')];
+ if(!days.some(date=>managerDayKey(date)===key))return null;
+ const next={...service};
+ const scoped=entry=>managerDayKey(entry.serviceDate)!==key;
+ for(const field of ['workers','requirements','pauseShifts','incidents','blocks']){
+  if(Array.isArray(service[field]))next[field]=service[field].filter(scoped);
+ }
+ next.addedDays=(service.addedDays||[]).filter(date=>managerDayKey(date)!==key);
+ for(const field of ['closedDays','pdfDocuments','staffingLinkedWorks']){
+  if(service[field])next[field]=Object.fromEntries(Object.entries(service[field])
+   .filter(([date])=>managerDayKey(date.split('|')[0])!==key));
+ }
+ const removedShifts=new Set((service.pauseShifts||[]).filter(shift=>!scoped(shift)).map(shift=>String(shift.id)));
+ if(service._pauseVersions)next._pauseVersions=Object.fromEntries(Object.entries(service._pauseVersions).filter(([version])=>{
+  const parts=version.split(':');
+  if(parts[0]==='assignment')return managerDayKey(parts[1])!==key;
+  return !['shift','return'].includes(parts[0])||!removedShifts.has(parts[1]);
+ }));
+ const remaining=[...new Set([...next.addedDays,...(next.workers||[]).map(worker=>worker.serviceDate||'SIN FECHA')])];
+ if(managerDayKey(service.serviceDate)===key){
+  const sortable=date=>/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(date)?managerDayKey(date).split('/').reverse().join('-'):'9999';
+  next.serviceDate=remaining.sort((a,b)=>sortable(a).localeCompare(sortable(b)))[0]||'';
+ }
+ if(!remaining.length||(Object.keys(service.pdfDocuments||{}).length&&!Object.keys(next.pdfDocuments).length))next.pdfName='';
+ return next;
+}
+
 export async function manager(request,env,url){
  const db=env.DB;
  const action=url.pathname.slice('/api/manager/'.length);
@@ -126,6 +161,28 @@ export async function manager(request,env,url){
   const result=await db.prepare('UPDATE services SET deleted_at=CURRENT_TIMESTAMP WHERE code=? AND deleted_at IS NULL').bind(code).run();
   if(!result.meta.changes)return error('El servicio ya no está disponible. Actualiza la lista.',404);
   return response({ok:true});
+ }
+ if(action==='delete-day'&&writes){
+  const {code,day,revision}=await request.json();
+  if(typeof code!=='string'||!/^(?:\d{6}|[A-Za-z0-9_-]{12,80})$/.test(code)||
+    typeof day!=='string'||!day||day.length>30||typeof revision!=='string')return error('Servicio o día no válido.',400);
+  const row=await db.prepare('SELECT s.id,p.snapshot FROM services s JOIN service_snapshots p ON p.service_id=s.id WHERE s.code=? AND s.deleted_at IS NULL').bind(code).first();
+  if(!row)return error('El servicio ya no está disponible.',404);
+  const previous=JSON.parse(row.snapshot);
+  if(String(previous._syncRevision||'')!==revision)return error('El servicio ha cambiado. Actualiza la lista y vuelve a revisar el día.',409);
+  const next=serviceWithoutDay(previous,day);
+  if(!next)return error('Ese día ya no está en el servicio. Actualiza la lista.',404);
+  const nextRevision=crypto.randomUUID();
+  next._syncRevision=nextRevision;
+  next._syncSequence=Number(previous._syncSequence||0)+1;
+  const results=await db.batch([
+   db.prepare('UPDATE service_snapshots SET snapshot=?,updated_at=CURRENT_TIMESTAMP WHERE service_id=? AND snapshot=? AND EXISTS (SELECT 1 FROM services WHERE id=? AND deleted_at IS NULL)')
+    .bind(JSON.stringify(next),row.id,row.snapshot,row.id),
+   db.prepare("UPDATE services SET service_date=?,pdf_name=? WHERE id=? AND EXISTS (SELECT 1 FROM service_snapshots WHERE service_id=? AND json_extract(snapshot,'$._syncRevision')=?)")
+    .bind(next.serviceDate||'',next.pdfName||'',row.id,row.id,nextRevision)
+  ]);
+  if(!results[0].meta.changes)return error('El servicio ha cambiado. Actualiza la lista y vuelve a revisar el día.',409);
+  return response({ok:true,day:managerDayKey(day),revision:nextRevision});
  }
  if(action==='services'&&request.method==='GET'){
   const {results}=await db.prepare(`SELECT s.code,

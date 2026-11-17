@@ -199,6 +199,33 @@ print(json.dumps(out))
   const rotatedCookie=rotated.headers.get('set-cookie').split(';')[0];
   assert.equal((await manager('services',undefined,rememberedCookie)).status,401);
   assert.equal((await manager('services',undefined,rotatedCookie,'https://example.test',true,nextPage)).status,200);
+  const dayService={code:'333333',serviceName:'Servicio por días',serviceDate:'17/11/2026',
+   closed:true,closedDays:{'17/11/2026':'closed'},addedDays:['17/11/2026','18/11/2026'],
+   workers:[{id:'D1',serviceDate:'17/11/2026'},{id:'D2',serviceDate:'18/11/2026'}],
+   _syncRevision:'DAY_R1',_syncSequence:4};
+  sql([
+   {sql:'INSERT INTO services(id,code,closed) VALUES (?,?,0)',args:['S3','333333']},
+   {sql:'INSERT INTO service_snapshots(service_id,snapshot,updated_at) VALUES (?,?,CURRENT_TIMESTAMP)',args:['S3',JSON.stringify(dayService)]}
+  ]);
+  const removeDay={code:'333333',day:'17/11/2026',revision:'DAY_R1'};
+  assert.equal((await manager('delete-day',removeDay)).status,401);
+  assert.equal((await manager('delete-day',removeDay,rotatedCookie,'https://foreign.test',true,nextPage)).status,403);
+  assert.equal((await manager('delete-day',{...removeDay,revision:'STALE'},rotatedCookie,'https://example.test',true,nextPage)).status,409);
+  const originalBatch=DB.batch;
+  DB.batch=async statements=>{
+   sql([{sql:'UPDATE service_snapshots SET snapshot=? WHERE service_id=?',args:[JSON.stringify({...dayService,_syncRevision:'DAY_R2'}),'S3']}]);
+   return originalBatch(statements);
+  };
+  assert.equal((await manager('delete-day',removeDay,rotatedCookie,'https://example.test',true,nextPage)).status,409);
+  DB.batch=originalBatch;
+  assert.equal((await manager('delete-day',{...removeDay,revision:'DAY_R2'},rotatedCookie,'https://example.test',true,nextPage)).status,200);
+  const remaining=(await (await call('GET',null,'','333333')).json()).service;
+  assert.deepEqual(remaining.workers,[dayService.workers[1]]);
+  assert.equal(remaining.serviceDate,'18/11/2026');
+  assert.equal(remaining._syncSequence,5);
+  assert.deepEqual(remaining.closedDays,{});
+  assert.equal(remaining.closed,true);
+  assert.equal((await manager('delete-day',{...removeDay,revision:remaining._syncRevision},rotatedCookie,'https://example.test',true,nextPage)).status,404);
   const logout=await manager('logout',{},rotatedCookie,'https://example.test',true,nextPage);
   assert.equal(logout.status,200);
   assert.match(logout.headers.get('set-cookie'),/; Max-Age=0/);

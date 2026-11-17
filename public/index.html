@@ -8,7 +8,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>Crew Control v11.2.45 | Gestión de personal</title>
+  <title>Crew Control v11.2.46 | Gestión de personal</title>
   
   <style>
     :root{
@@ -22056,7 +22056,7 @@ document.addEventListener('keydown',event=>{
  }
 }
 </style>
-<link rel="stylesheet" href="/service-tools.css?v=8">
+<link rel="stylesheet" href="/service-tools.css?v=9">
 <script>
 function crewAddDayButton(){
  return state.service?.closed?'':`<button type="button" class="crew-add-day" onclick="crewOpenAddDay()" aria-label="Añadir día" title="Añadir día">
@@ -22340,6 +22340,7 @@ function crewManagerCard(service){
    finally{element.disabled=false;}
   };
   parent.append(element);
+  return element;
  };
  const open=async()=>{
   const loaded=await dispatchBackend('loadService',[service.code]);
@@ -22394,15 +22395,29 @@ function crewManagerCard(service){
   date.textContent=day;
   const closed=crewDayClosed(service,day);
   label.append(date,stateBadge(closed));
-  entry.append(label);
+  const dayActions=document.createElement('div');
+  dayActions.className='crew-manager-day-actions';
+  entry.append(label,dayActions);
   dayList.append(entry);
-  if(closed)button('Descargar Excel',()=>download(day),'crew-manager-export',entry);
+  if(closed)button('Descargar Excel',()=>download(day),'crew-manager-export',dayActions);
   else{
    const input=createUpload(day);
    const hasPdf=service.pdfDays?.some(date=>crewDayKey(date)===crewDayKey(day));
-   button(hasPdf?'Actualizar PDF':'Añadir PDF',()=>input.click(),'secondary',entry);
-   entry.append(input);
+   button(hasPdf?'Actualizar PDF':'Añadir PDF',()=>input.click(),'secondary',dayActions);
+   dayActions.append(input);
   }
+  const removeDay=button('Eliminar día',async()=>{
+   const {service:latest}=await crewApi(service.code);
+   const count=(latest.workers||[]).filter(worker=>crewDayKey(worker.serviceDate)===crewDayKey(day)).length;
+   const message='¿Eliminar el día '+day+' de «'+title.textContent+'»? Se retirarán '+count+' registro(s) de personal, la planificación, pausas e incidencias de esta jornada.';
+   if(!confirm(message+(crewDayClosed(latest,day)?' El día está cerrado.':'')))return;
+   await crewManagerApi('delete-day',{code:service.code,day,revision:String(latest._syncRevision||'')});
+   await crewRefreshManager();
+   managerUI.status.textContent='Día '+day+' eliminado.';
+  },'crew-manager-day-delete',dayActions);
+  removeDay.title='Eliminar día '+day;
+  removeDay.setAttribute('aria-label','Eliminar día '+day);
+  removeDay.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg>';
  }
  button('Eliminar',async()=>{
   if(!confirm('¿Eliminar «'+title.textContent+'» ('+service.code+')? Se quitará de la lista y su código dejará de dar acceso al servicio.'))return;

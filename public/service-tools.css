@@ -70,15 +70,15 @@ body:has(#startScreen.hidden) #crewManagerEntry{display:none!important}
  gap:6px 8px;padding:5px 6px 5px 9px;border:1px solid #eeeae5;border-radius:9px;background:#faf9f7;
 }
 #crewManager .crew-manager-day-label{display:flex;align-items:center;flex-wrap:wrap;gap:5px 8px;font-size:12px}
-#crewManager :is(.crew-manager-actions,.crew-manager-day)>button{
+#crewManager :is(.crew-manager-actions,.crew-manager-day,.crew-manager-day-actions)>button{
  min-height:34px;padding:5px 9px;border:1px solid #ddd8d3!important;border-radius:8px;
  background:#fff!important;color:#23211f!important;box-shadow:none;font-size:12px;font-weight:750;
 }
 #crewManager .crew-manager-actions>button.primary{background:#ff851a!important;border-color:#ff851a!important;color:#151515!important}
-#crewManager :is(.crew-manager-actions,.crew-manager-day)>button:not(.primary):hover{background:#f2efea!important}
+#crewManager :is(.crew-manager-actions,.crew-manager-day,.crew-manager-day-actions)>button:not(.primary):hover{background:#f2efea!important}
 #crewManager .crew-manager-actions>button.primary:hover{background:#ff9a42!important}
-#crewManager :is(.crew-manager-actions,.crew-manager-day)>button.crew-manager-export{background:#edf6ef!important;border-color:#c6dfca!important;color:#205d35!important}
-#crewManager :is(.crew-manager-actions,.crew-manager-day)>button.crew-manager-export:hover{background:#deefe3!important}
+#crewManager :is(.crew-manager-actions,.crew-manager-day,.crew-manager-day-actions)>button.crew-manager-export{background:#edf6ef!important;border-color:#c6dfca!important;color:#205d35!important}
+#crewManager :is(.crew-manager-actions,.crew-manager-day,.crew-manager-day-actions)>button.crew-manager-export:hover{background:#deefe3!important}
 #crewManager .crew-manager-actions>button.crew-manager-delete{margin-inline-start:auto;border-color:transparent!important;color:#9b2927!important}
 #crewManager .crew-manager-actions>button.crew-manager-delete:hover{background:#fce5e3!important}
 
@@ -89,3 +89,7 @@ body:has(#startScreen.hidden) #crewManagerEntry{display:none!important}
 #crewManager .crew-manager-state[data-closed="partial"]{background:#fff0da;color:#855415}
 #crewManagerNoMatches{color:#68635e;font-size:13px;padding:16px 4px}
 @media(max-width:420px){#crewManager .crew-manager-filters{grid-template-columns:minmax(0,1fr)}#crewManagerResults{grid-column:1}}
+
+#crewManager .crew-manager-day-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+#crewManager .crew-manager-day-actions>.crew-manager-day-delete{display:grid;place-items:center;width:32px;min-height:32px;padding:5px;background:#fff3f1!important;border-color:#efd2cc!important;color:#a1392f!important}
+#crewManager .crew-manager-day-delete svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
