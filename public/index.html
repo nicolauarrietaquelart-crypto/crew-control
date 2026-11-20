@@ -22440,6 +22440,24 @@ html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #scenariosTeamsModal .crew-tea
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #scenariosTeamsModal .crew-team-work-list-v11263 > button small{color:var(--cd-muted)!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #scenariosTeamsModal .crew-team-work-list-v11263 > button:is(:hover,:focus-visible,.active){border-color:#ff8a2b!important;background:rgba(255,138,43,.12)!important}
 
+
+/* Capa blanca (::after) detrás de cada fila en pantallas anchas */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row]::after{background:var(--cd-surface)!important;background-image:none!important;border-color:var(--cd-line)!important;box-shadow:none!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row]:hover:not(.worker-row-selected)::after{background:var(--cd-surface-2)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups details.work-group > .table-wrap > table > tbody[data-work-team-body] > tr[data-worker-row].worker-row-selected::after{background:linear-gradient(90deg,rgba(255,138,43,.18),rgba(255,138,43,.06))!important;border-color:rgba(255,138,43,.5)!important;box-shadow:inset 4px 0 0 #ff8a2b!important}
+/* Cabecera de planificación compartida */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups > .crew-linked-work-heading{background:var(--cd-surface)!important;background-image:none!important;border-color:var(--cd-line)!important;color:#ff8a2b!important;box-shadow:none!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups > .crew-linked-work-heading > span{color:#ff8a2b!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups > .crew-linked-work-heading :is(.crew-shared-heading-stats,.crew-shared-heading-stats .staffing-summary){background:transparent!important;background-image:none!important}
+
+
+/* Panel para cargar el PDF inicial */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #initialPdfUploadPanel :is(.initial-pdf-dropzone-v11228,.upload){background:var(--cd-surface-2)!important;background-image:none!important;border-color:var(--cd-line-2)!important;color:var(--cd-text)!important;box-shadow:none!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #initialPdfUploadPanel :is(.initial-pdf-dropzone-v11228,.upload):is(.drag,.dragover,.is-dragging,:hover){border-color:#ff8a2b!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #initialPdfUploadPanel strong{color:var(--cd-text)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #initialPdfUploadPanel .hint{color:var(--cd-muted)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #initialPdfUploadPanel .file-button.primary{background:#ff8a2b!important;background-image:none!important;color:#111214!important;border-color:#ff8a2b!important}
+
 /* Modales y diálogos */
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(.modal-card,dialog){background:var(--cd-surface)!important;color:var(--cd-text)!important;border-color:var(--cd-line)!important;box-shadow:0 24px 70px rgba(0,0,0,.6)!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .modal:not(.hidden){background:rgba(0,0,0,.55)!important}
