@@ -22290,7 +22290,9 @@ html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups :is(table,tbo
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups thead th{background:var(--cd-surface-2)!important;color:var(--cd-muted)!important;border-color:var(--cd-line)!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row]{background:var(--cd-surface)!important;border-color:var(--cd-line)!important;box-shadow:none!important;outline-color:var(--cd-line)!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row] > td{background:var(--cd-surface)!important;color:var(--cd-text)!important;border-color:var(--cd-line)!important}
-html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row].worker-row-selected > td{background:#2a2016!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row].worker-row-selected{background:#2a2016!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row].worker-row-selected > td{background:transparent!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row].worker-row-selected::after{background:linear-gradient(90deg,rgba(255,138,43,.16),rgba(255,138,43,.05))!important;box-shadow:inset 4px 0 0 #ff8a2b!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr.shift-divider-row td,html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups .shift-divider-controls-v121{background:var(--cd-surface)!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups .shift-divider-controls-v1211 > :is(.shift-divider-btn,.shift-select-left-v1211,.shift-select-v121),
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups :is(.shift-divider-btn,.shift-select-v121){background:var(--cd-surface-3)!important;background-image:none!important;color:var(--cd-text)!important;border-color:var(--cd-line-2)!important;box-shadow:none!important}
@@ -22418,6 +22420,15 @@ html.crew-dark{scrollbar-color:#3a3d44 transparent}
   root.classList.toggle('crew-dark',dark);
   try{localStorage.setItem('crew-theme',dark?'dark':'light');}catch{}
   paint();
+  // Some rows keep the previous theme's styles until they are rebuilt:
+  // redraw the roster and side panels so nothing mixes both themes.
+  try{
+   if(typeof state!=='undefined'&&state?.service){
+    if(typeof renderPersonnel==='function')renderPersonnel();
+    if(typeof renderIncidents==='function')renderIncidents();
+    if(typeof renderOperationalDashboard==='function')renderOperationalDashboard();
+   }
+  }catch(error){console.warn('[tema]',error);}
  };
  paint();
 })();
