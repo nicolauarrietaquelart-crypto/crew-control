@@ -14665,8 +14665,11 @@ function scheduleStructureSave(){
     backend.run
       .withSuccessHandler(service=>{
         if(state.service?.code!==code||crewSnapshotIsOlder(code,service))return;
-        // The operation only saved teams. The polling path owns roster refreshes.
-        renderScenarios();updateTeamSelects();renderPersonnel();
+        // Avoid destroying the focused team name field or rebuilding the roster
+        // on each autosave response. The blur/change handler performs the refresh.
+        if(!document.getElementById('scenarioList')?.contains(document.activeElement)){
+          renderScenarios();updateTeamSelects();crewStructureRefresh();
+        }
         setSaveState('Guardado','saved');
       })
       .withFailureHandler(err=>{console.error(err);setSaveState('Error al guardar','error')})
@@ -15283,6 +15286,8 @@ function setSaveState(text,cls){
 function renderScenarios(){
   if(!state.service)return;
   const host=document.getElementById('scenarioList');
+  // Never replace a text field while the operator is typing in Equipos.
+  if(host?.contains(document.activeElement)&&document.activeElement?.matches('input[type="text"]'))return;
 
   host.innerHTML=state.service.scenarios.map((scenario,scenarioIndex)=>{
     const teams=state.service.teams.filter(t=>t.scenarioId===scenario.id);
@@ -15291,7 +15296,7 @@ function renderScenarios(){
       <div class="scenario-card">
         <div class="scenario-head">
           <input type="text" value="${escapeAttr(scenario.name)}"
-            oninput="renameScenario('${escapeAttr(scenario.id)}',this.value)">
+            oninput="renameScenario('${escapeAttr(scenario.id)}',this.value)" onchange="crewStructureInputCommitted()">
           ${scenarioIndex===0
             ? '<span class="hint" style="margin:0">Principal</span>'
             : `<button class="danger" onclick="removeScenario('${escapeAttr(scenario.id)}')">Eliminar escenario</button>`}
@@ -15312,9 +15317,9 @@ function teamRowHtml(team){
   return `
     <div class="team-row">
       <input type="text" value="${escapeAttr(team.name)}" placeholder="Equipo"
-        oninput="updateTeam('${escapeAttr(team.id)}','name',this.value)">
+        oninput="updateTeam('${escapeAttr(team.id)}','name',this.value)" onchange="crewStructureInputCommitted()">
       <input type="text" value="${escapeAttr(team.colorName)}" placeholder="Color"
-        oninput="updateTeam('${escapeAttr(team.id)}','colorName',this.value)">
+        oninput="updateTeam('${escapeAttr(team.id)}','colorName',this.value)" onchange="crewStructureInputCommitted()">
       <button type="button" class="palette-trigger"
         onclick="openTeamColorPalette(event,'${escapeAttr(team.id)}',this)"
         title="Colores rápidos">
@@ -15587,7 +15592,17 @@ function addScenario(){
 function renameScenario(id,value){
   const s=state.service.scenarios.find(x=>x.id===id);
   if(!s)return;s.name=value;
-  updateTeamSelects();renderPersonnel();scheduleStructureSave();
+  // Typing must not re-render the roster or move the viewport.
+  scheduleStructureSave();
+}
+function crewStructureRefresh(){
+  const y=window.scrollY;
+  updateTeamSelects();renderPersonnel();
+  if(window.scrollY!==y)window.scrollTo(0,y);
+}
+function crewStructureInputCommitted(){
+  // Commit dependent labels only after editing finishes.
+  crewStructureRefresh();
 }
 
 function removeScenario(id){
@@ -15631,7 +15646,8 @@ function updateTeam(id,field,value){
   const t=state.service.teams.find(x=>x.id===id);
   if(!t)return;
   t[field]=field==='noVest'?Boolean(value):value;
-  updateTeamSelects();renderPersonnel();scheduleStructureSave();
+  if(field==='noVest')crewStructureRefresh();
+  scheduleStructureSave();
 }
 
 function removeTeam(id){
@@ -17258,6 +17274,8 @@ function renderPersonnel(light=false){
   }
 
   const host=document.getElementById('personnelGroups');
+  // Avoid browser scroll anchoring to rows replaced during autosave.
+  host.style.overflowAnchor='none';
   crewRemoveHiddenSelections();
   renderCrewMobileDayShiftV11256();
   const workers=workersForActiveDay().filter(w=>operationalWorkMatches(w.trabajo||'SIN TIPO')&&operationalTimeMatches(w));
@@ -17423,12 +17441,9 @@ function renderPersonnel(light=false){
     const node=groupTemplate.content.firstElementChild;
     if(node){
       node.dataset.renderFingerprint=fingerprint;
-      // Keep the user's expanded state if this group was updated in place.
-      if(existing){
-        if(existing.open)state.expandedWorkGroups.add(trabajo);
-        else state.expandedWorkGroups.delete(trabajo);
-        node.open=existing.open;
-      }
+      // The explicit user choice is authoritative; never copy an obsolete DOM
+      // details state back into state during an unrelated roster refresh.
+      node.open=state.expandedWorkGroups.has(trabajo);
       nextNodes.push(node);
     }
   });
@@ -17486,7 +17501,11 @@ function renderPersonnel(light=false){
 
 
 function rememberWorkGroupToggle(details,trabajo){
-  if(!details)return;
+  if(!details?.isConnected)return;
+  // Ignore delayed toggle events from details nodes replaced by renderPersonnel.
+  const current=[...document.querySelectorAll('#personnelGroups > details.work-group')]
+    .find(el=>el.getAttribute('data-work-group')===trabajo);
+  if(current!==details)return;
   if(details.open)state.expandedWorkGroups.add(trabajo);
   else state.expandedWorkGroups.delete(trabajo);
 }
