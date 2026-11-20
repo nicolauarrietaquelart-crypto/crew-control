@@ -1,7 +1,7 @@
 import {manager} from './manager.js';
 const json=(data,status=200,extra={})=>new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store',...extra}});
 const err=(message,status=400)=>json({ok:false,error:message},status);
-async function body(request){const value=await request.json();if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Invalid JSON object');return value}
+async function body(request){let value;try{value=await request.json()}catch{throw Object.assign(Error('Invalid JSON'),{badRequest:true})}if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Invalid JSON object');return value}
 const str=(v,max=500)=>String(v??'').slice(0,max);
 const snapshotConflict=()=>err('Otro dispositivo ha modificado este servicio. Actualiza para sincronizar antes de guardar.',409);
 
@@ -115,7 +115,9 @@ export default {
         }
         const bytes=new Uint8Array(await request.arrayBuffer());
         if(!bytes.byteLength||bytes.byteLength>8000000)return err('PDF vacío o superior a 8 MB',413);
-        const name=str(decodeURIComponent(request.headers.get('x-pdf-filename')||'personal.pdf'),180).replace(/[\\/]/g,'_');
+        let rawName=request.headers.get('x-pdf-filename')||'personal.pdf';
+        try{rawName=decodeURIComponent(rawName)}catch{}
+        const name=str(rawName,180).replace(/[\\/]/g,'_');
         if(bytes.length<5||bytes.subarray(0,5).some((b,i)=>b!==[37,80,68,70,45][i]))return err('El archivo no es un PDF válido',400);
         const writes=[env.DB.prepare('DELETE FROM service_pdf_chunks WHERE service_id=? AND document_key=?').bind(service.id,file)];
         const chunkSize=1000000;
@@ -252,6 +254,7 @@ export default {
    }
    return err('API route not implemented',404);
   }catch(e){
+   if(e?.badRequest)return err('JSON no válido',400);
    if(String(e).includes('UNIQUE constraint'))return err('Duplicate code',409);
    return err('Database operation failed',500);
   }

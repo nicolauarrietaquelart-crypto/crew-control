@@ -13086,6 +13086,19 @@ const crewApi=async(code,method='GET',payload)=> {
     throw error;
   }finally{clearTimeout(timeout);}
 };
+// Six random digits can collide with an existing service: retry with a new
+// code instead of showing "Este código ya existe" to the user.
+async function crewCreateServiceCode(name){
+  for(let attempt=0;attempt<6;attempt++){
+    const code=String(crypto.getRandomValues(new Uint32Array(1))[0]%1000000).padStart(6,'0');
+    const response=await fetch('/api/services',{method:'POST',headers:{'content-type':'application/json','x-service-code':code},body:JSON.stringify({name:name||''})});
+    let result={};
+    try{result=await response.json();}catch{}
+    if(response.ok)return code;
+    if(response.status!==409)throw new Error(result.error||'No se pudo crear el servicio');
+  }
+  throw new Error('No se pudo generar un código de servicio libre. Inténtalo de nuevo.');
+}
 let crewSaveQueue=Promise.resolve();
 let crewLastLocalWrite=0;
 let crewRemoteCheckInFlight=false;
@@ -13540,11 +13553,14 @@ async function crewD1Dispatch(method,args){
     return {service:saved,summary:{matched,added,removed,retained,retainedNames,scheduleChanged,pauseChanged,dietChanged,coordinatorChanged,movedToReserve,changedNames,duplicateIdsCorrected}};
   }
   if(method==='duplicateServiceSetup'){
-    const newCode=String(crypto.getRandomValues(new Uint32Array(1))[0]%1000000).padStart(6,'0');
-    const res=await fetch('/api/services',{method:'POST',headers:{'content-type':'application/json','x-service-code':newCode},body:JSON.stringify({name:state.service?.serviceName||''})});
-    const created=await res.json();if(!res.ok)throw new Error(created.error||'Error al duplicar');
+    const newCode=await crewCreateServiceCode(state.service?.serviceName||'');
     const original=state.service||{};
-    const copy={...original,code:newCode,closed:false,closedAt:'',closedDays:{},workers:[],incidents:[],requirements:[],blocks:[],addedDays:[],pdfDocuments:{},pdfName:'',scenarios:(original.scenarios||[]).map(x=>({...x})),teams:(original.teams||[]).map(x=>({...x}))};
+    // Copy only the structure. Pause shifts, return checks and linked staffing
+    // refer to workers of the original service and must not leak into the copy.
+    const copy={...original,code:newCode,closed:false,closedAt:'',closedDays:{},workers:[],incidents:[],requirements:[],blocks:[],addedDays:[],pdfDocuments:{},pdfName:'',
+      pauseShifts:[],_pauseVersions:{},staffingLinkedWorks:{},
+      scenarios:(original.scenarios||[]).map(x=>({...x})),teams:(original.teams||[]).map(x=>({...x}))};
+    delete copy._syncRevision;delete copy._syncSequence;
     return crewPersist(copy);
   }
   if(method==='addScenario'){
@@ -13573,14 +13589,13 @@ async function crewD1Dispatch(method,args){
       });
     }
     const ready=crewEnsureDefaultStructure(loaded);
-    if(ready!==loaded && !loaded.closed)return crewPersist(ready);
+    // Add the default structure on the latest D1 revision: two devices opening
+    // the same new service at once must not overwrite each other's data.
+    if(ready!==loaded && !loaded.closed)return crewSaveLatest(code,remote=>crewEnsureDefaultStructure(remote));
     return ready;
   }
   if(method==='generateNewService'){
-    const code=String(crypto.getRandomValues(new Uint32Array(1))[0]%1000000).padStart(6,'0');
-    const response=await fetch('/api/services',{method:'POST',headers:{'content-type':'application/json','x-service-code':code},body:JSON.stringify({name:''})});
-    const result=await response.json();
-    if(!response.ok)throw new Error(result.error||'No se pudo crear el servicio');
+    const code=await crewCreateServiceCode('');
     const createdService=crewEnsureDefaultStructure((await crewApi(code)).service);
     return crewPersist(createdService);
   }
@@ -13676,10 +13691,28 @@ async function crewD1Dispatch(method,args){
   }
   if(method==='addManualWorker'){
     const data=args[1]||{},id=crypto.randomUUID();
-    const worker={id,...data,status:'PENDIENTE',blockId:'MANUAL_'+id,blockLabel:(data.trabajo||'')+' · MANUAL',sortOrder:(state.service?.workers||[]).length+1};
-    await crewSaveLatest(code,remote=>({...remote,
-      workers:[...(remote.workers||[]),{...worker,sortOrder:(remote.workers||[]).length+1}]
-    }));
+    const personal=String(data.personal||'').trim();
+    if(!personal)throw new Error('Indica el nombre del trabajador.');
+    let worker=null;
+    await crewSaveLatest(code,remote=>{
+      if(remote.closedDays&&crewDayClosed(remote,data.serviceDate))throw new Error('Día cerrado: no se pueden añadir trabajadores.');
+      const team=data.teamId?(remote.teams||[]).find(t=>String(t.id)===String(data.teamId)):null;
+      // Same complete record as the original app: without included:true the
+      // worker is saved but never shown in the roster.
+      worker={
+        id,serviceDate:String(data.serviceDate||''),blockId:'MANUAL_'+id,
+        blockLabel:String(data.trabajo||'')+' · MANUAL',trabajo:String(data.trabajo||''),
+        isReserve:Boolean(data.isReserve),personal,especialidad:String(data.especialidad||'').trim(),
+        hLlam:String(data.hLlam||data.inicio||''),inicio:String(data.inicio||''),fin:String(data.fin||''),
+        pausa:String(data.pausa||'00:00'),nDieta:Number(data.nDieta||0),isCoordinator:Boolean(data.isCoordinator),
+        actualStart:'',actualEnd:'',actualPause:'',actualDiet:'',movil:String(data.movil||'').trim(),
+        scenarioId:team?String(team.scenarioId||''):'',teamId:team?String(team.id||''):'',
+        status:'PENDIENTE',arrivalAt:'',notes:'Añadido manualmente',
+        ratingUniformidad:0,ratingActitud:0,ratingPuntualidad:0,
+        included:true,page:0,pdfRow:0,sortOrder:(remote.workers||[]).length+1,_fieldTimes:{}
+      };
+      return {...remote,workers:[...(remote.workers||[]),worker]};
+    });
     return worker;
   }
   if(method==='closeService'||method==='reopenService'){
@@ -13710,12 +13743,42 @@ async function crewD1Dispatch(method,args){
     return {ok:true,saved,noTeams};
   }
   if(method==='saveIncident'){
-    const payload=args[1]||{},id=payload.incidentId||crypto.randomUUID();
-    const incident={...payload,id,createdAt:new Date().toISOString()};
-    await crewSaveLatest(code,remote=>({
-      ...remote,incidents:[...(remote.incidents||[]).filter(i=>String(i.id)!==String(id)),incident]
-    }));
-    return incident;
+    const payload=args[1]||{},id=String(payload.incidentId||crypto.randomUUID());
+    const category=String(payload.category||'OTRO');
+    const newCategory=String(payload.newCategory||'').trim();
+    if(!String(payload.description||'').trim())throw new Error('Describe la incidencia.');
+    let incident=null,savedWorker=null;
+    await crewSaveLatest(code,remote=>{
+      const current=(remote.incidents||[]).find(i=>String(i.id)===id);
+      const worker=(remote.workers||[]).find(w=>String(w.id)===String(payload.workerId||''));
+      if(category==='CAMBIO CATEGORIA'&&(!worker||!newCategory))throw new Error(worker?'Indica la nueva categoría.':'Selecciona un trabajador.');
+      // Keep the original creation time, worker name and previous category
+      // when an incident is edited (same record as the original app).
+      incident={
+        id,workerId:worker?String(worker.id):'',
+        personal:worker?String(worker.personal||''):'GENERAL',
+        serviceDate:worker?String(worker.serviceDate||''):String(payload.serviceDate||''),
+        trabajo:worker?String(worker.trabajo||''):String(payload.trabajo||'GENERAL'),
+        createdAt:current?.createdAt||new Date().toISOString(),
+        category,severity:String(payload.severity||'LEVE'),
+        oldCategory:category==='CAMBIO CATEGORIA'?String(current?.category==='CAMBIO CATEGORIA'&&String(current.workerId)===String(worker?.id)?current.oldCategory??'':worker?.especialidad||''):'',
+        newCategory:category==='CAMBIO CATEGORIA'?newCategory:'',
+        description:String(payload.description||'').trim(),
+        actionTaken:String(payload.actionTaken||'').trim(),
+        status:String(payload.status||'ABIERTA')
+      };
+      let workers=remote.workers;
+      savedWorker=null;
+      if(category==='CAMBIO CATEGORIA'&&worker.especialidad!==newCategory){
+        // Persist the category change; before it only changed on this screen.
+        const times={...(worker._fieldTimes||{})};
+        times.especialidad=Number(times.especialidad||0)+1;
+        savedWorker={...worker,especialidad:newCategory,manualSpecialtyOverride:true,_fieldTimes:times};
+        workers=(remote.workers||[]).map(w=>w===worker?savedWorker:w);
+      }
+      return {...remote,workers,incidents:[...(remote.incidents||[]).filter(i=>String(i.id)!==id),incident]};
+    });
+    return {ok:true,incident,worker:savedWorker};
   }
   if(method==='deleteIncident'){
     const id=String(args[1]);
@@ -13900,7 +13963,7 @@ function requestDuplicateService(){
   if(!state.service)return;
 
   const msg=
-    'Se creará un servicio nuevo con los mismos escenarios, equipos, colores y recinto.\\n\\n'+
+    'Se creará un servicio nuevo con los mismos escenarios, equipos, colores y recinto.\n\n'+
     'No se copiará el personal ni las asistencias. ¿Continuar?';
 
   if(!confirm(msg))return;
@@ -13930,7 +13993,7 @@ function createNewService(){
 
   backend.run
     .withSuccessHandler(service=>{
-      btn.disabled=false;btn.textContent='Generar nuevo código de servicio';
+      btn.disabled=false;btn.textContent='Nuevo servicio';
 
       service.serviceName='';
       service.serviceDate='';
@@ -13944,7 +14007,7 @@ function createNewService(){
       openServiceFromAccess(service,remember);
     })
     .withFailureHandler(err=>{
-      btn.disabled=false;btn.textContent='Generar nuevo código de servicio';
+      btn.disabled=false;btn.textContent='Nuevo servicio';
       showBox('startStatus',errorMessage(err),'error');
     })
     .generateNewService();
@@ -18109,7 +18172,7 @@ async function copyCurrentTeamMobiles(){
     setSaveState('Sin móviles en el equipo','saved');
     return;
   }
-  const text=mobiles.join('\\n');
+  const text=mobiles.join('\n');
   try{
     await navigator.clipboard.writeText(text);
   }catch(e){
@@ -21259,11 +21322,11 @@ function saveManualWorker(){
   const trabajo=state.manualWork;
 
   if(!confirm(
-    `Vas a añadir manualmente a "${personal}" en ${trabajo}.\\n\\n¿Continuar?`
+    `Vas a añadir manualmente a "${personal}" en ${trabajo}.\n\n¿Continuar?`
   ))return;
 
   if(!confirm(
-    `SEGUNDA CONFIRMACIÓN\\n\\n¿Seguro que quieres añadir a "${personal}" al servicio?`
+    `SEGUNDA CONFIRMACIÓN\n\n¿Seguro que quieres añadir a "${personal}" al servicio?`
   ))return;
 
   const data={
@@ -21304,11 +21367,11 @@ function deleteCurrentWorker(){
   if(!w||state.service.closed)return;
 
   if(!confirm(
-    `Vas a eliminar a "${w.personal}" de este servicio.\\n\\n¿Continuar?`
+    `Vas a eliminar a "${w.personal}" de este servicio.\n\n¿Continuar?`
   ))return;
 
   if(!confirm(
-    `SEGUNDA CONFIRMACIÓN\\n\\nEsta persona dejará de aparecer en el servicio. ¿Eliminar a "${w.personal}"?`
+    `SEGUNDA CONFIRMACIÓN\n\nEsta persona dejará de aparecer en el servicio. ¿Eliminar a "${w.personal}"?`
   ))return;
 
   const id=w.id;
