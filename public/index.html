@@ -22432,8 +22432,17 @@ html.crew-dark{scrollbar-color:#3a3d44 transparent}
   root.classList.toggle('crew-dark',dark);
   try{localStorage.setItem('crew-theme',dark?'dark':'light');}catch{}
   paint();
-  // Some rows keep the previous theme's styles until they are rebuilt:
-  // redraw the roster and side panels so nothing mixes both themes.
+  // Chrome can keep the previous theme's computed colours on table cells
+  // after the root class changes. Hiding the page for one synchronous
+  // reflow forces every element to recompute its style (no visible flash).
+  const x=window.scrollX,y=window.scrollY,active=document.activeElement;
+  document.body.style.setProperty('display','none','important');
+  void document.body.offsetHeight;
+  document.body.style.removeProperty('display');
+  void document.body.offsetHeight;
+  window.scrollTo(x,y);
+  if(active&&active!==document.body&&typeof active.focus==='function')try{active.focus({preventScroll:true});}catch{}
+  // Redraw the roster and side panels as well, so nothing mixes both themes.
   try{
    if(typeof state!=='undefined'&&state?.service){
     if(typeof renderPersonnel==='function')renderPersonnel();
