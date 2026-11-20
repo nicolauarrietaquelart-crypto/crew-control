@@ -19004,7 +19004,7 @@ function workerRowHtml(w){
   const noVest=isNoVestRole(w.especialidad)||(team&&team.noVest);
 
   const vest=noVest
-    ?'<span class="vest" style="background:#eee;color:#333">SIN CHALECO</span>'
+    ?'<span class="vest vest-none">SIN CHALECO</span>'
     :team?`<span class="vest" style="background:${escapeAttr(team.colorHex||'#ddd')};color:${bestTextColor(team.colorHex)}">${escapeHtml(team.colorName||team.name)}</span>`:'—';
 
   let options='<option value="">Sin asignar</option>';
@@ -22244,6 +22244,7 @@ document.addEventListener('keydown',event=>{
 </style>
 <link rel="stylesheet" href="/service-tools.css?v=9">
 <style id="crew-dark-mode-v1">
+span.vest.vest-none{background:#eee;color:#333}
 /* ===== Crew Control · modo oscuro =====
    Solo actúa con html.crew-dark. Sin esa clase la app conserva su diseño
    claro actual. Se carga la última para ganar en cascada. */
@@ -22363,6 +22364,34 @@ html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #startScreen.login-card .or{co
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #startScreen.login-card .or::before,html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #startScreen.login-card .or::after{background:var(--cd-line-2)!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #newServiceBtn{background:#ff8a2b!important;background-image:none!important;color:#111214!important;border-color:#ff8a2b!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #openServiceBtn{background:#ececee!important;background-image:none!important;color:#111214!important;border-color:#ececee!important;box-shadow:none!important}
+
+
+/* Algunos textos fijaban -webkit-text-fill-color oscuro: manda el color del tema */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body *{-webkit-text-fill-color:currentColor!important}
+/* Barra de tipos ocultos y chip de especialidad */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .hidden-work-types-bar-v11227{background:var(--cd-surface)!important;background-image:none!important;border-color:var(--cd-line)!important;box-shadow:none!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .hidden-work-label-v11227{color:var(--cd-muted)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups :is(span.role,.mobile-role .role){background:var(--cd-surface-3)!important;color:var(--cd-text)!important;border-color:var(--cd-line-2)!important}
+
+
+/* Etiquetas: tintadas en vez de fondos claros */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(.readiness-badge.ready,.readiness-badge.ok,.readiness-badge.done,.staffing-chip.ok){background:rgba(46,170,100,.16)!important;color:#5fd598!important;border-color:rgba(46,170,100,.4)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(.readiness-badge.partial,.readiness-badge.warn,.staffing-chip.warn){background:rgba(240,170,40,.16)!important;color:#f2c25a!important;border-color:rgba(240,170,40,.4)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(.readiness-badge.critical,.readiness-badge.bad,.staffing-chip.bad){background:rgba(225,70,70,.16)!important;color:#ff8f8f!important;border-color:rgba(225,70,70,.4)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .staffing-chip *{color:inherit!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(span.vest.vest-none,.reserve-badge){background:var(--cd-surface-3)!important;color:var(--cd-text)!important;border-color:var(--cd-line-2)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .ops-chip-mobile-label{color:var(--cd-muted)!important}
+
+
+/* Incidencias y otros */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .incident-card{background:var(--cd-surface-2)!important;background-image:none!important;border-color:var(--cd-line-2)!important;color:var(--cd-text)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .incident-card :is(strong,span,div,p){color:inherit}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .incident-card.GRAVE{border-left-color:#f04438!important;background:rgba(240,68,56,.1)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .incident-card.MEDIA{border-left-color:#f59e0b!important;background:rgba(245,158,11,.1)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .incident-card.LEVE{border-left-color:#8a93a3!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .incident-card :is(.hint,small){color:var(--cd-muted)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .hidden-work-count-v11260{background:var(--cd-surface-3)!important;color:var(--cd-text)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #crewMobileBulkSelectionInfo{color:var(--cd-text)!important}
 
 /* Modales y diálogos */
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(.modal-card,dialog){background:var(--cd-surface)!important;color:var(--cd-text)!important;border-color:var(--cd-line)!important;box-shadow:0 24px 70px rgba(0,0,0,.6)!important}
