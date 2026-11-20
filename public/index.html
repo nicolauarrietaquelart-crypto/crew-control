@@ -11075,6 +11075,8 @@ html.crew-android select.status option{font-size:16px!important;color:#111!impor
    ~1 s of style work per tap on phones and tablets with large services. */
 (()=>{
  const root=document.documentElement;
+ // Theme: light (current design) by default; dark only when chosen.
+ try{if(localStorage.getItem('crew-theme')==='dark')root.classList.add('crew-dark');}catch{}
  const sync=()=>{
   const start=document.getElementById('startScreen');
   // Before the start screen is parsed, keep the initial (start) state.
@@ -11162,6 +11164,10 @@ body.crew-day-closed #initialPdfUploadPanel .file-button{pointer-events:none;opa
         <div class="subtitle">Operaciones de personal</div>
       </div>
     </div>
+    <button type="button" id="crewThemeToggle" class="crew-theme-toggle" onclick="crewToggleTheme()" aria-pressed="false" aria-label="Activar modo oscuro" title="Modo oscuro">
+      <svg class="crew-theme-moon" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+      <svg class="crew-theme-sun" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
     <button type="button" id="mobileOperationalToggleV11234"
       class="mobile-ops-toggle-v11234" onclick="toggleMobileOperationalPanelV11234()"
       aria-label="Desplegar control operativo" aria-controls="mobileOperationalDrawerV11234"
@@ -21836,7 +21842,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
     'max-height':mobile?'calc(100dvh - 40px)':'calc(100dvh - 88px)',
     'margin':'auto','border-radius':'18px',
     'box-shadow':'0 0 0 1px rgba(0,0,0,.12)',
-    'background':'#fff',
+    'background':'var(--crew-modal-bg,#fff)',
     'overflow-x':'hidden',
     'overflow-y':isWorker||isWide?'hidden':'auto',
     'display':isWorker?'grid':isWide?'flex':'block',
@@ -22237,6 +22243,157 @@ document.addEventListener('keydown',event=>{
 }
 </style>
 <link rel="stylesheet" href="/service-tools.css?v=9">
+<style id="crew-dark-mode-v1">
+/* ===== Crew Control · modo oscuro =====
+   Solo actúa con html.crew-dark. Sin esa clase la app conserva su diseño
+   claro actual. Se carga la última para ganar en cascada. */
+html.crew-dark{
+ color-scheme:dark;--crew-modal-bg:#17181b;background:#0e0f11!important;
+ --cd-bg:#0e0f11;--cd-surface:#17181b;--cd-surface-2:#1e1f23;--cd-surface-3:#26282d;
+ --cd-line:#2d2f35;--cd-line-2:#3a3d44;--cd-text:#ececee;--cd-muted:#a3a7af;--cd-faint:#7d828b;
+}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body{background:var(--cd-bg)!important;background-image:none!important;color:var(--cd-text)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body::before,html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body:not(.crew-on-start)::after{background:none!important;background-image:none!important}
+
+/* Botón de tema */
+.crew-theme-toggle{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;flex:0 0 38px;margin-left:auto;margin-right:8px;
+ border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;cursor:pointer;padding:0;box-shadow:none}
+.crew-theme-toggle:hover{background:rgba(255,255,255,.16)}
+.crew-theme-toggle .crew-theme-sun{display:none}
+html.crew-dark .crew-theme-toggle .crew-theme-sun{display:block}
+html.crew-dark .crew-theme-toggle .crew-theme-moon{display:none}
+header .wrap{display:flex;align-items:center}
+
+/* Superficies principales */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(section.card,.card,.service-top,.personnel-sidebar-v121,#personnelGroups details.work-group,.login-card,.closed-banner,.crew-pause-alert-banner){
+ background:var(--cd-surface)!important;background-image:none!important;border-color:var(--cd-line)!important;
+ box-shadow:0 1px 0 rgba(255,255,255,.03) inset,0 10px 30px rgba(0,0,0,.35)!important;color:var(--cd-text)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #appScreen > section.card.personnel-card-v121{background:transparent!important;box-shadow:none!important;border-color:transparent!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(h1,h2,h3,h4,label,.field,legend){color:var(--cd-text)}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(.hint,.modal-sub,.subtitle,.muted,small){color:var(--cd-muted)!important}
+
+/* Campos */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(input:not([type=checkbox]):not([type=radio]):not([type=range]),select:not(.status),textarea){
+ background:var(--cd-surface-2)!important;background-image:none!important;color:var(--cd-text)!important;border-color:var(--cd-line-2)!important;box-shadow:none!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body select:not(.status){background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a3a7af' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")!important;background-repeat:no-repeat!important;background-position:right 10px center!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(input,textarea)::placeholder{color:var(--cd-faint)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body option{background:var(--cd-surface-2);color:var(--cd-text)}
+
+/* Botones secundarios */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(button.secondary,.secondary,.icon-btn:not(.close-service-btn),.file-button,.sort-btn,.modal-close):not(#newServiceBtn){
+ background:var(--cd-surface-2)!important;background-image:none!important;color:var(--cd-text)!important;border-color:var(--cd-line-2)!important;box-shadow:none!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(button.secondary,.secondary,.icon-btn,.modal-close) svg{stroke:currentColor}
+
+/* Tabla de personal */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups :is(table,tbody,thead,.table-wrap){background:transparent!important;color:var(--cd-text)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups thead th{background:var(--cd-surface-2)!important;color:var(--cd-muted)!important;border-color:var(--cd-line)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row]{background:var(--cd-surface)!important;border-color:var(--cd-line)!important;box-shadow:none!important;outline-color:var(--cd-line)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row] > td{background:var(--cd-surface)!important;color:var(--cd-text)!important;border-color:var(--cd-line)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row].worker-row-selected > td{background:#2a2016!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr.shift-divider-row td,html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups .shift-divider-controls-v121{background:var(--cd-surface)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups .shift-divider-controls-v1211 > :is(.shift-divider-btn,.shift-select-left-v1211,.shift-select-v121),
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups :is(.shift-divider-btn,.shift-select-v121){background:var(--cd-surface-3)!important;background-image:none!important;color:var(--cd-text)!important;border-color:var(--cd-line-2)!important;box-shadow:none!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups .shift-clock-icon{background:var(--cd-surface-2)!important;color:var(--cd-text)!important}
+
+/* Panel operativo */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(#operationalDashboard,#mobileOperationalDrawerV11234) .dashboard-metric.simple-v127{background:var(--cd-surface-2)!important;background-image:none!important;border-color:var(--cd-line)!important;box-shadow:none!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(#operationalDashboard,#mobileOperationalDrawerV11234) .dashboard-metric.simple-v127 :is(small,span){color:var(--cd-muted)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .dashboard-metric.metric-present-v11232 strong{color:#4fd18b!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #selectedCounter{background:var(--cd-surface-3)!important;color:var(--cd-text)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .mobile-operational-drawer-v11234{background:var(--cd-bg)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #crewMobileBottomV11238{background:rgba(23,24,27,.94)!important;border-top:1px solid var(--cd-line)!important;color:var(--cd-text)!important;box-shadow:0 -8px 24px rgba(0,0,0,.35)!important}
+
+
+/* Controles claros del panel y de la tabla */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(.staffing-summary,.shift-select-check-v1211,.ops-chip,a.crew-phone-desktop-v11264,a.crew-phone-mobile-v11264,#operationalWorkPrevious,#operationalWorkNext,#operationalTimePrevious,#operationalTimeNext,.operational-work-chip-v122:not(.active),.operational-time-chip-v1210:not(.active),.day-btn:not(.active),.crew-add-day,#crewSearchToggle,.sidebar-link-btn-v129,#dropZone,#scopeSelectBtn,.sidebar-icon-btn-v124.visible,.work-team-filter-wrap,.mobile-shift-sort-toggle,.code-badge,.pill){
+ background:var(--cd-surface-2)!important;background-image:none!important;color:var(--cd-text)!important;border-color:var(--cd-line-2)!important;box-shadow:none!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(#operationalWorkPrevious,#operationalWorkNext,#operationalTimePrevious,#operationalTimeNext):disabled{opacity:.35}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .sidebar-icon-btn-v124.present{background:rgba(46,170,100,.16)!important;color:#5fd598!important;border-color:rgba(46,170,100,.35)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .sidebar-icon-btn-v124.absent{background:rgba(225,70,70,.16)!important;color:#ff8f8f!important;border-color:rgba(225,70,70,.35)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .sidebar-icon-btn-v124.rate{background:rgba(230,180,40,.16)!important;color:#f2c94c!important;border-color:rgba(230,180,40,.35)!important}
+/* Elementos negros: en oscuro pasan a claros para seguir destacando */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(.code-pill,.close-service-btn,.day-btn.active,.operational-work-chip-v122.active,.sidebar-pdf-action-v11227,.sidebar-icon-btn-v124.changes-v125){
+ background:#ececee!important;background-image:none!important;color:#111214!important;border-color:#ececee!important;box-shadow:none!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(.code-pill,.close-service-btn,.day-btn.active,.operational-work-chip-v122.active,.sidebar-pdf-action-v11227,.sidebar-icon-btn-v124.changes-v125) *{color:inherit!important;stroke:currentColor}
+/* Textos que tenían color oscuro fijo */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(.shift-selected-count-v121,button.worker-open,.sidebar-link-btn-v129 .label,.schedule-planned,.crew-desktop-name-line,.worker-name){color:var(--cd-text)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .dashboard-metric.metric-present-v11232 strong{color:#4fd18b!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .work-team-filter-label{color:var(--cd-muted)!important}
+
+
+/* Estados: mismo significado, fondos tintados para no deslumbrar */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body select.status.status-PENDIENTE{background-color:var(--cd-surface-3)!important;border-color:var(--cd-line-2)!important;color:var(--cd-text)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body select.status.status-PRESENTE{background-color:rgba(46,170,100,.22)!important;border-color:rgba(46,170,100,.55)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body select.status.status-CONTACTADO{background-color:rgba(255,140,40,.2)!important;border-color:rgba(255,140,40,.55)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body select.status.status-NO-PRESENTADO{background-color:rgba(225,70,70,.2)!important;border-color:rgba(225,70,70,.55)!important}
+
+
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .dashboard-metric.metric-unassigned-v11236 strong{color:var(--cd-text)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #crewBottomAbsent{color:#ff7b7b!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .dashboard-metric.metric-absent-v11232 strong{color:#ff7b7b!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .modal .modal-card #modalArrivalTime{color:#5fd598!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .modal .modal-card .star-btn:not(.on){color:#5d616a!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .modal .modal-card .star-btn.on{color:#f2c94c!important}
+/* Ficha del trabajador */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .modal .modal-card :is(.planned-box,.arrival-record,.worker-reserve-toggle-v11226){background:var(--cd-surface-2)!important;background-image:none!important;border-color:var(--cd-line-2)!important;color:var(--cd-text)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .modal .modal-card .arrival-record-label{color:#7fd6a4!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .modal .modal-card .star-btn{color:#4a4d55!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .modal .modal-card .star-btn:is(.active,.on,[aria-pressed="true"]){color:#f2c94c!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .modal .modal-card button.danger{background:rgba(225,70,70,.16)!important;color:#ff8f8f!important;border-color:rgba(225,70,70,.35)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .modal .modal-card input#modalWorkerReserve{background:var(--cd-surface-3)!important}
+
+
+/* Ventanas: equipos, incidencias, planificación, dispositivos, cambios masivos */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(.integrated-modal-body-v129,.scenario-head,.team-row,.palette-trigger,#crewTeamsTabStaffV11263,.crew-devices-panel,.no-teams-option,.requirement-row,.crew-notify-card){background:var(--cd-surface-2)!important;background-image:none!important;border-color:var(--cd-line-2)!important;color:var(--cd-text)!important;box-shadow:none!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .integrated-modal-body-v129{background:transparent!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .requirement-row.crew-plan-clickable{background:rgba(255,140,40,.12)!important;border-color:rgba(255,140,40,.35)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(.requirement-current,.crew-devices-panel p,.crew-devices-note){color:var(--cd-muted)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(.check-label,.no-teams-option strong,.requirement-row span:not(.team-dot)){color:var(--cd-text)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body input:is([type=checkbox],[type=radio]){background-color:var(--cd-surface-3)!important;border-color:var(--cd-line-2)!important;accent-color:#ff8a2b}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .bulk-shortcut-v125.present{background:rgba(46,170,100,.16)!important;color:#5fd598!important;border-color:rgba(46,170,100,.35)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .bulk-shortcut-v125.absent{background:rgba(225,70,70,.16)!important;color:#ff8f8f!important;border-color:rgba(225,70,70,.35)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .bulk-shortcut-v125.rate{background:rgba(230,180,40,.16)!important;color:#f2c94c!important;border-color:rgba(230,180,40,.35)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .crew-notify-card{background:var(--cd-surface)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(.crew-device-entry,.crew-mobile-bulk-selection){background:var(--cd-surface-2)!important;background-image:none!important;border-color:var(--cd-line-2)!important;color:var(--cd-text)!important}
+
+
+/* Pantalla de acceso */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #startScreen.login-card :is(h2,.lead){color:var(--cd-text)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #startScreen.login-card .or{color:var(--cd-faint)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #startScreen.login-card .or::before,html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #startScreen.login-card .or::after{background:var(--cd-line-2)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #newServiceBtn{background:#ff8a2b!important;background-image:none!important;color:#111214!important;border-color:#ff8a2b!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #openServiceBtn{background:#ececee!important;background-image:none!important;color:#111214!important;border-color:#ececee!important;box-shadow:none!important}
+
+/* Modales y diálogos */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(.modal-card,dialog){background:var(--cd-surface)!important;color:var(--cd-text)!important;border-color:var(--cd-line)!important;box-shadow:0 24px 70px rgba(0,0,0,.6)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .modal:not(.hidden){background:rgba(0,0,0,.55)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body dialog::backdrop{background:rgba(0,0,0,.55)}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .modal-card :is(.modal-head,.modal-actions,.modal-footer){background:var(--cd-surface)!important;border-color:var(--cd-line)!important}
+
+/* Barras de desplazamiento */
+html.crew-dark{scrollbar-color:#3a3d44 transparent}
+</style>
+<script id="crew-theme-toggle">
+(()=>{
+ const root=document.documentElement;
+ const meta=document.querySelector('meta[name="theme-color"]');
+ const light=meta?.getAttribute('content')||'#171719';
+ function paint(){
+  const dark=root.classList.contains('crew-dark');
+  const btn=document.getElementById('crewThemeToggle');
+  if(btn){btn.setAttribute('aria-pressed',String(dark));btn.setAttribute('aria-label',dark?'Activar modo claro':'Activar modo oscuro');btn.title=dark?'Modo claro':'Modo oscuro';}
+  if(meta)meta.setAttribute('content',dark?'#0e0f11':light);
+ }
+ window.crewToggleTheme=()=>{
+  const dark=!root.classList.contains('crew-dark');
+  root.classList.toggle('crew-dark',dark);
+  try{localStorage.setItem('crew-theme',dark?'dark':'light');}catch{}
+  paint();
+ };
+ paint();
+})();
+</script>
+
 <script>
 function crewAddDayButton(){
  return state.service?.closed?'':`<button type="button" class="crew-add-day" onclick="crewOpenAddDay()" aria-label="Añadir día" title="Añadir día">
