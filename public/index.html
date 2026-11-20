@@ -11297,9 +11297,15 @@ body.crew-day-closed #initialPdfUploadPanel .file-button{pointer-events:none;opa
       </div>
     </div>
 
-    <section class="card">
-      <div class="section-title"><h2>Datos del servicio</h2></div>
-      <div class="grid-3">
+    <section class="card crew-meta-card" id="crewMetaCard">
+      <div class="section-title crew-meta-title">
+        <h2>Datos del servicio</h2>
+        <button type="button" id="crewMetaToggle" class="crew-meta-toggle" onclick="crewToggleMetaCard()" aria-expanded="true" aria-controls="crewMetaFields">
+          <span id="crewMetaSummary" class="crew-meta-summary"></span>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+      </div>
+      <div class="grid-3" id="crewMetaFields">
         <div><label class="field">Servicio / referencia</label>
           <input id="serviceName" type="text" oninput="scheduleMetaSave()"></div>
         <div><label class="field">Fecha principal</label>
@@ -22174,6 +22180,182 @@ document.addEventListener('keydown',event=>{
 }
 </style>
 <link rel="stylesheet" href="/service-tools.css?v=9">
+<style id="crew-minimal-v1">
+/* ===== Crew Control · capa de diseño minimalista =====
+   Superficies planas y claras, bordes finos, una sola sombra suave y el
+   naranja reservado para la acción principal. Se carga la última para
+   ganar en cascada sin tocar el diseño heredado. */
+:root{
+ --cm-bg:#f5f5f3;--cm-surface:#ffffff;--cm-soft:#f7f7f5;--cm-line:#e8e8e4;--cm-line-2:#dededa;
+ --cm-text:#17181b;--cm-muted:#6c7078;--cm-faint:#9a9ea6;--cm-accent:#ff7a1a;--cm-dark:#17181b;
+ --cm-r:14px;--cm-r-sm:10px;--cm-shadow:0 1px 2px rgba(16,18,22,.04),0 4px 14px rgba(16,18,22,.04);
+}
+html body{background:var(--cm-bg)!important;color:var(--cm-text)}
+html body:not(.crew-on-start)::before,html body:not(.crew-on-start)::after{background:none!important}
+
+/* Cabecera: fina y clara */
+html body:not(.crew-on-start) > header{
+ background:rgba(255,255,255,.86)!important;color:var(--cm-text)!important;
+ border-bottom:1px solid var(--cm-line)!important;box-shadow:none!important;
+ -webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px);
+}
+html body:not(.crew-on-start) > header::before,html body:not(.crew-on-start) > header::after{display:none!important}
+html body:not(.crew-on-start) > header .wrap{padding-top:10px!important;padding-bottom:10px!important}
+html body:not(.crew-on-start) > header h1{color:var(--cm-text)!important;font-size:15px!important;letter-spacing:.08em!important;font-weight:800!important}
+html body:not(.crew-on-start) > header .subtitle{color:var(--cm-muted)!important;font-size:11px!important}
+html body:not(.crew-on-start) > header .crew-pennywise-logo-v11240{filter:invert(1) grayscale(1) contrast(1.2);max-height:26px!important;width:auto!important}
+html body:not(.crew-on-start) > header .mobile-ops-toggle-v11234{
+ background:var(--cm-soft)!important;border:1px solid var(--cm-line)!important;color:var(--cm-text)!important;box-shadow:none!important}
+
+/* Tarjetas y superficies: planas */
+html body #appScreen > section.card,
+html body #appScreen > .service-top,
+html body .personnel-sidebar-v121,
+html body #personnelGroups details.work-group{
+ background:var(--cm-surface)!important;background-image:none!important;
+ border:1px solid var(--cm-line)!important;box-shadow:var(--cm-shadow)!important;border-radius:var(--cm-r)!important;
+}
+html body #appScreen > section.card.personnel-card-v121{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important}
+html body #personnelGroups details.work-group{overflow:hidden}
+html body #personnelGroups{gap:12px}
+
+/* Barra del servicio */
+html body .service-top .code-pill{background:var(--cm-dark)!important;color:#fff!important;border-radius:8px!important;box-shadow:none!important;letter-spacing:.06em}
+html body .service-top .service-code > span:first-child{color:var(--cm-muted)!important;font-size:12px!important;text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+html body .service-top .save-state{color:var(--cm-muted)!important;font-weight:600!important;font-size:12px!important}
+html body .service-top .save-state.saved::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:#22a05a;margin-right:6px;vertical-align:1px}
+html body .service-top .save-state.saving{color:#b26100!important}
+html body .service-top .save-state.error{color:#c62828!important}
+html body .service-top .service-actions button{box-shadow:none!important}
+html body .service-top .service-actions button.secondary{background:var(--cm-surface)!important;border:1px solid var(--cm-line)!important;color:var(--cm-text)!important}
+
+/* Cabecera de cada tipo de servicio: clara en vez de negra */
+html body #personnelGroups details.work-group > summary.work-group-head{
+ background:var(--cm-surface)!important;background-image:none!important;color:var(--cm-text)!important;
+ box-shadow:none!important;border-bottom:1px solid transparent!important;min-height:56px;
+}
+html body #personnelGroups details.work-group[open] > summary.work-group-head{border-bottom-color:var(--cm-line)!important}
+html body #personnelGroups details.work-group > summary.work-group-head *{text-shadow:none!important}
+html body #personnelGroups summary.work-group-head .work-group-title,
+html body #personnelGroups summary.work-group-head .work-group-title strong,
+html body #personnelGroups summary.work-group-head h3{color:var(--cm-text)!important;letter-spacing:.04em}
+html body #personnelGroups summary.work-group-head button{
+ background:var(--cm-soft)!important;background-image:none!important;border:1px solid var(--cm-line)!important;
+ color:var(--cm-text)!important;box-shadow:none!important;
+}
+html body #personnelGroups summary.work-group-head button[aria-pressed="true"]{background:var(--cm-dark)!important;color:#fff!important;border-color:var(--cm-dark)!important}
+html body #personnelGroups summary.work-group-head .work-drag-handle-v11227{color:var(--cm-faint)!important}
+html body #personnelGroups summary.work-group-head svg{stroke:currentColor}
+
+/* Tabla de personal: filas con línea fina, sin tarjetas apiladas */
+html body #personnelGroups thead th{background:var(--cm-surface)!important;color:var(--cm-faint)!important;font-weight:700!important;letter-spacing:.08em!important;border-bottom:1px solid var(--cm-line)!important}
+html body #personnelGroups thead th .sort-btn{color:var(--cm-faint)!important}
+html body #personnelGroups tr.shift-divider-row td{background:var(--cm-surface)!important}
+html body #personnelGroups tr.shift-divider-row button{background:var(--cm-soft)!important;background-image:none!important;border:1px solid var(--cm-line)!important;box-shadow:none!important;color:var(--cm-text)!important}
+@media (min-width:1101px){
+ html body #personnelGroups tr[data-worker-row] > td{background:var(--cm-surface)!important;border:0!important;border-bottom:1px solid var(--cm-line)!important;border-radius:0!important;box-shadow:none!important}
+ html body #personnelGroups tr[data-worker-row]{outline:0!important;box-shadow:none!important}
+ html body #personnelGroups tr[data-worker-row]:hover > td{background:var(--cm-soft)!important}
+ html body #personnelGroups tr[data-worker-row].worker-row-selected > td{background:#fff6ee!important}
+}
+html body #personnelGroups select,html body #personnelGroups .phone-pill,html body #personnelGroups [class*="pause"] .pill{box-shadow:none!important}
+html body #personnelGroups tr[data-worker-row] select:not(.status){background-color:var(--cm-surface)!important;border:1px solid var(--cm-line)!important}
+
+/* Panel lateral */
+html body .personnel-sidebar-v121 > *:first-child{background:var(--cm-surface)!important;background-image:none!important;color:var(--cm-text)!important;box-shadow:none!important;border-bottom:1px solid var(--cm-line)!important;border-radius:0!important;padding-left:4px!important}
+html body .personnel-sidebar-v121 > *:first-child h2,
+html body .personnel-sidebar-v121 > *:first-child h3,
+html body .personnel-sidebar-v121 > *:first-child strong{color:var(--cm-text)!important}
+html body .personnel-sidebar-v121 > *:first-child button:not(.crew-guard-call){background:var(--cm-soft)!important;border:1px solid var(--cm-line)!important;color:var(--cm-text)!important;box-shadow:none!important}
+html body .personnel-sidebar-v121 button,html body .personnel-sidebar-v121 select{box-shadow:none!important}
+
+/* Botones: el naranja solo para la acción principal */
+html body button.primary{box-shadow:none!important}
+html body .modal-card{border-radius:18px!important;border:1px solid var(--cm-line)!important;box-shadow:0 20px 60px rgba(16,18,22,.14)!important}
+html body .modal:not(.hidden){background:rgba(20,22,26,.28)!important}
+html body .modal-card .modal-head{border-bottom:1px solid var(--cm-line)!important}
+
+
+/* Indicadores: tarjeta blanca, el color solo en la cifra */
+html body :is(#operationalDashboard,#mobileOperationalDrawerV11234) .dashboard-metric.simple-v127{background:var(--cm-surface)!important;background-image:none!important;border:1px solid var(--cm-line)!important;box-shadow:none!important}
+html body :is(#operationalDashboard,#mobileOperationalDrawerV11234) .dashboard-metric.simple-v127 :is(small,span){color:var(--cm-muted)!important}
+/* Contador de selección y barra de turno: suaves */
+html body #selectedCounter{background:var(--cm-soft)!important;color:var(--cm-muted)!important;border:1px solid var(--cm-line)!important;box-shadow:none!important}
+html body #personnelGroups .shift-divider-controls-v121{background:var(--cm-surface)!important}
+html body #personnelGroups .shift-divider-controls-v1211 > :is(.shift-divider-btn,.shift-select-left-v1211,.shift-select-v121),html body #personnelGroups .shift-divider-btn,html body #personnelGroups .shift-select-v121{background:var(--cm-soft)!important;background-image:none!important;border:1px solid var(--cm-line)!important;box-shadow:none!important;color:var(--cm-text)!important}
+/* Cabecera más baja */
+@media (min-width:701px){html:not(.crew-on-start){--crew-header-h:64px!important}}
+html body:not(.crew-on-start) > header{height:var(--crew-header-h)!important;min-height:0!important;padding-top:0!important;padding-bottom:0!important;display:flex!important;align-items:center}
+html body:not(.crew-on-start) > header .wrap{padding-top:0!important;padding-bottom:0!important;width:100%}
+@media (min-width:701px){html body.control-sidebar-open .personnel-sidebar-v121.personnel-sidebar-portal-v1215{top:calc(var(--crew-header-h) + 22px)!important}}
+
+/* Datos del servicio plegables */
+html body .crew-meta-title{display:flex;align-items:center;gap:12px}
+html body .crew-meta-title h2{margin:0!important;flex:0 0 auto}
+html body .crew-meta-toggle{margin-left:auto;display:inline-flex;align-items:center;gap:8px;min-width:0;
+ background:transparent!important;border:0!important;box-shadow:none!important;color:var(--cm-muted)!important;
+ font-weight:600;font-size:13px;padding:6px 8px!important;border-radius:8px;cursor:pointer}
+html body .crew-meta-toggle:hover{background:var(--cm-soft)!important}
+html body .crew-meta-toggle svg{flex:0 0 auto;transition:transform .2s ease}
+html body .crew-meta-summary{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:none}
+html body .crew-meta-card.is-collapsed .crew-meta-summary{display:inline}
+html body .crew-meta-card.is-collapsed .crew-meta-toggle svg{transform:rotate(-90deg)}
+html body .crew-meta-card.is-collapsed #crewMetaFields{display:none!important}
+html body .crew-meta-card.is-collapsed .section-title{margin-bottom:0!important}
+html body .crew-meta-card.is-collapsed{padding-top:14px!important;padding-bottom:14px!important}
+
+/* Tablet vertical: la tabla de escritorio no cabe junto al panel lateral */
+@media (min-width:901px) and (max-width:1100px){
+ html body #personnelGroups .table-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch}
+}
+
+/* Móvil */
+@media (max-width:900px){
+ html body #appScreen > section.card,html body #appScreen > .service-top{border-radius:12px!important}
+ html body #personnelGroups tr[data-worker-row]{box-shadow:none!important;border:1px solid var(--cm-line)!important;background:var(--cm-surface)!important}
+ html body #crewMobileBottomV11238{background:rgba(255,255,255,.92)!important;border-top:1px solid var(--cm-line)!important;box-shadow:none!important;
+  -webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px)}
+}
+@media (prefers-reduced-motion:reduce){html body .crew-meta-toggle svg{transition:none}}
+</style>
+<script id="crew-meta-collapse">
+/* Datos del servicio: se pliega solo cuando ya están rellenos, para dejar
+   la pantalla al personal. La elección manual se recuerda en el dispositivo. */
+(()=>{
+ const card=document.getElementById('crewMetaCard');
+ if(!card)return;
+ const key='crew-meta-collapsed';
+ const read=()=>{try{return localStorage.getItem(key)}catch{return null}};
+ const write=v=>{try{localStorage.setItem(key,v)}catch{}};
+ const values=()=>['serviceName','serviceDate','venue'].map(id=>document.getElementById(id)?.value.trim()||'');
+ function summary(){
+  const text=values().filter(Boolean).join(' · ');
+  document.getElementById('crewMetaSummary').textContent=text;
+  return text;
+ }
+ function apply(collapsed){
+  card.classList.toggle('is-collapsed',collapsed);
+  document.getElementById('crewMetaToggle').setAttribute('aria-expanded',String(!collapsed));
+ }
+ window.crewToggleMetaCard=()=>{
+  const collapsed=!card.classList.contains('is-collapsed');
+  summary();apply(collapsed);write(collapsed?'1':'0');
+ };
+ function auto(){
+  const filled=Boolean(values()[0]);
+  const stored=read();
+  summary();
+  if(document.activeElement&&card.contains(document.activeElement))return;
+  apply(filled&&stored!=='0');
+ }
+ card.addEventListener('input',summary);
+ // Re-check when a service opens or its data arrives from another device.
+ let last='';
+ setInterval(()=>{const v=values().join('|')+'|'+(document.getElementById('appScreen')?.classList.contains('hidden'));if(v!==last){last=v;auto();}},800);
+ auto();
+})();
+</script>
+
 <script>
 function crewAddDayButton(){
  return state.service?.closed?'':`<button type="button" class="crew-add-day" onclick="crewOpenAddDay()" aria-label="Añadir día" title="Añadir día">
