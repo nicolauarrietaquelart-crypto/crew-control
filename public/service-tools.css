@@ -1,5 +1,5 @@
 #crewManagerEntry{position:fixed;inset:auto max(14px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) auto;z-index:10;width:42px;height:42px;padding:0;display:grid;place-items:center}
-body:has(#startScreen.hidden) #crewManagerEntry{display:none!important}
+body:not(.crew-on-start) #crewManagerEntry{display:none!important}
 .crew-tool-dialog{margin:auto;max-height:88dvh;width:min(680px,calc(100vw - 24px));border:1px solid #e0e0e0;border-radius:18px;padding:18px;color:#171717;background:#fff;overflow:auto}
 .crew-tool-dialog::backdrop{background:#13131388}
 .crew-tool-dialog>.crew-tool-head{display:flex;align-items:center;justify-content:space-between;gap:12px;position:static;background:none;padding:0;box-shadow:none;color:inherit}

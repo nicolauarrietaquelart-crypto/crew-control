@@ -57,11 +57,16 @@ function dayKey(value){
  return match?match[1].padStart(2,'0')+'/'+match[2].padStart(2,'0')+'/'+match[3]:date;
 }
 
-export function closedDayChanged(previous,next){
+// reopenDay: an explicit request to reopen one closed day. Only its closedDays
+// entry may disappear; its workers, pauses and PDFs must stay unchanged in the
+// same save. Without it, a missing closed day is a stale snapshot and rejected.
+export function closedDayChanged(previous,next,reopenDay=''){
  const closed=previous.closedDays||{};
  const keys=new Set(Object.keys(closed));
  if(!keys.size)return false;
- if([...keys].some(day=>next.closedDays?.[day]!==closed[day]))return true;
+ const reopen=reopenDay?dayKey(reopenDay):'';
+ if(reopen&&!keys.has(reopen))return true;
+ if([...keys].some(day=>day===reopen?next.closedDays?.[day]!==undefined:next.closedDays?.[day]!==closed[day]))return true;
  for(const field of ['workers','pauseShifts','requirements','incidents','blocks']){
   const scoped=service=>(Array.isArray(service[field])?service[field]:[])
    .filter(entry=>keys.has(dayKey(entry?.serviceDate)));
@@ -162,6 +167,12 @@ export default {
       const rows=await env.DB.prepare('SELECT id,created_at,changes FROM service_device_activity WHERE service_id=? AND device_id=? ORDER BY created_at DESC,id DESC LIMIT 30').bind(service.id,deviceId).all();
       return json({ok:true,events:(rows.results||[]).map(row=>({...row,changes:JSON.parse(row.changes)}))});
     }
+    // Cheap change probe for polling devices: only the revision, not the full
+    // roster, so phones and tablets do not download/parse it every second.
+    if(!section&&m==='GET'&&url.searchParams.get('format')==='revision'){
+      const row=await env.DB.prepare("SELECT json_extract(snapshot,'$._syncRevision') revision, json_extract(snapshot,'$._syncSequence') sequence FROM service_snapshots WHERE service_id=?").bind(service.id).first();
+      return json({ok:true,revision:row?.revision||'',sequence:Number(row?.sequence||0)});
+    }
     if(!section&&m==='GET'&&url.searchParams.get('format')==='snapshot'){
       const row=await env.DB.prepare('SELECT snapshot FROM service_snapshots WHERE service_id=?').bind(service.id).first();
       return json({ok:true,service:row?.snapshot?JSON.parse(row.snapshot):{code:service.code,serviceName:service.name,serviceDate:service.service_date,venue:service.venue,closed:!!service.closed,workers:[],teams:[],scenarios:[],incidents:[],requirements:[],workOrder:[],hiddenWorkTypes:[]}});
@@ -182,7 +193,7 @@ export default {
       const oldRow=await env.DB.prepare('SELECT snapshot FROM service_snapshots WHERE service_id=?').bind(service.id).first();
       const previous=oldRow?.snapshot?JSON.parse(oldRow.snapshot):{};
       if(String(previous._syncRevision||'')!==expected)return snapshotConflict();
-      if(closedDayChanged(previous,snapshot))return err('Hay cambios en un día cerrado. Actualiza el servicio; los cambios pendientes se conservan en el dispositivo.',422);
+      if(closedDayChanged(previous,snapshot,typeof input.reopenDay==='string'?input.reopenDay.slice(0,30):''))return err('Hay cambios en un día cerrado. Actualiza el servicio; los cambios pendientes se conservan en el dispositivo.',422);
       if(!attendanceVersionsAreValid(previous,snapshot)){
         return err('El servicio contiene fichajes de una versión anterior. Recarga el servicio antes de volver a guardar.',422);
       }

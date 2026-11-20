@@ -577,6 +577,21 @@ test('closing one day protects its records and PDF while other days remain edita
  assert.equal(closedDayChanged(closed,{...closed,pdfDocuments:{}}),true);
 });
 
+test('a closed day can only be reopened explicitly and without editing it in the same save',()=>{
+ const day='01/11/2026',other='02/11/2026';
+ const closed={closedDays:{[day]:'2026-11-01T22:00:00Z',[other]:'2026-11-02T22:00:00Z'},
+   workers:[{id:'A',serviceDate:day,status:'PRESENTE'},{id:'B',serviceDate:other,status:'PRESENTE'}]};
+ const reopened={...structuredClone(closed),closedDays:{[other]:closed.closedDays[other]}};
+ assert.equal(closedDayChanged(closed,reopened),true);
+ assert.equal(closedDayChanged(closed,reopened,day),false);
+ assert.equal(closedDayChanged(closed,reopened,'1/11/2026'),false);
+ const reopenedAndEdited=structuredClone(reopened);
+ reopenedAndEdited.workers[0].status='PENDIENTE';
+ assert.equal(closedDayChanged(closed,reopenedAndEdited,day),true);
+ assert.equal(closedDayChanged(closed,{...closed,closedDays:{}},day),true);
+ assert.equal(closedDayChanged(closed,reopened,'03/11/2026'),true);
+});
+
 test('PDF continuation pages keep the table columns and use the actual service day',async()=>{
   const source=section('function extractPdfReference(', 'function crewDayKey(');
   const item=(str,x,y,width=35)=>({str,width,transform:[1,0,0,1,x,y]});

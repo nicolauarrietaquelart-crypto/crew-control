@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="crew-on-start">
 <head>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -6977,7 +6977,7 @@ body > .modal{position:fixed!important;inset:0!important;z-index:20000!important
 .team-palette-color{min-height:30px!important;border-radius:7px!important;transition:transform .18s ease,border-color .18s ease}
 @media(max-width:700px){.team-row{grid-template-columns:minmax(0,1fr) minmax(0,.75fr) 42px!important}.team-row>.check-label,.team-row>button:last-child{grid-column:auto}}
 /* Modal geometry: one scroll container, no nested overlays or phantom shadows */
-html:has(.modal:not(.hidden)),body:has(.modal:not(.hidden)){overflow:hidden!important}
+html.crew-modal-open,body.crew-modal-open{overflow:hidden!important}
 .modal:not(.hidden){position:fixed!important;inset:0!important;z-index:30000!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:clamp(12px,2.5vw,28px)!important;overflow:hidden!important;background:rgba(16,18,22,.30)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:none!important}
 .modal:not(.hidden)>.modal-card{position:relative!important;flex:0 1 auto!important;width:min(1040px,100%)!important;max-width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;max-height:calc(100dvh - 56px)!important;overflow-x:hidden!important;overflow-y:auto!important;margin:0 auto!important;padding:clamp(18px,2vw,28px)!important;border:1px solid #e8e8eb!important;border-radius:22px!important;background:#fff!important;box-shadow:0 12px 34px rgba(0,0,0,.11)!important;scrollbar-gutter:stable}
 .modal:not(.hidden)>.modal-card .modal-head{position:relative!important;top:auto!important;margin:0 0 16px!important;padding:0 0 14px!important;background:#fff!important;border-bottom:1px solid #eee!important;box-shadow:none!important}
@@ -8089,31 +8089,32 @@ select.status[data-status-worker].status-NO-PRESENTADO{
  transition:opacity 2.6s cubic-bezier(.45,0,.55,1);
  visibility:hidden;
 }
-body:has(#startScreen:not(.hidden)) .crew-access-photo-slide{visibility:visible}
-body:has(#startScreen:not(.hidden)) .crew-access-photo-slide.is-active{opacity:1}
+body:not(.crew-on-start) .crew-access-photo-slide{display:none!important}
+body.crew-on-start .crew-access-photo-slide{visibility:visible}
+body.crew-on-start .crew-access-photo-slide.is-active{opacity:1}
 @media(prefers-reduced-motion:reduce){
  .crew-access-photo-slide{transition:none}
 }
-body:has(#startScreen:not(.hidden))::after{
+body.crew-on-start::after{
  content:""!important;position:fixed!important;inset:0!important;
  z-index:0!important;pointer-events:none!important;
  background:rgba(10,12,16,.48)!important;
 }
-body:has(#startScreen:not(.hidden)) > *{position:relative;z-index:1}
+body.crew-on-start > *{position:relative;z-index:1}
 /* Lock only the access screen to the viewport; service screens keep normal scrolling. */
-html:has(#startScreen:not(.hidden)),
-body:has(#startScreen:not(.hidden)){
+html.crew-on-start,
+body.crew-on-start{
  height:100%!important;
  overflow:hidden!important;
  overscroll-behavior:none;
 }
-body:has(#startScreen:not(.hidden)){
+body.crew-on-start{
  height:100vh!important;
  height:100dvh!important;
  display:flex!important;
  flex-direction:column!important;
 }
-body:has(#startScreen:not(.hidden)) main.wrap{
+body.crew-on-start main.wrap{
  flex:1 1 auto!important;
  min-height:0!important;
  height:auto!important;
@@ -8123,13 +8124,13 @@ body:has(#startScreen:not(.hidden)) main.wrap{
  padding-bottom:12px!important;
 }
 @media(max-height:560px){
- body:has(#startScreen:not(.hidden)) #startScreen.login-card{
+ body.crew-on-start #startScreen.login-card{
   max-height:calc(100dvh - 90px)!important;
   overflow-y:auto!important;
  }
 }
 /* Center the login card in the visible photo area, independently of device width. */
-body:has(#startScreen:not(.hidden)) main.wrap{
+body.crew-on-start main.wrap{
  min-height:calc(100vh - 78px);
  min-height:calc(100dvh - 78px);
  display:flex!important;
@@ -8139,34 +8140,34 @@ body:has(#startScreen:not(.hidden)) main.wrap{
  padding-top:20px!important;
  padding-bottom:24px!important;
 }
-body:has(#startScreen:not(.hidden)) #startScreen.login-card{
+body.crew-on-start #startScreen.login-card{
  width:min(620px,100%)!important;
  margin:0 auto!important;
  flex:0 0 auto;
 }
-body:has(#startScreen:not(.hidden)) #startScreen.login-card{
+body.crew-on-start #startScreen.login-card{
  position:relative!important;z-index:2!important;isolation:isolate!important;
  background:rgba(255,255,255,.76)!important;color:#111!important;
  border:1px solid rgba(255,255,255,.8)!important;
  backdrop-filter:blur(16px)!important;-webkit-backdrop-filter:blur(16px)!important;
 }
-body:has(#startScreen:not(.hidden)) #startScreen.login-card::before,
-body:has(#startScreen:not(.hidden)) #startScreen.login-card::after{
+body.crew-on-start #startScreen.login-card::before,
+body.crew-on-start #startScreen.login-card::after{
  content:none!important;display:none!important;
 }
-body:has(#startScreen:not(.hidden)) #startScreen.login-card h2,
-body:has(#startScreen:not(.hidden)) #startScreen.login-card .lead{color:#111!important}
-body:has(#startScreen:not(.hidden)) #startScreen.login-card .or{color:#666!important}
+body.crew-on-start #startScreen.login-card h2,
+body.crew-on-start #startScreen.login-card .lead{color:#111!important}
+body.crew-on-start #startScreen.login-card .or{color:#666!important}
 @media(max-width:700px){
- body:has(#startScreen:not(.hidden)) #startScreen.login-card{
+ body.crew-on-start #startScreen.login-card{
  background:rgba(255,255,255,.92)!important;
  }
 }
 /* No operational controls should appear before a service is opened. */
-body:has(#startScreen:not(.hidden)) #mobileOperationalToggleV11234,
-body:has(#startScreen:not(.hidden)) #sidebarEdgeToggleBtn,
-body:has(#startScreen:not(.hidden)) #crewMobileBottomV11238,
-body:has(#startScreen:not(.hidden)) #mobileOperationalDrawerV11234{
+body.crew-on-start #mobileOperationalToggleV11234,
+body.crew-on-start #sidebarEdgeToggleBtn,
+body.crew-on-start #crewMobileBottomV11238,
+body.crew-on-start #mobileOperationalDrawerV11234{
  display:none!important;
  visibility:hidden!important;
 }
@@ -11068,6 +11069,29 @@ html.crew-android body .team-member-card select.status{
 html.crew-android select.status option{font-size:16px!important;color:#111!important;text-indent:0!important}
 </style>
 <script>if(/Android/i.test(navigator.userAgent))document.documentElement.classList.add('crew-android');</script>
+<script id="crew-state-classes">
+/* Page-state classes instead of body:has(...) selectors. A :has() on <body>
+   makes the browser re-check the whole page on every DOM change, which cost
+   ~1 s of style work per tap on phones and tablets with large services. */
+(()=>{
+ const root=document.documentElement;
+ const sync=()=>{
+  const start=document.getElementById('startScreen');
+  // Before the start screen is parsed, keep the initial (start) state.
+  const onStart=start?!start.classList.contains('hidden'):root.classList.contains('crew-on-start');
+  const modal=Boolean(document.querySelector('.modal:not(.hidden)'));
+  for(const el of [root,document.body]){
+   if(!el)continue;
+   if(el.classList.contains('crew-on-start')!==onStart)el.classList.toggle('crew-on-start',onStart);
+   if(el.classList.contains('crew-modal-open')!==modal)el.classList.toggle('crew-modal-open',modal);
+  }
+ };
+ window.crewSyncStateClasses=sync;
+ new MutationObserver(sync).observe(root,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',sync,{once:true});
+ sync();
+})();
+</script>
 <script>
 if (/iPad/i.test(navigator.userAgent) ||
     (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1)) {
@@ -11100,7 +11124,7 @@ if (/iPad/i.test(navigator.userAgent) ||
 #crewCloseScope .crew-close-actions{display:flex;gap:8px;flex-wrap:wrap}
 body.service-closed #crewAddDay input{pointer-events:auto;opacity:1}
 body.crew-day-closed #initialPdfUploadPanel .file-button{pointer-events:none;opacity:.55}
-#crewNotifyWholeClose[hidden],#crewReopenWholeService[hidden],#crewCloseCurrentDay[hidden]{display:none}
+#crewNotifyWholeClose[hidden],#crewReopenWholeService[hidden],#crewReopenDay[hidden],#crewCloseCurrentDay[hidden]{display:none}
 </style>
 <style id="crew-pdf-missing-review-style">
 #crewPdfMissingReview{width:min(640px,calc(100vw - 24px));padding:20px}
@@ -11122,7 +11146,7 @@ body.crew-day-closed #initialPdfUploadPanel .file-button{pointer-events:none;opa
 @media(max-width:460px){.crew-pdf-review-person{align-items:flex-start;flex-direction:column}.crew-pdf-review-options{align-self:stretch}.crew-pdf-review-options button{flex:1}}
 </style>
 </head>
-<body>
+<body class="crew-on-start">
 <div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
 <div class="crew-access-photo-slide" id="crewAccessPhotoB" aria-hidden="true"></div>
 
@@ -11268,6 +11292,7 @@ body.crew-day-closed #initialPdfUploadPanel .file-button{pointer-events:none;opa
         <button class="secondary" type="button" onclick="downloadClosedServiceExcel(false,false,state.service,state.service.closed?'':state.activeDay)" title="Descargar Excel del cierre">Descargar Excel</button>
         <button class="secondary" type="button" id="crewNotifyWholeClose" onclick="openCrewCloseNotify()" title="Notificar cierre por WhatsApp">Notificar cierre</button>
         <button class="secondary" type="button" id="crewReopenWholeService" onclick="requestReopenService()">Reabrir servicio</button>
+        <button class="secondary" type="button" id="crewReopenDay" onclick="requestReopenDay()" hidden>Reabrir día</button>
         <button class="secondary" type="button" onclick="crewOpenAddDay()">+ Añadir día / PDF</button>
       </div>
     </div>
@@ -13275,7 +13300,7 @@ const crewPersist=(service,mode='general')=>{
   crewSaveQueue=task.catch(()=>{});
   return task;
 };
-const crewSaveLatest=(code,update,{allowClosed=false}={})=>{
+const crewSaveLatest=(code,update,{allowClosed=false,extra={}}={})=>{
   const task=crewSaveQueue.then(async()=>{
     for(let attempt=0;attempt<5;attempt++){
       const remote=(await crewApi(code)).service;
@@ -13283,7 +13308,7 @@ const crewSaveLatest=(code,update,{allowClosed=false}={})=>{
       if(remote.closed&&!allowClosed)throw new Error('El servicio está cerrado');
       const next=update(remote);
       try{
-        const result=await crewApi(code,'PUT',{service:next,revision:String(remote._syncRevision||'')});
+        const result=await crewApi(code,'PUT',{...extra,service:next,revision:String(remote._syncRevision||'')});
         crewLastLocalWrite=Date.now();
         return result.service||{...next,_syncRevision:result.revision};
       }catch(error){
@@ -13305,6 +13330,19 @@ function crewHasOlderAttendance(local,remote){
   });
 }
 
+async function crewRevisionProbe(code){
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),6000);
+  try{
+    const response=await fetch('/api/services/'+encodeURIComponent(code)+'?format=revision',{
+      headers:{'x-service-code':code},cache:'no-store',signal:controller.signal});
+    if(!response.ok)return null;
+    const data=await response.json();
+    crewConnectionRestored();
+    return typeof data.revision==='string'?data:null;
+  }catch{return null;}
+  finally{clearTimeout(timeout);}
+}
 async function crewCheckRemoteChanges(){
   if(crewRemoteCheckInFlight||crewPdfImportInFlight||document.hidden||!state.service?.code)return;
   if(Date.now()-crewLastLocalWrite<500||state.workerSaveInFlight)return;
@@ -13324,6 +13362,13 @@ async function crewCheckRemoteChanges(){
     // made while this request was pending.
     if(state.workerSaveInFlight||
        crewLastLocalWrite>checkStarted||state.service?._syncRevision!==localRevision)return;
+    // Ask only for the revision first. When nothing changed and there is no
+    // local pending work to reconcile, skip downloading the whole service.
+    if(!Object.keys(crewCurrentWorkerJournal(code)).length&&!crewPausePending(code).length&&state.service?._syncRevision){
+      const probe=await crewRevisionProbe(code);
+      if(probe&&probe.revision===state.service?._syncRevision){crewPendingNotice();return;}
+      if(state.workerSaveInFlight||crewLastLocalWrite>checkStarted||state.service?._syncRevision!==localRevision)return;
+    }
     const response=await crewApi(code);
     const remote=response.service;
     if(!remote||crewPdfImportInFlight||state.service?.code!==code)return;
@@ -20313,7 +20358,14 @@ function operationalWorkMatches(work){
 let operationalWorkPageStartV11233=0;
 let operationalWorkPageLastV11233=0;
 
+// Reading scrollWidth right after re-rendering the chips forces a full page
+// layout on every tap. Measure once on the next frame instead.
+let crewWorkNextButtonFrame=0;
 function updateOperationalWorkNextButton(){
+  if(crewWorkNextButtonFrame)return;
+  crewWorkNextButtonFrame=requestAnimationFrame(()=>{crewWorkNextButtonFrame=0;updateOperationalWorkNextButtonNow();});
+}
+function updateOperationalWorkNextButtonNow(){
   const host=document.getElementById('operationalWorkFilters');
   const prev=document.getElementById('operationalWorkPrevious');
   const next=document.getElementById('operationalWorkNext');
@@ -20701,6 +20753,7 @@ function applyClosedState(){
   document.getElementById('closeServiceBtn').style.display=full?'none':'inline-flex';
   document.getElementById('crewNotifyWholeClose').hidden=!full;
   document.getElementById('crewReopenWholeService').hidden=!full;
+  document.getElementById('crewReopenDay').hidden=full||!dayClose;
   if(full||dayClose){
     const closedAt=full?service.closedAt:dayClose;
     const when=closedAt?new Date(closedAt).toLocaleString('es-ES'):'';
@@ -21005,6 +21058,40 @@ async function downloadClosedServiceExcel(auto=false,returnFile=false,service=st
   else alert('Servicio cerrado correctamente, pero no se pudo descargar el Excel automáticamente. Pulsa «Descargar Excel» para intentarlo de nuevo.');
   throw err;
  }
+}
+
+// Reopen only the active day. The server accepts the removal of one closed
+// day only through this explicit request, so stale saves cannot reopen days.
+let crewReopenDayInFlight=false;
+async function requestReopenDay(){
+  if(!state.service||state.service.closed||crewReopenDayInFlight)return;
+  const day=state.activeDay;
+  const key=crewDayKey(day);
+  if(!day||!state.service.closedDays?.[key])return;
+  if(!navigator.onLine){alert('Recupera la conexión para reabrir el día.');return;}
+  if(!confirm(`¿Reabrir el día ${day}?\n\nSe podrán volver a editar los fichajes, equipos y pausas de esta jornada. Los demás días no cambian.`))return;
+  const code=state.service.code;
+  crewReopenDayInFlight=true;
+  setSaveState('Reabriendo el día…','saving');
+  try{
+    const saved=await crewSaveLatest(code,remote=>{
+      if(remote.closed)throw new Error('El servicio completo está cerrado. Reabre el servicio.');
+      if(!remote.closedDays?.[key])return remote;
+      const closedDays={...remote.closedDays};
+      delete closedDays[key];
+      return {...remote,closedDays};
+    },{extra:{reopenDay:key}});
+    if(state.service?.code!==code)return;
+    state.service=crewRestoreLocalEdits(saved);
+    crewCacheRoster();
+    applyClosedState();
+    renderPersonnel();
+    renderIncidents();
+    setSaveState('Día reabierto','saved');
+  }catch(error){
+    setSaveState('Error','error');
+    alert(errorMessage(error));
+  }finally{crewReopenDayInFlight=false;}
 }
 
 function requestReopenService(){
