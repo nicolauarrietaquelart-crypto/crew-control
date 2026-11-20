@@ -11276,8 +11276,7 @@ body.crew-day-closed #initialPdfUploadPanel .file-button{pointer-events:none;opa
     <div class="service-top">
       <div class="service-code">
         <span>Servicio</span>
-        <span id="serviceCodeBadge" class="code-pill" role="button" tabindex="0" onclick="copyServiceCode()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();copyServiceCode()}" title="Toca para copiar el código" aria-label="Copiar código del servicio">000000</span>
-        <button class="secondary icon-btn compact-code-btn" onclick="copyServiceCode()" title="Copiar código"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"></rect><path d="M5 16H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1"></path></svg><span>Copiar</span></button>
+        <span id="serviceCodeBadge" class="code-pill" role="button" tabindex="0" style="cursor:copy" onclick="copyServiceCode()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();copyServiceCode()}" title="Toca para copiar el código" aria-label="Copiar código del servicio">000000</span>
       </div>
       <div class="service-actions">
         <span id="saveState" class="save-state saved" role="status">Guardado</span>
@@ -22289,7 +22288,7 @@ html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(button.secondary,.secondar
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups :is(table,tbody,thead,.table-wrap){background:transparent!important;color:var(--cd-text)!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups thead th{background:var(--cd-surface-2)!important;color:var(--cd-muted)!important;border-color:var(--cd-line)!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row]{background:var(--cd-surface)!important;border-color:var(--cd-line)!important;box-shadow:none!important;outline-color:var(--cd-line)!important}
-html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row] > td{background:var(--cd-surface)!important;color:var(--cd-text)!important;border-color:var(--cd-line)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row] > td{background:transparent!important;color:var(--cd-text)!important;border-color:var(--cd-line)!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row].worker-row-selected{background:#2a2016!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row].worker-row-selected > td{background:transparent!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row].worker-row-selected::after{background:linear-gradient(90deg,rgba(255,138,43,.16),rgba(255,138,43,.05))!important;box-shadow:inset 4px 0 0 #ff8a2b!important}
@@ -22406,6 +22405,40 @@ html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #crewManager .crew-manager-sta
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #crewManager .crew-manager-delete{color:#ff8f8f!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #crewManager .crew-manager-day-delete{background:rgba(225,70,70,.16)!important;background-image:none!important;color:#ff8f8f!important;border-color:rgba(225,70,70,.4)!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #crewManager span:not([class]){color:var(--cd-muted)}
+
+
+/* Móvil: sin destellos al tocar tarjetas */
+html.crew-dark #personnelGroups tr[data-worker-row],html.crew-dark #personnelGroups tr[data-worker-row] *{-webkit-tap-highlight-color:transparent}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row]:is(:active,:focus,:focus-within){background:var(--cd-surface)!important;outline:none!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row].worker-row-selected:is(:active,:focus,:focus-within){background:#2a2016!important}
+/* Iconos que quedaban oscuros */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(.modal-close,.shift-clock-icon,.mobile-shift-sort-toggle,.scenarios-close-v114){color:#fff!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(.modal-close,.shift-clock-icon,.mobile-shift-sort-toggle,.scenarios-close-v114) svg{stroke:currentColor!important;color:#fff!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .shift-clock-icon{background:var(--cd-surface-3)!important}
+/* Turno seleccionado: botón naranja */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups .shift-divider-controls-v1211 > .shift-select-v121:is(.active,[aria-pressed="true"]){background:#ff8a2b!important;background-image:none!important;border-color:#ff8a2b!important;color:#111214!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups .shift-select-v121:is(.active,[aria-pressed="true"]) *{color:#111214!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups .shift-select-v121:is(.active,[aria-pressed="true"]) .shift-select-check-v1211{background:#111214!important;color:#ff8a2b!important;border-color:#111214!important}
+/* Flecha para mostrar el panel lateral */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .sidebar-edge-toggle-v11225{background:linear-gradient(180deg,#2b2d33,#0e0f11)!important;border-color:#3a3d44!important;color:#ff8a2b!important;box-shadow:0 10px 28px rgba(0,0,0,.5)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .sidebar-edge-toggle-v11225 *{color:inherit!important}
+/* Ventana de equipo */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #teamMembersModal :is(.team-members-stats > div,.team-panel-shift-head,.team-member-card,.team-member-phone){background:var(--cd-surface-2)!important;background-image:none!important;border-color:var(--cd-line-2)!important;color:var(--cd-text)!important;box-shadow:none!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #teamMembersModal .team-member-phone{background:var(--cd-surface-3)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #teamMembersModal :is(.team-members-stats > div strong,.team-member-card strong,.team-panel-shift-head){color:var(--cd-text)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #teamMembersModal .team-members-stats > div.good strong{color:#5fd598!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #teamMembersModal .team-members-stats > div :is(span,small){color:var(--cd-muted)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #teamMembersModal :is(.team-member-time,.team-member-card small,.team-member-card span:not(.status)){color:var(--cd-muted)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #teamMembersModal .team-member-card svg{stroke:currentColor}
+/* Escenarios y equipos: pestañas y planificación por día */
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #scenariosTeamsModal [role=tab]{background:var(--cd-surface-2)!important;background-image:none!important;color:var(--cd-text)!important;border-color:var(--cd-line-2)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #scenariosTeamsModal [role=tab][aria-selected="true"]{background:#ff8a2b!important;color:#111214!important;border-color:#ff8a2b!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #scenariosTeamsModal .crew-team-day-v11263{background:var(--cd-surface-2)!important;background-image:none!important;border-color:var(--cd-line-2)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #scenariosTeamsModal .crew-team-day-v11263 > strong{color:var(--cd-muted)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #scenariosTeamsModal .crew-team-work-list-v11263 > button{background:var(--cd-surface-3)!important;background-image:none!important;border-color:var(--cd-line-2)!important;color:var(--cd-text)!important;box-shadow:none!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #scenariosTeamsModal .crew-team-work-list-v11263 > button *{color:inherit!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #scenariosTeamsModal .crew-team-work-list-v11263 > button small{color:var(--cd-muted)!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #scenariosTeamsModal .crew-team-work-list-v11263 > button:is(:hover,:focus-visible,.active){border-color:#ff8a2b!important;background:rgba(255,138,43,.12)!important}
 
 /* Modales y diálogos */
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(.modal-card,dialog){background:var(--cd-surface)!important;color:var(--cd-text)!important;border-color:var(--cd-line)!important;box-shadow:0 24px 70px rgba(0,0,0,.6)!important}
