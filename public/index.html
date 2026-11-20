@@ -22290,7 +22290,9 @@ html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups :is(table,tbo
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups thead th{background:var(--cd-surface-2)!important;color:var(--cd-muted)!important;border-color:var(--cd-line)!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row]{background:var(--cd-surface)!important;border-color:var(--cd-line)!important;box-shadow:none!important;outline-color:var(--cd-line)!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row] > td{background:var(--cd-surface)!important;color:var(--cd-text)!important;border-color:var(--cd-line)!important}
-html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row].worker-row-selected > td{background:#2a2016!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row].worker-row-selected{background:#2a2016!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row].worker-row-selected > td{background:transparent!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr[data-worker-row].worker-row-selected::after{background:linear-gradient(90deg,rgba(255,138,43,.16),rgba(255,138,43,.05))!important;box-shadow:inset 4px 0 0 #ff8a2b!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups tr.shift-divider-row td,html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups .shift-divider-controls-v121{background:var(--cd-surface)!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups .shift-divider-controls-v1211 > :is(.shift-divider-btn,.shift-select-left-v1211,.shift-select-v121),
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #personnelGroups :is(.shift-divider-btn,.shift-select-v121){background:var(--cd-surface-3)!important;background-image:none!important;color:var(--cd-text)!important;border-color:var(--cd-line-2)!important;box-shadow:none!important}
@@ -22312,9 +22314,9 @@ html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(#operationalWorkPrevious,#
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .sidebar-icon-btn-v124.present{background:rgba(46,170,100,.16)!important;color:#5fd598!important;border-color:rgba(46,170,100,.35)!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .sidebar-icon-btn-v124.absent{background:rgba(225,70,70,.16)!important;color:#ff8f8f!important;border-color:rgba(225,70,70,.35)!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body .sidebar-icon-btn-v124.rate{background:rgba(230,180,40,.16)!important;color:#f2c94c!important;border-color:rgba(230,180,40,.35)!important}
-/* Elementos negros: en oscuro pasan a claros para seguir destacando */
+/* Elementos negros: en oscuro pasan a naranja para seguir destacando */
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(.code-pill,.close-service-btn,.day-btn.active,.operational-work-chip-v122.active,.sidebar-pdf-action-v11227,.sidebar-icon-btn-v124.changes-v125){
- background:#ececee!important;background-image:none!important;color:#111214!important;border-color:#ececee!important;box-shadow:none!important}
+ background:#ff8a2b!important;background-image:none!important;color:#111214!important;border-color:#ff8a2b!important;box-shadow:none!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(.code-pill,.close-service-btn,.day-btn.active,.operational-work-chip-v122.active,.sidebar-pdf-action-v11227,.sidebar-icon-btn-v124.changes-v125) *{color:inherit!important;stroke:currentColor}
 /* Textos que tenían color oscuro fijo */
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body :is(.shift-selected-count-v121,button.worker-open,.sidebar-link-btn-v129 .label,.schedule-planned,.crew-desktop-name-line,.worker-name){color:var(--cd-text)!important}
@@ -22363,7 +22365,7 @@ html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #startScreen.login-card :is(h2
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #startScreen.login-card .or{color:var(--cd-faint)!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #startScreen.login-card .or::before,html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #startScreen.login-card .or::after{background:var(--cd-line-2)!important}
 html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #newServiceBtn{background:#ff8a2b!important;background-image:none!important;color:#111214!important;border-color:#ff8a2b!important}
-html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #openServiceBtn{background:#ececee!important;background-image:none!important;color:#111214!important;border-color:#ececee!important;box-shadow:none!important}
+html.crew-dark:not(#cd1):not(#cd2):not(#cd3) body #openServiceBtn{background:#ff8a2b!important;background-image:none!important;color:#111214!important;border-color:#ff8a2b!important;box-shadow:none!important}
 
 
 /* Algunos textos fijaban -webkit-text-fill-color oscuro: manda el color del tema */
@@ -22418,6 +22420,15 @@ html.crew-dark{scrollbar-color:#3a3d44 transparent}
   root.classList.toggle('crew-dark',dark);
   try{localStorage.setItem('crew-theme',dark?'dark':'light');}catch{}
   paint();
+  // Some rows keep the previous theme's styles until they are rebuilt:
+  // redraw the roster and side panels so nothing mixes both themes.
+  try{
+   if(typeof state!=='undefined'&&state?.service){
+    if(typeof renderPersonnel==='function')renderPersonnel();
+    if(typeof renderIncidents==='function')renderIncidents();
+    if(typeof renderOperationalDashboard==='function')renderOperationalDashboard();
+   }
+  }catch(error){console.warn('[tema]',error);}
  };
  paint();
 })();
