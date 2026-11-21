@@ -22243,42 +22243,47 @@ document.addEventListener('keydown',event=>{
 </style>
 <link rel="stylesheet" href="/service-tools.css?v=9">
 <style id="crew-status-menu-v1">
-/* Menú propio para elegir el estado (sustituye la lista nativa del navegador) */
-.crew-status-menu{position:fixed;z-index:2147483000;min-width:236px;padding:6px;border-radius:16px;
- background:#fff;border:1px solid rgba(17,18,20,.08);box-shadow:0 18px 50px rgba(17,18,20,.18),0 2px 6px rgba(17,18,20,.06);
- font-family:inherit;transform-origin:var(--crew-status-origin,top left);animation:crewStatusMenuIn .14s ease-out}
-@keyframes crewStatusMenuIn{from{opacity:0;transform:scale(.96) translateY(-4px)}to{opacity:1;transform:none}}
+/* Menús propios para estado y equipo (sustituyen la lista nativa) */
+.crew-status-menu{position:fixed;z-index:2147483000;min-width:190px;max-width:280px;max-height:min(60vh,420px);overflow:auto;padding:5px;border-radius:13px;
+ background:#fff;border:1px solid rgba(17,18,20,.08);box-shadow:0 14px 40px rgba(17,18,20,.16),0 2px 6px rgba(17,18,20,.06);
+ font-family:inherit;transform-origin:var(--crew-status-origin,top left);animation:crewStatusMenuIn .12s ease-out;overscroll-behavior:contain}
+@keyframes crewStatusMenuIn{from{opacity:0;transform:scale(.97) translateY(-3px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.crew-status-menu{animation:none}}
-.crew-status-menu[hidden]{display:none}
-.crew-status-menu-title{padding:8px 12px 6px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#8a8f98}
-.crew-status-option{display:flex;align-items:center;gap:12px;width:100%;margin:0;padding:10px 12px;border:0;border-radius:11px;
- background:transparent;color:#17181b;font:inherit;font-size:15px;font-weight:700;letter-spacing:.01em;text-align:left;cursor:pointer;box-shadow:none}
+.crew-status-menu-title{padding:6px 9px 4px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#8a8f98}
+.crew-status-group{padding:8px 9px 3px;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#8a8f98;border-top:1px solid rgba(17,18,20,.06);margin-top:3px}
+.crew-status-option{display:flex;align-items:center;gap:9px;width:100%;margin:0;padding:6px 8px;border:0;border-radius:9px;min-height:0;
+ background:transparent;color:#17181b;font:inherit;font-size:12.5px;font-weight:700;letter-spacing:.01em;text-align:left;cursor:pointer;box-shadow:none;text-transform:none}
 .crew-status-option:hover,.crew-status-option:focus-visible{background:#f4f4f2;outline:none}
-.crew-status-option[aria-checked="true"]{background:var(--crew-status-tint)}
-.crew-status-dot{flex:0 0 34px;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
+.crew-status-option[aria-checked="true"]{background:var(--crew-status-tint,#f4f4f2)}
+.crew-status-dot{flex:0 0 24px;width:24px;height:24px;border-radius:7px;display:grid;place-items:center;
  background:var(--crew-status-tint);color:var(--crew-status-color)}
-.crew-status-dot svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-.crew-status-label{flex:1}
-.crew-status-tick{width:18px;height:18px;stroke:var(--crew-status-color);fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.crew-status-dot svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.crew-team-swatch{flex:0 0 14px;width:14px;height:14px;border-radius:50%;margin:0 5px;background:var(--crew-team-color,#bbb);box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)}
+.crew-team-swatch.none{background:transparent;box-shadow:inset 0 0 0 1.5px #a0a4ac;border:0}
+.crew-status-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crew-status-tick{flex:0 0 14px;width:14px;height:14px;stroke:var(--crew-status-color,#ff7a14);fill:none;stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round;opacity:0}
 .crew-status-option[aria-checked="true"] .crew-status-tick{opacity:1}
 .crew-status-option[data-value="PENDIENTE"]{--crew-status-color:#6b7079;--crew-status-tint:#f0f0ee}
 .crew-status-option[data-value="CONTACTADO"]{--crew-status-color:#e06a00;--crew-status-tint:#fff1e3}
 .crew-status-option[data-value="PRESENTE"]{--crew-status-color:#17924f;--crew-status-tint:#e6f6ec}
 .crew-status-option[data-value="NO PRESENTADO"]{--crew-status-color:#d23a3a;--crew-status-tint:#fdeaea}
-select.status{cursor:pointer}
-html.crew-dark .crew-status-menu{background:#1e1f23;border-color:#3a3d44;box-shadow:0 24px 60px rgba(0,0,0,.6)}
-html.crew-dark .crew-status-menu-title{color:#7d828b}
+select.status,select[data-team-worker]{cursor:pointer}
+html.crew-dark .crew-status-menu{background:#1e1f23;border-color:#3a3d44;box-shadow:0 20px 50px rgba(0,0,0,.6)}
+html.crew-dark :is(.crew-status-menu-title,.crew-status-group){color:#7d828b}
+html.crew-dark .crew-status-group{border-top-color:#2d2f35}
 html.crew-dark .crew-status-option{color:#ececee}
 html.crew-dark .crew-status-option:hover,html.crew-dark .crew-status-option:focus-visible{background:#26282d}
+html.crew-dark .crew-status-option[aria-checked="true"]:not([data-value="PENDIENTE"]):not([data-value="CONTACTADO"]):not([data-value="PRESENTE"]):not([data-value="NO PRESENTADO"]){background:rgba(255,138,43,.14)}
 html.crew-dark .crew-status-option[data-value="PENDIENTE"]{--crew-status-color:#c9ccd2;--crew-status-tint:#2b2d33}
 html.crew-dark .crew-status-option[data-value="CONTACTADO"]{--crew-status-color:#ff9a45;--crew-status-tint:rgba(255,140,40,.16)}
 html.crew-dark .crew-status-option[data-value="PRESENTE"]{--crew-status-color:#5fd598;--crew-status-tint:rgba(46,170,100,.18)}
 html.crew-dark .crew-status-option[data-value="NO PRESENTADO"]{--crew-status-color:#ff8f8f;--crew-status-tint:rgba(225,70,70,.18)}
+html.crew-dark .crew-team-swatch.none{box-shadow:inset 0 0 0 1.5px #6b7079}
 </style>
 <script id="crew-status-menu-script">
-/* Al tocar un selector de estado se abre este menú en lugar de la lista
-   nativa. Al elegir se cambia el <select> y se lanza su "change", así que
-   el guardado y la sincronización siguen funcionando igual. */
+/* Al tocar un selector de estado o de equipo se abre este menú en lugar de
+   la lista nativa. Al elegir se cambia el <select> y se lanza su "change",
+   así que el guardado y la sincronización siguen funcionando igual. */
 (()=>{
  const ICONS={
   'PENDIENTE':'<path d="M6 12h12"/>',
@@ -22286,21 +22291,36 @@ html.crew-dark .crew-status-option[data-value="NO PRESENTADO"]{--crew-status-col
   'PRESENTE':'<path d="m5 12 5 5L20 7"/>',
   'NO PRESENTADO':'<path d="M18 6 6 18M6 6l12 12"/>'
  };
+ const TICK='<svg class="crew-status-tick" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg>';
  let menu=null,current=null,justOpened=0;
- const isStatus=el=>el instanceof HTMLSelectElement&&el.classList.contains('status');
- function build(select){
+ const kindOf=el=>el instanceof HTMLSelectElement?(el.classList.contains('status')?'status':(el.hasAttribute('data-team-worker')?'team':'')):'';
+ function teamColor(id){
+  try{const t=(state.service?.teams||[]).find(x=>String(x.id)===String(id));return t?.colorHex||'';}catch{return '';}
+ }
+ function optionButton(opt,select,kind){
+  const b=document.createElement('button');
+  b.type='button';b.className='crew-status-option';
+  if(kind==='status')b.dataset.value=opt.value;
+  b.setAttribute('role','menuitemradio');b.setAttribute('aria-checked',String(opt.value===select.value));
+  let lead='';
+  if(kind==='status')lead='<span class="crew-status-dot"><svg viewBox="0 0 24 24">'+(ICONS[opt.value]||'')+'</svg></span>';
+  else{const c=opt.value?teamColor(opt.value):'';lead='<span class="crew-team-swatch'+(opt.value?'':' none')+'"'+(c?' style="--crew-team-color:'+c.replace(/[^#\w(),.\s%-]/g,'')+'"':'')+'></span>';}
+  b.innerHTML=lead+'<span class="crew-status-label"></span>'+TICK;
+  b.querySelector('.crew-status-label').textContent=opt.textContent.trim();
+  b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();choose(opt.value);});
+  return b;
+ }
+ function build(select,kind){
   const m=document.createElement('div');
   m.className='crew-status-menu';m.setAttribute('role','menu');
-  const title=document.createElement('div');title.className='crew-status-menu-title';title.textContent='Estado';
+  const title=document.createElement('div');title.className='crew-status-menu-title';title.textContent=kind==='status'?'Estado':'Equipo';
   m.append(title);
-  for(const opt of select.options){
-   const b=document.createElement('button');
-   b.type='button';b.className='crew-status-option';b.dataset.value=opt.value;
-   b.setAttribute('role','menuitemradio');b.setAttribute('aria-checked',String(opt.value===select.value));
-   b.innerHTML='<span class="crew-status-dot"><svg viewBox="0 0 24 24">'+(ICONS[opt.value]||'')+'</svg></span><span class="crew-status-label"></span><svg class="crew-status-tick" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg>';
-   b.querySelector('.crew-status-label').textContent=opt.textContent.trim();
-   b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();choose(opt.value);});
-   m.append(b);
+  const groups=select.querySelectorAll('optgroup').length;
+  for(const child of select.children){
+   if(child.tagName==='OPTGROUP'){
+    if(groups>1){const g=document.createElement('div');g.className='crew-status-group';g.textContent=child.label;m.append(g);}
+    for(const opt of child.children)m.append(optionButton(opt,select,kind));
+   }else if(child.tagName==='OPTION')m.append(optionButton(child,select,kind));
   }
   m.addEventListener('keydown',e=>{
    const items=[...m.querySelectorAll('.crew-status-option')];const i=items.indexOf(document.activeElement);
@@ -22311,17 +22331,20 @@ html.crew-dark .crew-status-option[data-value="NO PRESENTADO"]{--crew-status-col
   return m;
  }
  function place(select){
-  const r=select.getBoundingClientRect(),mw=menu.offsetWidth,mh=menu.offsetHeight,gap=6,vw=innerWidth,vh=innerHeight;
+  const r=select.getBoundingClientRect(),mw=menu.offsetWidth,mh=menu.offsetHeight,gap=5,vw=innerWidth,vh=innerHeight;
   let left=Math.min(Math.max(8,r.left),vw-mw-8),top=r.bottom+gap,origin='top left';
   if(top+mh>vh-8&&r.top-gap-mh>8){top=r.top-gap-mh;origin='bottom left';}
   top=Math.max(8,Math.min(top,vh-mh-8));
   menu.style.left=left+'px';menu.style.top=top+'px';menu.style.setProperty('--crew-status-origin',origin);
+  menu.style.minWidth=Math.max(190,Math.min(280,r.width))+'px';
  }
  function open(select){
   close(false);
-  if(select.disabled)return;
-  current=select;menu=build(select);document.body.append(menu);place(select);justOpened=Date.now();
-  (menu.querySelector('[aria-checked="true"]')||menu.querySelector('.crew-status-option'))?.focus({preventScroll:true});
+  const kind=kindOf(select);
+  if(!kind||select.disabled)return;
+  current=select;menu=build(select,kind);document.body.append(menu);place(select);justOpened=Date.now();
+  const checked=menu.querySelector('[aria-checked="true"]')||menu.querySelector('.crew-status-option');
+  checked?.focus({preventScroll:true});checked?.scrollIntoView({block:'nearest'});
  }
  function close(refocus){
   if(menu){menu.remove();menu=null;}
@@ -22334,22 +22357,23 @@ html.crew-dark .crew-status-option[data-value="NO PRESENTADO"]{--crew-status-col
   select.value=value;
   select.dispatchEvent(new Event('change',{bubbles:true}));
  }
+ const usable=el=>kindOf(el)&&!el.disabled;
  function intercept(e){
   const select=e.target;
-  if(!isStatus(select)||select.disabled)return;
+  if(!usable(select))return;
   e.preventDefault();e.stopPropagation();
   if(menu&&current===select){close(false);return;}
   open(select);
  }
  document.addEventListener('mousedown',intercept,true);
- document.addEventListener('touchstart',e=>{if(isStatus(e.target)&&!e.target.disabled){e.preventDefault();}},{capture:true,passive:false});
- document.addEventListener('touchend',e=>{if(isStatus(e.target)&&!e.target.disabled){intercept(e);}},{capture:true,passive:false});
- document.addEventListener('click',e=>{if(isStatus(e.target)){e.preventDefault();e.stopPropagation();}},true);
+ document.addEventListener('touchstart',e=>{if(usable(e.target))e.preventDefault();},{capture:true,passive:false});
+ document.addEventListener('touchend',e=>{if(usable(e.target))intercept(e);},{capture:true,passive:false});
+ document.addEventListener('click',e=>{if(kindOf(e.target)){e.preventDefault();e.stopPropagation();}},true);
  document.addEventListener('keydown',e=>{
-  if(isStatus(e.target)&&['Enter',' ','ArrowDown','ArrowUp'].includes(e.key)){e.preventDefault();open(e.target);}
+  if(usable(e.target)&&['Enter',' ','ArrowDown','ArrowUp'].includes(e.key)){e.preventDefault();open(e.target);}
  },true);
  document.addEventListener('pointerdown',e=>{if(menu&&!menu.contains(e.target)&&e.target!==current)close(false);},true);
- addEventListener('scroll',()=>{if(menu&&Date.now()-justOpened>250)close(false);},true);
+ addEventListener('scroll',e=>{if(menu&&!menu.contains(e.target)&&Date.now()-justOpened>250)close(false);},true);
  addEventListener('resize',()=>close(false));
 })();
 </script>
