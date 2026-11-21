@@ -8095,6 +8095,17 @@ body.crew-on-start .crew-access-photo-slide.is-active{opacity:1}
 @media(prefers-reduced-motion:reduce){
  .crew-access-photo-slide{transition:none}
 }
+/* Vídeo de fondo: cubre la pantalla, con un desenfoque suave */
+/* Móvil (vertical): el vídeo llena la pantalla. Pantallas anchas: el vídeo
+   se ve entero en el centro y detrás una versión muy desenfocada. */
+.crew-access-video{width:calc(100% + 48px)!important;height:calc(100% + 48px)!important;object-fit:cover;object-position:center 30%;filter:blur(1px) saturate(1.05)!important;transform:scale(1.02);background:transparent}
+.crew-access-video-backdrop{background:#0e0f11 url('/access-bg-poster.jpg') center/cover no-repeat!important;filter:blur(40px) saturate(1.2) brightness(.8)!important;transform:scale(1.2)!important;display:none}
+@media (min-aspect-ratio:3/4){
+ .crew-access-video{object-fit:contain;inset:0!important;width:100%!important;height:100%!important;filter:none!important;transform:none;
+  -webkit-mask-image:linear-gradient(90deg,transparent calc(50% - 28vh),#000 calc(50% - 17vh),#000 calc(50% + 17vh),transparent calc(50% + 28vh));
+  mask-image:linear-gradient(90deg,transparent calc(50% - 28vh),#000 calc(50% - 17vh),#000 calc(50% + 17vh),transparent calc(50% + 28vh))}
+ body.crew-on-start .crew-access-video-backdrop{display:block}
+}
 body.crew-on-start::after{
  content:""!important;position:fixed!important;inset:0!important;
  z-index:0!important;pointer-events:none!important;
@@ -11149,8 +11160,7 @@ body.crew-day-closed #initialPdfUploadPanel .file-button{pointer-events:none;opa
 </style>
 </head>
 <body class="crew-on-start">
-<div class="crew-access-photo-slide is-active" id="crewAccessPhotoA" aria-hidden="true" style="background-image:url('https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg')"></div>
-<div class="crew-access-photo-slide" id="crewAccessPhotoB" aria-hidden="true"></div>
+<div class="crew-access-photo-slide crew-access-video-backdrop is-active" aria-hidden="true"></div><video class="crew-access-photo-slide crew-access-video is-active" id="crewAccessVideo" aria-hidden="true" autoplay muted loop playsinline preload="auto" poster="/access-bg-poster.jpg"><source src="/access-bg.mp4" type="video/mp4"></video>
 
   <button type="button" id="sidebarEdgeToggleBtn" class="sidebar-edge-toggle-v11225" onclick="toggleOperationalSidebar()" title="Mostrar panel" aria-label="Mostrar panel">
     <span id="sidebarEdgeToggleGlyph"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span>
@@ -21959,54 +21969,23 @@ async function notifyClosedServiceWhatsApp(person){
  }
 }
 </script>
-<script id="crew-access-photo-carousel">
-(() => {
- const photos = [
-  'https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00015-copy.jpg',
-  'https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00279-copy.jpg',
-  'https://www.grupopennywise.com/wp-content/uploads/2026/10/image-29.png',
-  'https://www.grupopennywise.com/wp-content/uploads/2026/10/DSC00055-copy.jpg'
- ];
- const layers = [document.getElementById('crewAccessPhotoA'), document.getElementById('crewAccessPhotoB')];
- if(layers.some(layer => !layer)) return;
- const imageLoads = photos.map(src => {
-  const img = new Image();
-  img.src = src;
-  return img.decode ? img.decode().then(() => true).catch(() => false)
-    : new Promise(resolve => {
-      if(img.complete) return resolve(img.naturalWidth > 0);
-      img.onload = () => resolve(true);
-      img.onerror = () => resolve(false);
-    });
- });
- let current = 0, visible = 0, changing = false;
- window.setInterval(async () => {
-  const start = document.getElementById('startScreen');
-  if(changing || !start || start.classList.contains('hidden') || document.hidden) return;
-  changing = true;
-  try {
-   // Do not reveal the next slide until its image has fully loaded/decoded.
-   let next = (current + 1) % photos.length;
-   let found = false;
-   for(let attempts = 0; attempts < photos.length - 1; attempts++) {
-    if(await imageLoads[next]) { found = true; break; }
-    next = (next + 1) % photos.length;
-   }
-   if(!found || start.classList.contains('hidden') || document.hidden) return;
-   const incoming = 1 - visible;
-   const nextLayer = layers[incoming];
-   nextLayer.style.backgroundImage = 'url("' + photos[next] + '")';
-   // Crossfade both layers at once; the outgoing slide becomes fully transparent
-   // before its background URL is ever reused on the following cycle.
-   nextLayer.classList.add('is-active');
-   layers[visible].classList.remove('is-active');
-   await new Promise(resolve => window.setTimeout(resolve, 2700));
-   current = next;
-   visible = incoming;
-  } finally {
-   changing = false;
-  }
- }, 4000);
+<script id="crew-access-video">
+/* Vídeo de fondo del acceso: solo se reproduce mientras se ve la pantalla
+   de acceso; dentro de la app queda en pausa para no gastar batería. */
+(()=>{
+ const v=document.getElementById('crewAccessVideo');
+ if(!v)return;
+ v.muted=true;
+ const reduce=matchMedia('(prefers-reduced-motion: reduce)');
+ const sync=()=>{
+  const onStart=document.body.classList.contains('crew-on-start');
+  if(onStart&&!reduce.matches&&!document.hidden){const p=v.play();if(p&&p.catch)p.catch(()=>{});}
+  else v.pause();
+ };
+ new MutationObserver(sync).observe(document.body,{attributes:true,attributeFilter:['class']});
+ document.addEventListener('visibilitychange',sync);
+ reduce.addEventListener?.('change',sync);
+ sync();
 })();
 </script>
 <script id="crew-mobile-touch-polish">
