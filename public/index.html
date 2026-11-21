@@ -22267,7 +22267,9 @@ document.addEventListener('keydown',event=>{
 .crew-status-option[data-value="CONTACTADO"]{--crew-status-color:#e06a00;--crew-status-tint:#fff1e3}
 .crew-status-option[data-value="PRESENTE"]{--crew-status-color:#17924f;--crew-status-tint:#e6f6ec}
 .crew-status-option[data-value="NO PRESENTADO"]{--crew-status-color:#d23a3a;--crew-status-tint:#fdeaea}
-select.status,select[data-team-worker]{cursor:pointer}
+select.status,select[data-team-worker],#workerModal select,#bulkChangesModal select{cursor:pointer}
+.crew-status-option:disabled{opacity:.45;cursor:default}
+.crew-status-menu{z-index:2147483600}
 html.crew-dark .crew-status-menu{background:#1e1f23;border-color:#3a3d44;box-shadow:0 20px 50px rgba(0,0,0,.6)}
 html.crew-dark :is(.crew-status-menu-title,.crew-status-group){color:#7d828b}
 html.crew-dark .crew-status-group{border-top-color:#2d2f35}
@@ -22293,18 +22295,37 @@ html.crew-dark .crew-team-swatch.none{box-shadow:inset 0 0 0 1.5px #6b7079}
  };
  const TICK='<svg class="crew-status-tick" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg>';
  let menu=null,current=null,justOpened=0;
- const kindOf=el=>el instanceof HTMLSelectElement?(el.classList.contains('status')?'status':(el.hasAttribute('data-team-worker')?'team':'')):'';
+ // Selects handled: state (select.status), team (data-team-worker) and every
+ // single-choice select inside the worker card and the bulk-edit dialog.
+ const kindOf=el=>{
+  if(!(el instanceof HTMLSelectElement)||el.multiple||el.size>1)return '';
+  if(el.classList.contains('status'))return 'status';
+  if(el.hasAttribute('data-team-worker'))return 'team';
+  if(el.closest('#workerModal,#bulkChangesModal'))return 'generic';
+  return '';
+ };
+ function fieldLabel(select){
+  const own=select.labels?.[0]?.textContent;
+  if(own)return own.trim();
+  for(let n=select.previousElementSibling;n;n=n.previousElementSibling)if(n.matches('label,.field'))return n.textContent.trim();
+  const box=select.parentElement?.querySelector(':scope > label, :scope > .field');
+  return box?box.textContent.trim():'';
+ }
  function teamColor(id){
   try{const t=(state.service?.teams||[]).find(x=>String(x.id)===String(id));return t?.colorHex||'';}catch{return '';}
  }
  function optionButton(opt,select,kind){
   const b=document.createElement('button');
   b.type='button';b.className='crew-status-option';
-  if(kind==='status')b.dataset.value=opt.value;
+  if(opt.disabled)b.disabled=true;
   b.setAttribute('role','menuitemradio');b.setAttribute('aria-checked',String(opt.value===select.value));
   let lead='';
-  if(kind==='status')lead='<span class="crew-status-dot"><svg viewBox="0 0 24 24">'+(ICONS[opt.value]||'')+'</svg></span>';
-  else{const c=opt.value?teamColor(opt.value):'';lead='<span class="crew-team-swatch'+(opt.value?'':' none')+'"'+(c?' style="--crew-team-color:'+c.replace(/[^#\w(),.\s%-]/g,'')+'"':'')+'></span>';}
+  const swatch=c=>'<span class="crew-team-swatch'+(c?'':' none')+'"'+(c?' style="--crew-team-color:'+c.replace(/[^#\w(),.\s%-]/g,'')+'"':'')+'></span>';
+  if(kind==='status'||(kind==='generic'&&ICONS[opt.value])){
+   b.dataset.value=opt.value;
+   lead='<span class="crew-status-dot"><svg viewBox="0 0 24 24">'+(ICONS[opt.value]||'')+'</svg></span>';
+  }else if(kind==='team')lead=swatch(opt.value?teamColor(opt.value):'');
+  else if(kind==='generic'&&opt.value&&teamColor(opt.value))lead=swatch(teamColor(opt.value));
   b.innerHTML=lead+'<span class="crew-status-label"></span>'+TICK;
   b.querySelector('.crew-status-label').textContent=opt.textContent.trim();
   b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();choose(opt.value);});
@@ -22313,14 +22334,14 @@ html.crew-dark .crew-team-swatch.none{box-shadow:inset 0 0 0 1.5px #6b7079}
  function build(select,kind){
   const m=document.createElement('div');
   m.className='crew-status-menu';m.setAttribute('role','menu');
-  const title=document.createElement('div');title.className='crew-status-menu-title';title.textContent=kind==='status'?'Estado':'Equipo';
-  m.append(title);
+  const titleText=kind==='status'?'Estado':kind==='team'?'Equipo':fieldLabel(select);
+  if(titleText){const title=document.createElement('div');title.className='crew-status-menu-title';title.textContent=titleText;m.append(title);}
   const groups=select.querySelectorAll('optgroup').length;
   for(const child of select.children){
    if(child.tagName==='OPTGROUP'){
     if(groups>1){const g=document.createElement('div');g.className='crew-status-group';g.textContent=child.label;m.append(g);}
-    for(const opt of child.children)m.append(optionButton(opt,select,kind));
-   }else if(child.tagName==='OPTION')m.append(optionButton(child,select,kind));
+    for(const opt of child.children)if(!opt.hidden)m.append(optionButton(opt,select,kind));
+   }else if(child.tagName==='OPTION'&&!child.hidden)m.append(optionButton(child,select,kind));
   }
   m.addEventListener('keydown',e=>{
    const items=[...m.querySelectorAll('.crew-status-option')];const i=items.indexOf(document.activeElement);
