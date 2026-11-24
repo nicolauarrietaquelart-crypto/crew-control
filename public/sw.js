@@ -1,5 +1,5 @@
-const CACHE = 'crew-control-shell-v5';
-const SHELL = ['/', '/ICON.PNG', '/manifest.webmanifest', '/pause-return.js', '/pause-return.css', '/service-tools.css'];
+const CACHE = 'crew-control-shell-v6';
+const SHELL = ['/', '/icon-192.png', '/manifest.webmanifest', '/pause-return.js', '/pause-return.css', '/service-tools.css'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(async cache => {
     await Promise.allSettled(SHELL.map(path => cache.add(new Request(path, {cache:'reload'}))));
